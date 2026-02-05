@@ -1,0 +1,125 @@
+﻿// -----------------------------------------------------------------------
+// <copyright file="QuantitiesAttributeGenerator.cs" company="TedToolkit">
+// Copyright (c) TedToolkit. All rights reserved.
+// Licensed under the LGPL-3.0 license. See COPYING, COPYING.LESSER file in the project root for full license information.
+// </copyright>
+// -----------------------------------------------------------------------
+
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using TedToolkit.Quantities.Data;
+using TedToolkit.RoslynHelper.Extensions;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static TedToolkit.RoslynHelper.Extensions.SyntaxExtensions;
+
+namespace TedToolkit.Quantities.Analyzer;
+
+internal sealed class QuantitiesAttributeGenerator(DataCollection data)
+{
+    public readonly record struct QuantityUnit(Quantity Quantity, string Unit)
+    {
+        public string UnitName
+            => Quantity.UnitName;
+
+        public string Name
+            => Quantity.Name;
+    }
+
+    public IEnumerable<QuantityUnit> QuantityUnits
+    {
+        get
+        {
+            return data.Quantities.Values.Where(q => q.IsBasic).Select(q =>
+                {
+                    var unit = q.Units
+                        .Select(u => data.Units[u])
+                        .OrderBy(u => u.DistanceToDefault)
+                        .ThenByDescending(u => u.ApplicableSystem)
+                        .First().GetUnitName(data.Units.Values);
+                    return new QuantityUnit(q, unit);
+                });
+        }
+    }
+
+    public void Generate(SourceProductionContext context)
+    {
+        var c = ClassDeclaration("QuantitiesAttribute")
+            .WithAttributeLists(
+            [
+                GeneratedCodeAttribute(typeof(QuantitiesAttributeGenerator)).AddAttributes(Attribute(
+                        IdentifierName("global::System.AttributeUsage"))
+                    .WithArgumentList(AttributeArgumentList(
+                    [
+                        AttributeArgument(MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            IdentifierName("global::System.AttributeTargets"),
+                            IdentifierName("Assembly"))),
+                    ])))
+            ])
+            .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)))
+            .WithTypeParameterList(TypeParameterList([TypeParameter(Identifier("TData"))]))
+            .WithParameterList(ParameterList(
+            [
+                Parameter(Identifier("quantitySystem"))
+                    .WithType(PredefinedType(Token(SyntaxKind.StringKeyword))),
+                Parameter(Identifier("quantities"))
+                    .WithModifiers(TokenList(Token(SyntaxKind.ParamsKeyword)))
+                    .WithType(ArrayType(PredefinedType(Token(SyntaxKind.StringKeyword)))
+                        .WithRankSpecifiers([ArrayRankSpecifier([OmittedArraySizeExpression()])]))
+            ]))
+            .WithMembers(
+            [
+                ..QuantityUnits.Select(q =>
+                    PropertyDeclaration(IdentifierName(q.UnitName),
+                            Identifier(q.Name))
+                        .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
+                        .WithAttributeLists([GeneratedCodeAttribute(typeof(QuantitiesAttributeGenerator))])
+                        .WithAccessorList(AccessorList(
+                        [
+                            AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
+                                .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)),
+                            AccessorDeclaration(SyntaxKind.InitAccessorDeclaration)
+                                .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
+                        ]))
+                        .WithInitializer(
+                            EqualsValueClause(
+                                MemberAccessExpression(
+                                    SyntaxKind.SimpleMemberAccessExpression,
+                                    IdentifierName(q.UnitName),
+                                    IdentifierName(q.Unit))))
+                        .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))),
+
+                PropertyDeclaration(IdentifierName("global::TedToolkit.Quantities.UnitFlag"),
+                        Identifier("Flag"))
+                    .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
+                    .WithAttributeLists([GeneratedCodeAttribute(typeof(QuantitiesAttributeGenerator))])
+                    .WithAccessorList(AccessorList(
+                    [
+                        AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
+                            .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)),
+                        AccessorDeclaration(SyntaxKind.InitAccessorDeclaration)
+                            .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
+                    ]))
+                    .WithInitializer(
+                        EqualsValueClause(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0))))
+                    .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
+            ])
+            .WithBaseList(BaseList(
+            [
+                SimpleBaseType(IdentifierName("global::System.Attribute"))
+            ]))
+            .WithConstraintClauses(
+            [
+                TypeParameterConstraintClause(IdentifierName("TData"))
+                    .WithConstraints(
+                    [
+                        ClassOrStructConstraint(SyntaxKind.StructConstraint),
+                        TypeConstraint(IdentifierName("global::System.IConvertible"))
+                    ])
+            ])
+            .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
+
+        context.AddSource("_QuantitiesAttribute.g.cs",
+            NamespaceDeclaration("TedToolkit.Quantities").WithMembers([c]).NodeToString());
+    }
+}

@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+    <PackageVersion Include="Polyfill" Version="9.7.4" />
+    <PackageVersion Include="Sourcy.DotNet" Version="1.1.1" />
+    <PackageVersion Include="TedToolkit.RoslynHelper" Version="2026.1.17" />
+    <PackageVersion Include="TedToolkit.Scopes" Version="2026.1.9" />
+    <PackageVersion Include="TUnit" Version="1.9.2" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageVersion Include="PeterO.Numbers" Version="1.8.2" />
+    <PackageVersion Include="dotNetRdf" Version="3.4.1" />
+  </ItemGroup>
+</Project>
