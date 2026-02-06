@@ -6,7 +6,7 @@
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="Polyfill" Version="9.8.1" />
     <PackageVersion Include="Sourcy.DotNet" Version="1.1.1" />
-    <PackageVersion Include="TedToolkit.RoslynHelper" Version="2026.2.6.1" />
+    <PackageVersion Include="TedToolkit.RoslynHelper" Version="2026.2.6.3" />
     <PackageVersion Include="TedToolkit.Scopes" Version="2026.1.31" />
     <PackageVersion Include="TUnit" Version="1.9.2" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />

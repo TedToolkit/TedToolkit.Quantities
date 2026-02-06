@@ -41,7 +41,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
     }
 
     private static (ITypeSymbol TDataType,
-        byte Flag,
+        int Flag,
         Dictionary<string, string> Units,
         string QuantitySystem,
         string[] Quantities)?
@@ -67,7 +67,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
             return null;
         }
 
-        byte flag = 0;
+        var flag = 0;
         var quantitySystem = "";
         var quantities = new List<string>();
         var quantityTypes = new Dictionary<string, string>();
@@ -81,7 +81,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                 var expr = attributeArgumentSyntax.Expression;
                 if (name == "Options")
                 {
-                    GetData<byte>(v => flag = v);
+                    GetData<int>(v => flag = v);
                 }
                 else if (name is null)
                 {
@@ -100,8 +100,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    var exprs = expr.ToString().Split('.');
-                    quantityTypes[name] = exprs[^1];
+                    quantityTypes[name] = expr.ToString().Split('.')[^1];
                 }
 
                 void GetData<TData>(Action<TData> action)

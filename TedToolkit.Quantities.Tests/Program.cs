@@ -7,5 +7,5 @@ Console.WriteLine("Hello, World!");
 
 using (new Tolerance().FastPush())
 {
-
+    var length = 10.0.Metre;
 }
