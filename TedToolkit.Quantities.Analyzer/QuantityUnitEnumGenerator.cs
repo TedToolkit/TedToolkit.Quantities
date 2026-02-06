@@ -56,7 +56,7 @@ internal sealed class QuantityUnitEnumGenerator(DataCollection data, Quantity qu
             var invocation = "global::TedToolkit.Quantities.Internals.GetUnitString".ToSimpleName().Invoke()
                 .AddArgument(Argument("isSymbol".ToSimpleName()))
                 .AddArgument(Argument("formatProvider".ToSimpleName()))
-                .AddArgument(Argument(unit.Symbol.Replace("\"", "\\\"").ToLiteral()))
+                .AddArgument(Argument(unit.Symbol.ToLiteral()))
                 .AddArgument(Argument(unit.Name.ToLiteral()));
 
             foreach (var keyValuePair in unit.Labels)

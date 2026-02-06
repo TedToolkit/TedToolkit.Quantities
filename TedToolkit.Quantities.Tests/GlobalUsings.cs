@@ -10,4 +10,4 @@
     "Dimensionless",
     "InverseLength",
     Length = LengthUnit.Millimetre,
-    Options = UnitOptions.GENERATE_EXTENSION_METHODS)]
+    Options = UnitOptions.GENERATE_EXTENSION_PROPERTIES)]

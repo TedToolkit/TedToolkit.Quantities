@@ -37,7 +37,7 @@ internal sealed class ToleranceGenerator(
     /// <param name="compilations">compilations.</param>
     public void Generate(in SourceProductionContext context, Compilation compilations)
     {
-        var declaration = Struct("Tolerance").Partial
+        var declaration = RecordStruct("Tolerance").Partial
             .AddBaseType(new DataType("TedToolkit.Scopes.IScope"))
             .AddMember(Constructor().Public)
             .AddMember(Method("TedToolkit.Scopes.IScope.OnEntry"))
@@ -77,7 +77,7 @@ internal sealed class ToleranceGenerator(
                     .AddStatement("global::System.Math.Abs".ToSimpleName().Invoke()
                         .AddArgument(Argument("left".ToSimpleName().Sub("Value")
                             .Operator("-", "right".ToSimpleName().Sub("Value"))))
-                        .Operator("<", quantityName.ToSimpleName().Sub("Value")).Return))
+                        .Operator("<=", quantityName.ToSimpleName().Sub("Value")).Return))
                 .AddMember(Method("GetHashCode", new(DataType.Int)).Public
                     .AddParameter(Parameter(quantityType, "obj"))
                     .AddStatement(0.ToLiteral().Return))
