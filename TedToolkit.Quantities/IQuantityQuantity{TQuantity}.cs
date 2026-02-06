@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="IQuantityQuantity{TQuantity}.cs" company="TedToolkit">
 // Copyright (c) TedToolkit. All rights reserved.
 // Licensed under the LGPL-3.0 license. See COPYING, COPYING.LESSER file in the project root for full license information.
@@ -19,7 +19,7 @@ public interface IQuantityQuantity<TQuantity> :
 {
 #if NET7_0_OR_GREATER
     /// <summary>
-    /// Zero value.
+    /// Gets zero value.
     /// </summary>
     static abstract TQuantity Zero { get; }
 

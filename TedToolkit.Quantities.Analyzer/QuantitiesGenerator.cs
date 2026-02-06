@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="QuantitiesGenerator.cs" company="TedToolkit">
 // Copyright (c) TedToolkit. All rights reserved.
 // Licensed under the LGPL-3.0 license. See COPYING, COPYING.LESSER file in the project root for full license information.
@@ -49,19 +49,23 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
     {
         if (compilations.Assembly.GetAttributes()
                 .FirstOrDefault(a =>
-                    a.AttributeClass is { IsGenericType: true } attributeClass
-            && attributeClass.ConstructUnboundGenericType().ToString().Contains("Quantities")) is not
-            { } attrData)
+                    a.AttributeClass is { IsGenericType: true, } attributeClass
+                    && attributeClass.ConstructUnboundGenericType().ToString().Contains("Quantities")) is not
+                    { } attrData)
         {
             return null;
         }
 
         var tDataType = attrData.AttributeClass?.TypeArguments.FirstOrDefault();
         if (tDataType is null)
+        {
             return null;
+        }
 
         if (attrData.ApplicationSyntaxReference?.GetSyntax() is not AttributeSyntax syntax)
+        {
             return null;
+        }
 
         byte flag = 0;
         var quantitySystem = "";
@@ -96,7 +100,8 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    quantityTypes[name] = expr.ToString().Split('.').Last();
+                    var exprs = expr.ToString().Split('.');
+                    quantityTypes[name] = exprs[^1];
                 }
 
                 void GetData<TData>(Action<TData> action)
@@ -104,8 +109,12 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                     var semanticModel = compilations.GetSemanticModel(expr.SyntaxTree);
                     var constant = semanticModel.GetConstantValue(expr);
 
-                    if (constant is { HasValue: true, Value: TData v })
-                        action(v);
+                    if (constant is not { HasValue: true, Value: TData v, })
+                    {
+                        return;
+                    }
+
+                    action(v);
                 }
             }
         }
@@ -120,8 +129,8 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
         {
             var (compilations, texts) = arg;
 
-            if (compilations.GetTypeByMetadataName("TedToolkit.Quantities.QuantitiesAttribute`1")?
-                    .BaseType?.FullName
+            if (compilations.GetTypeByMetadataName("TedToolkit.Quantities.QuantitiesAttribute`1")
+                ?.BaseType?.FullName
                 is "System.Attribute")
             {
                 return;
@@ -140,7 +149,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
 
             var unit = new UnitSystem(units, data);
             {
-                new UnitEnumGenerator([..data.Units.Values]).GenerateCode(context);
+                new UnitEnumGenerator([.. data.Units.Values,]).GenerateCode(context);
 
                 var toStringExtensions = Class("UnitToStringExtensions").Public.Static;
                 foreach (var quantity in data.Quantities)
@@ -148,7 +157,9 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                     var enumGenerator = new QuantityUnitEnumGenerator(data, quantity.Value, unit);
                     enumGenerator.GenerateCode(context);
                     if (unitAttribute is not null)
+                    {
                         toStringExtensions = toStringExtensions.AddMember(enumGenerator.GenerateToString());
+                    }
                 }
 
                 File()
@@ -160,7 +171,9 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
             }
 
             if (unitAttribute is null)
+            {
                 return;
+            }
 
             var isPublic = (flag & 1 << 0) is 0;
             var generateMethods = (flag & 1 << 1) is not 0;
@@ -176,13 +189,17 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                     .GenerateCode(context);
             }
 
-            new ToleranceGenerator(unit, data.Quantities.Values.ToArray(), isPublic, tDataType)
+            new ToleranceGenerator(data.Quantities.Values.ToArray(), isPublic, tDataType)
                 .Generate(context, compilations);
 
             if (generateProperties)
+            {
                 new UnitPropertyExtensionGenerator(isPublic, tDataType, data).Generate(context);
+            }
             else if (generateMethods)
+            {
                 new UnitMethodExtensionGenerator(isPublic, tDataType, data).Generate(context);
+            }
         }
 #pragma warning disable CA1031
         catch (Exception e)

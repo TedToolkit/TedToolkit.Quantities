@@ -6,6 +6,7 @@
     <File Path="Directory.Packages.props" />
   </Folder>
   <Project Path="Build/Build.csproj">
+    <BuildDependency Project="TedToolkit.Quantities.Analyzer/TedToolkit.Quantities.Analyzer.csproj" />
     <Build Solution="Debug|*" Project="false" />
   </Project>
   <Project Path="TedToolkit.Quantities.Analyzer/TedToolkit.Quantities.Analyzer.csproj" />

@@ -22,10 +22,6 @@ using TedToolkit.Quantities.Data;
 using TedToolkit.RoslynHelper.Generators;
 using TedToolkit.RoslynHelper.Generators.Syntaxes;
 
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-
-using Conversion = TedToolkit.Quantities.Data.Conversion;
-
 namespace TedToolkit.Quantities.Analyzer;
 
 /// <summary>
@@ -58,7 +54,9 @@ internal static class Helpers
         var s = value.ToString(CultureInfo.InvariantCulture);
         var sb = new StringBuilder(s.Length);
         foreach (var c in s)
+        {
             sb.Append(_superscripts.TryGetValue(c, out var i) ? i : c);
+        }
 
         return sb.ToString();
     }
@@ -79,10 +77,16 @@ internal static class Helpers
             new DescriptionSummary(description.Split('\n').Select(t => new DescriptionText(t)).ToArray()));
         owner.AddRootDescription(new DescriptionRemarks(
             new DescriptionText(dimension),
-            new DescriptionText(string.Join("\t", links.Select(l => l.Remarks)))
-        ));
+            new DescriptionText(string.Join("\t", links.Select(l => l.Remarks)))));
     }
 
+    /// <summary>
+    /// Get the data.
+    /// </summary>
+    /// <param name="fileName">file name.</param>
+    /// <param name="jsons">json values.</param>
+    /// <param name="quantities">quantities.</param>
+    /// <returns>results.</returns>
     public static DataCollection GetData(string? fileName, IEnumerable<string> jsons, string[] quantities)
     {
         var asm = typeof(QuantitiesGenerator).Assembly;
@@ -98,14 +102,16 @@ internal static class Helpers
             .FirstOrDefault(n => n.EndsWith("ISQ.json", StringComparison.OrdinalIgnoreCase));
 
         JObject jObject;
+        using (var stream = asm.GetManifestResourceStream(resourceName)!)
+        using (var reader = new StreamReader(stream))
         {
-            using var stream = asm.GetManifestResourceStream(resourceName)!;
-            using var reader = new StreamReader(stream);
             jObject = JObject.Parse(reader.ReadToEnd());
         }
 
         foreach (var json in jsons)
+        {
             AppendObject(JObject.Parse(json));
+        }
 
         var result = jObject.ToObject<DataCollection>();
 
@@ -119,18 +125,22 @@ internal static class Helpers
         bool QuantityPredict(KeyValuePair<string, Quantity> pair)
         {
             if (fileName is null)
+            {
                 return pair.Value.IsBasic;
+            }
 
-            if (quantities.Length is not 0)
-                return pair.Value.IsBasic || quantities.Contains(pair.Key);
+            if (quantities.Length is 0)
+            {
+                return true;
+            }
 
-            return true;
+            return pair.Value.IsBasic || quantities.Contains(pair.Key);
         }
 
         void AppendObject(JObject obj)
         {
             jObject.Merge(obj,
-                new JsonMergeSettings
+                new JsonMergeSettings()
                 {
                     MergeNullValueHandling = MergeNullValueHandling.Merge,
                     MergeArrayHandling = MergeArrayHandling.Union,
@@ -138,6 +148,14 @@ internal static class Helpers
         }
     }
 
+    /// <summary>
+    /// Get the system to unit.
+    /// </summary>
+    /// <param name="unit">unit.</param>
+    /// <param name="system">system.</param>
+    /// <param name="dimension">dimension.</param>
+    /// <param name="dataType">data type.</param>
+    /// <returns>result.</returns>
     public static IExpression? GetSystemToUnit(this in Unit unit, in UnitSystem system, in Dimension dimension,
         ITypeSymbol dataType)
     {
@@ -145,6 +163,14 @@ internal static class Helpers
         return ToExpression(conversion, dataType, "Value".ToSimpleName());
     }
 
+    /// <summary>
+    /// get the unit to system.
+    /// </summary>
+    /// <param name="unit">unit.</param>
+    /// <param name="system">system.</param>
+    /// <param name="dimension">dimension.</param>
+    /// <param name="dataType">data type.</param>
+    /// <returns>result.</returns>
     public static IExpression? GetUnitToSystem(this in Unit unit, in UnitSystem system, in Dimension dimension,
         ITypeSymbol dataType)
     {
@@ -152,24 +178,35 @@ internal static class Helpers
         return ToExpression(conversion, dataType, "value".ToSimpleName());
     }
 
-    private static IExpression? ToExpression(Conversion? conversion, ITypeSymbol dataType, SimpleNameExpression argument)
+    private static IExpression? ToExpression(Data.Conversion? conversion, ITypeSymbol dataType,
+        SimpleNameExpression argument)
     {
         if (conversion?.IsValid != true)
+        {
             return null;
+        }
 
         IExpression multiple = conversion.Value.Multiplier.ToEDecimal().Equals(EDecimal.One)
             ? argument
             : CreateNumber(conversion.Value.Multiplier, dataType).Operator("*", argument);
 
         if (conversion.Value.Offset.IsZero)
+        {
             return multiple;
+        }
 
         return multiple.Operator("+", CreateNumber(conversion.Value.Offset, dataType));
     }
 
-    public static Conversion? ToSystemConversion(scoped in UnitSystem system, scoped in Dimension dimension)
+    /// <summary>
+    /// To system conversion.
+    /// </summary>
+    /// <param name="system">system.</param>
+    /// <param name="dimension">dimension.</param>
+    /// <returns>result.</returns>
+    public static Data.Conversion? ToSystemConversion(scoped in UnitSystem system, scoped in Dimension dimension)
     {
-        Conversion? result = Conversion.Unit;
+        Data.Conversion? result = Data.Conversion.Unit;
         foreach (var systemKey in system.Keys)
         {
             var unitConversion = system.GetUnit(systemKey).Conversion;
@@ -180,16 +217,24 @@ internal static class Helpers
         return result;
     }
 
+    /// <summary>
+    /// To decimal.
+    /// </summary>
+    /// <param name="data">data.</param>
+    /// <returns>result.</returns>
     public static decimal ToDecimal(ERational data)
     {
         try
         {
             var dec = data.ToEDecimal();
             if (!dec.IsNaN())
+            {
                 return dec.ToDecimal();
+            }
         }
         catch (OverflowException)
         {
+            // Ignore
         }
 
         return (decimal)data.Numerator.ToInt64Unchecked() / data.Denominator.ToInt64Unchecked();
@@ -199,7 +244,9 @@ internal static class Helpers
     {
         var dec = data.ToEDecimal();
         if (!dec.IsNaN())
+        {
             return CreateNumber(dec, dataType);
+        }
 
         return CreateNumber(data.Numerator, dataType)
             .Operator("/", CreateNumber(data.Denominator, dataType));
@@ -212,23 +259,35 @@ internal static class Helpers
         if (!IsFloatingPoint(dataType))
         {
             if (int.TryParse(num, out var i))
+            {
                 return i.ToLiteral();
+            }
 
             if (uint.TryParse(num, out var u))
+            {
                 return u.ToLiteral();
+            }
 
             if (long.TryParse(num, out var l))
+            {
                 return l.ToLiteral();
+            }
 
             if (ulong.TryParse(num, out var ul))
+            {
                 return ul.ToLiteral();
+            }
         }
 
-        if (dataType.SpecialType is SpecialType.System_Decimal && decimal.TryParse(num, out var m))
+        if (dataType.SpecialType is SpecialType.System_Decimal && decimal.TryParse(num, out _))
+        {
             return ZString.Concat(num, 'm').ToSimpleName();
+        }
 
-        if (double.TryParse(num, out var d))
+        if (double.TryParse(num, out _))
+        {
             return ZString.Concat(num, 'd').ToSimpleName();
+        }
 
         return num.ToSimpleName();
     }

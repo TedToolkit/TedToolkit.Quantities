@@ -44,7 +44,9 @@ internal readonly struct UnitSystem(Dictionary<string, string>? unitDictionary, 
         var quantityUnits = quantity.Units
             .Select(u => data.Units[u]);
         if (unitDictionary?.TryGetValue(key, out var unitKey) ?? false)
+        {
             return quantityUnits.First(q => q.GetUnitName(allUnits) == unitKey);
+        }
 
         return quantityUnits
             .OrderBy(i => i.DistanceToDefault)

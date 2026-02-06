@@ -19,7 +19,9 @@ using VDS.RDF.Parsing;
 var solutionFolder = Solutions.TedToolkit_Quantities.Directory;
 
 if (solutionFolder is null)
+{
     return;
+}
 
 var quantityFolder = solutionFolder.CreateSubdirectory("TedToolkit.Quantities");
 var unitFolder = solutionFolder.CreateSubdirectory("TedToolkit.Quantities.Analyzer").CreateSubdirectory("QUDT");
@@ -30,7 +32,7 @@ using var g = new Graph();
 var parser = new TurtleParser();
 parser.Load(g, path);
 
-var names = new List<(string Name, string Description)>() { ("ALL", "All quantities.") };
+var names = new List<(string Name, string Description)>() { ("ALL", "All quantities."), };
 foreach (var uriNode in g.GetTriplesWithPredicateObject(
                  g.CreateUriNode("rdf:type"),
                  g.CreateUriNode("qudt:SystemOfQuantityKinds"))

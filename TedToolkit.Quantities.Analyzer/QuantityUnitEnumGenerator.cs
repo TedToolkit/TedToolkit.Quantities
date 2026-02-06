@@ -53,7 +53,7 @@ internal sealed class QuantityUnitEnumGenerator(DataCollection data, Quantity qu
             var unit = data.Units[quantityUnit];
             var unitName = unit.GetUnitName(data.Units.Values);
 
-            var invocation = "global::TedToolkit.Quantities.Internal.GetUnitString".ToSimpleName().Invoke()
+            var invocation = "global::TedToolkit.Quantities.Internals.GetUnitString".ToSimpleName().Invoke()
                 .AddArgument(Argument("isSymbol".ToSimpleName()))
                 .AddArgument(Argument("formatProvider".ToSimpleName()))
                 .AddArgument(Argument(unit.Symbol.Replace("\"", "\\\"").ToLiteral()))
@@ -84,7 +84,9 @@ internal sealed class QuantityUnitEnumGenerator(DataCollection data, Quantity qu
         void AddOne(int count, string key)
         {
             if (count is 0)
+            {
                 return;
+            }
 
             var unit = unitSystem.GetUnit(key);
 
@@ -96,9 +98,13 @@ internal sealed class QuantityUnitEnumGenerator(DataCollection data, Quantity qu
                 .Operator("+", count.ToSuperscript().ToLiteral());
 
             if (result is null)
+            {
                 result = member;
+            }
             else
+            {
                 result = result.Operator("+", "·".ToLiteral()).Operator("+", member);
+            }
         }
     }
 

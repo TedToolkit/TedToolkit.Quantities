@@ -38,7 +38,9 @@ public readonly record struct Conversion(ERational Multiplier, ERational Offset)
     public Conversion? TransformTo(Conversion? unit)
     {
         if (unit is null)
+        {
             return null;
+        }
 
         var multiplier = Multiplier / unit.Value.Multiplier;
         var offset = (Offset - unit.Value.Offset) / unit.Value.Multiplier;
@@ -66,23 +68,31 @@ public readonly record struct Conversion(ERational Multiplier, ERational Offset)
                 return new Conversion(multiplier, offset);
         }
 
-        if (Multiplier.IsZero || Offset.IsZero)
-            return new Conversion(Pow(Multiplier, exponent), Pow(Offset, exponent));
+        if (!Multiplier.IsZero && !Offset.IsZero)
+        {
+            return null;
+        }
 
-        return null;
+        return new Conversion(Pow(Multiplier, exponent), Pow(Offset, exponent));
     }
 
     private static ERational Pow(ERational rational, int exponent)
     {
         if (exponent == 0)
+        {
             return ERational.One;
+        }
 
         var one = rational;
         for (var i = 1; i < Math.Abs(exponent); i++)
+        {
             rational *= one;
+        }
 
         if (exponent < 0)
+        {
             rational = ERational.One / rational;
+        }
 
         return rational;
     }
@@ -95,10 +105,14 @@ public readonly record struct Conversion(ERational Multiplier, ERational Offset)
     public Conversion? Merge(Conversion? other)
     {
         if (other is null)
+        {
             return null;
+        }
 
         if (!Multiplier.IsZero && !Offset.IsZero)
+        {
             return null;
+        }
 
         return new Conversion(Multiplier * other.Value.Multiplier,
             Offset * other.Value.Offset);

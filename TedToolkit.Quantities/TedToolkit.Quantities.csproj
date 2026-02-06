@@ -10,9 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\..\analyzers\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\TedToolkit*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
-    <None Include="..\..\analyzers\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\Newtonsoft.Json.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
-    <None Include="..\..\analyzers\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\Numbers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+    <None Include="..\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\TedToolkit.Quantities.Analyzer.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+    <None Include="..\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\TedToolkit.Quantities.Data.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+    <None Include="..\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\TedToolkit.RoslynHelper.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+    <None Include="..\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\ZString.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+    <None Include="..\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\Numbers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+    <None Include="..\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\System.Memory.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+    <None Include="..\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\Newtonsoft.Json.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
     <PackageReference Include="TedToolkit.Scopes"/>
   </ItemGroup>
 </Project>

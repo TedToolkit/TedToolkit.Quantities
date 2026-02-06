@@ -14,7 +14,7 @@ namespace TedToolkit.Quantities.Generator;
 /// <summary>
 /// The helpers.
 /// </summary>
-public static class Helpers
+internal static class Helpers
 {
     /// <summary>
     /// Find the url name.

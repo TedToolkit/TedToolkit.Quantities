@@ -5,12 +5,20 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Globalization;
 using System.Runtime.InteropServices;
+
 using TedToolkit.Quantities.Data;
+
 using VDS.RDF;
 
 namespace TedToolkit.Quantities.Generator;
 
+/// <summary>
+/// The qudt analyzer.
+/// </summary>
+/// <param name="g">g</param>
+/// <param name="quantitySystem">quantity system.</param>
 internal sealed class QudtAnalyzer(Graph g, INode? quantitySystem)
 {
     private IEnumerable<IUriNode> GetBaseQuantityNodes()
@@ -43,6 +51,10 @@ internal sealed class QudtAnalyzer(Graph g, INode? quantitySystem)
             .OfType<IUriNode>();
     }
 
+    /// <summary>
+    /// Analyze
+    /// </summary>
+    /// <returns>the result.</returns>
     public DataCollection Analyze()
     {
         var basicNodes = GetBaseQuantityNodes().ToArray();
@@ -52,19 +64,19 @@ internal sealed class QudtAnalyzer(Graph g, INode? quantitySystem)
             .Where(q => q.HasValue)
             .Select(q => q!.Value)
             .ToArray();
-        return new DataCollection(quantities.ToDictionary(i => i.Name), _units, _dimensions);
+        return new(quantities.ToDictionary(i => i.Name), _units, _dimensions);
     }
 
-    #region Unit
-
-    public Unit UnitParse(IUriNode node)
+    private Unit UnitParse(IUriNode node)
     {
         var labels = node.GetLabels(g)
             .Where(i => !string.IsNullOrEmpty(i.Language))
             .ToDictionary(i => i.Language, i => i.Value);
 
         if (!labels.TryGetValue("", out var label) && !labels.TryGetValue("en", out label))
+        {
             label = null!;
+        }
 
         label = label?.LabelToName() ?? node.GetUrlName();
 
@@ -81,18 +93,17 @@ internal sealed class QudtAnalyzer(Graph g, INode? quantitySystem)
         var count = g.GetTriplesWithSubjectPredicate(node, g.CreateUriNode("qudt:applicableSystem"))
             .Count();
 
-        return new Unit(node.GetUrlName(), label, node.GetDescription(g), node.GetLinks(g), GetSymbol(node), labels,
+        return new(node.GetUrlName(), label, node.GetDescription(g), node.GetLinks(g), GetSymbol(node), labels,
             multiplier, offset,
             factors, count);
     }
-
 
     private string GetSymbol(IUriNode node)
     {
         return GetString("qudt:symbol")
                ?? GetString("qudt:ucumCode")
                ?? GetString("qudt:udunitsCode")
-               ?? string.Empty;
+               ?? "";
 
         string? GetString(string predicate)
         {
@@ -104,46 +115,47 @@ internal sealed class QudtAnalyzer(Graph g, INode? quantitySystem)
         }
     }
 
-    #endregion
-
     private readonly Dictionary<string, Unit> _units = [];
+
     private readonly Dictionary<string, Dimension> _dimensions = [];
 
-    #region Quantity
-
-    public Quantity? QuantityParse(IUriNode node, bool isBasic)
+    private Quantity? QuantityParse(IUriNode node, bool isBasic)
     {
         var dimensionNode = node.GetProperty<IUriNode>(g, "qudt:hasDimensionVector").First();
         var quantityKind = node.GetProperty<IUriNode>(g, "qudt:hasReferenceQuantityKind").FirstOrDefault();
 
         var isDefaultQuantity = quantityKind?.ToString() == node.ToString();
         if (DimensionParse(dimensionNode) is not { } dimension)
+        {
             return null;
+        }
 
         var denominator = DimensionParse(node.GetProperty<IUriNode>(g, "qudt:qkdvDenominator").FirstOrDefault());
         var numerator = DimensionParse(node.GetProperty<IUriNode>(g, "qudt:qkdvNumerator").FirstOrDefault());
         var matchName = node.GetProperty<IUriNode>(g, "qudt:exactMatch").Select(r => r.GetUrlName()).ToArray();
 
-        return new Quantity(node.GetUrlName().Replace('-','_'), node.GetDescription(g), node.GetLinks(g), isBasic,
+        return new Quantity(node.GetUrlName().Replace('-', '_'), node.GetDescription(g), node.GetLinks(g), isBasic,
             dimension, isDefaultQuantity,
-            GetUnits(node))
-        {
-            Numerator = numerator ?? string.Empty,
-            Denominator = denominator ?? string.Empty,
-            ExactMatch = matchName,
-        };
+            GetUnits(node)) { Numerator = numerator ?? "", Denominator = denominator ?? "", ExactMatch = matchName, };
     }
 
-    private IReadOnlyList<string> GetUnits(IUriNode node)
+    /// <summary>
+    /// Get the units.
+    /// </summary>
+    /// <param name="node">node.</param>
+    /// <returns>result.</returns>
+    private List<string> GetUnits(IUriNode node)
     {
-        List<string> result = [];
+        var result = new List<string>();
         foreach (var uriNode in node.GetProperty<IUriNode>(g, "qudt:applicableUnit"))
         {
             var name = uriNode.GetUrlName();
             result.Add(name);
             ref var unit = ref CollectionsMarshal.GetValueRefOrAddDefault(_units, name, out var exists);
             if (exists)
+            {
                 continue;
+            }
 
             unit = UnitParse(uriNode);
         }
@@ -151,33 +163,40 @@ internal sealed class QudtAnalyzer(Graph g, INode? quantitySystem)
         return result;
     }
 
-    #endregion
-
-    #region FactorUnit
-
-    public FactorUnit FactorUnitParse(IBlankNode node)
+    /// <summary>
+    /// Parse the factor unit.
+    /// </summary>
+    /// <param name="node">the node.</param>
+    /// <returns>factor unit.</returns>
+    private FactorUnit FactorUnitParse(IBlankNode node)
     {
-        var exponent = double.Parse(node.GetProperty<ILiteralNode>(g, "qudt:exponent").First().Value);
+        var exponent = double.Parse(node.GetProperty<ILiteralNode>(g, "qudt:exponent").First().Value,
+            CultureInfo.InvariantCulture);
         var unit = node.GetProperty<IUriNode>(g, "qudt:hasUnit").First();
         var dimension = unit.GetProperty<IUriNode>(g, "qudt:hasDimensionVector").First();
 
-        return new FactorUnit(exponent, DimensionParse(dimension)!);
+        return new(exponent, DimensionParse(dimension)!);
     }
 
-    #endregion
-
-    #region Dimensions
-
-    public string? DimensionParse(IUriNode? node)
+    /// <summary>
+    /// Parse the dimension.
+    /// </summary>
+    /// <param name="node">the node.</param>
+    /// <returns>the result.</returns>
+    private string? DimensionParse(IUriNode? node)
     {
         if (node is null)
+        {
             return null;
+        }
 
         try
         {
             var key = node.GetUrlName();
             if (_dimensions.ContainsKey(key))
+            {
                 return key;
+            }
 
             var dimension = new Dimension(
                 GetExponent("qudt:dimensionExponentForAmountOfSubstance"),
@@ -192,7 +211,9 @@ internal sealed class QudtAnalyzer(Graph g, INode? quantitySystem)
             _dimensions.Add(key, dimension);
             return key;
         }
+#pragma warning disable CA1031
         catch
+#pragma warning restore CA1031
         {
             return null;
         }
@@ -206,9 +227,7 @@ internal sealed class QudtAnalyzer(Graph g, INode? quantitySystem)
                 .First()
                 .Value;
 
-            return int.Parse(value);
+            return int.Parse(value, CultureInfo.InvariantCulture);
         }
     }
-
-    #endregion
 }

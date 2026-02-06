@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="ToleranceGenerator.cs" company="TedToolkit">
 // Copyright (c) TedToolkit. All rights reserved.
 // Licensed under the LGPL-3.0 license. See COPYING, COPYING.LESSER file in the project root for full license information.
@@ -22,12 +22,10 @@ namespace TedToolkit.Quantities.Analyzer;
 /// <summary>
 /// Create the tolerance generator.
 /// </summary>
-/// <param name="unitSystem">the unit system.</param>
-/// <param name="quantities">the quantities.</param>
+/// <param name="quantities">quantities.</param>
 /// <param name="isPublic">is public.</param>
 /// <param name="typeName">type symbol.</param>
 internal sealed class ToleranceGenerator(
-    UnitSystem unitSystem,
     IReadOnlyList<Quantity> quantities,
     bool isPublic,
     ITypeSymbol typeName)
@@ -46,7 +44,8 @@ internal sealed class ToleranceGenerator(
             .AddMember(Method("TedToolkit.Scopes.IScope.OnExit"));
         declaration = isPublic ? declaration.Public : declaration.Internal;
 
-        declaration.AddMember(Property(new DataType("Tolerance".ToSimpleName()).RefReadonly, "CurrentOrDefault").Public.Static
+        declaration.AddMember(Property(new DataType("Tolerance".ToSimpleName()).RefReadonly, "CurrentOrDefault").Public
+            .Static
             .AddAccessor(Accessor(AccessorType.GET)
                 .AddStatement("global::TedToolkit.Scopes.ScopeValues.Struct<Tolerance>.HasCurrent".ToSimpleName().If
                     .AddStatement("global::TedToolkit.Scopes.ScopeValues.Struct<Tolerance>.Current".ToSimpleName().Ref
@@ -60,23 +59,25 @@ internal sealed class ToleranceGenerator(
                 .AddDefault(new ObjectCreationExpression()));
         }
 
-        foreach (var quantity in quantities)
+        foreach (var quantityName in quantities.Select(i => i.Name))
         {
-            var quantityType = new DataType(quantity.Name);
+            var quantityType = new DataType(quantityName);
 
             declaration
+#pragma warning disable CS8620
                 .AddBaseType(new DataType("System.Collections.Generic.IEqualityComparer".ToSimpleName()
                     .Generic(quantityType)))
                 .AddBaseType(new DataType("System.Collections.Generic.IComparer".ToSimpleName()
                     .Generic(quantityType)))
-                .AddMember(CreateToleranceProperty(quantity.Name))
+#pragma warning restore CS8620
+                .AddMember(CreateToleranceProperty(quantityName))
                 .AddMember(Method("Equals", new(DataType.Bool)).Public
                     .AddParameter(Parameter(quantityType, "left"))
                     .AddParameter(Parameter(quantityType, "right"))
                     .AddStatement("global::System.Math.Abs".ToSimpleName().Invoke()
                         .AddArgument(Argument("left".ToSimpleName().Sub("Value")
                             .Operator("-", "right".ToSimpleName().Sub("Value"))))
-                        .Operator("<", quantity.Name.ToSimpleName().Sub("Value")).Return))
+                        .Operator("<", quantityName.ToSimpleName().Sub("Value")).Return))
                 .AddMember(Method("GetHashCode", new(DataType.Int)).Public
                     .AddParameter(Parameter(quantityType, "obj"))
                     .AddStatement(0.ToLiteral().Return))
@@ -89,7 +90,7 @@ internal sealed class ToleranceGenerator(
                         .AddStatement(0.ToLiteral().Return))
                     .AddStatement("left.Value.CompareTo(right.Value)".ToSimpleName().Return))
                 .AddMember(ImplicitConversionTo(quantityType).ScopedIn
-                    .AddStatement(ZString.Concat("value.", quantity.Name).ToSimpleName().Return));
+                    .AddStatement(ZString.Concat("value.", quantityName).ToSimpleName().Return));
         }
 
         File().AddNameSpace(NameSpace("TedToolkit.Quantities")

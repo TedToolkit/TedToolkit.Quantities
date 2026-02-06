@@ -19,6 +19,11 @@ using static TedToolkit.RoslynHelper.Generators.SourceComposer<
 
 namespace TedToolkit.Quantities.Analyzer;
 
+/// <summary>
+/// The unit extension generator.
+/// </summary>
+/// <param name="isPublic">is public.</param>
+/// <param name="data">data collection.</param>
 public abstract class UnitExtensionGenerator(bool isPublic, DataCollection data)
 {
     /// <summary>

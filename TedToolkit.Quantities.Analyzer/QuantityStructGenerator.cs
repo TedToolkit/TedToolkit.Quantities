@@ -31,7 +31,7 @@ namespace TedToolkit.Quantities.Analyzer;
 /// <param name="unitSystem">unit system.</param>
 /// <param name="isPublic">is public.</param>
 /// <param name="quantitySymbol">quantity symbol.</param>
-internal class QuantityStructGenerator(
+internal sealed class QuantityStructGenerator(
     DataCollection data,
     Quantity quantity,
     ITypeSymbol typeName,
@@ -42,18 +42,24 @@ internal class QuantityStructGenerator(
     private IEnumerable<Operator> CreateCustomOperators()
     {
         if (quantitySymbol is null)
+        {
             yield break;
+        }
 
         foreach (var attributeData in quantitySymbol.GetAttributes()
-                     .Where(a => a.AttributeClass is { IsGenericType: true } attributeClass
+                     .Where(a => a.AttributeClass is { IsGenericType: true, } attributeClass
                                  && attributeClass.ConstructUnboundGenericType().FullName is
                                      "TedToolkit.Quantities.QuantityOperatorAttribute<,,>"))
         {
             if (attributeData.ConstructorArguments.FirstOrDefault().Value is not byte value)
+            {
                 continue;
+            }
 
             if (value > 3)
+            {
                 continue;
+            }
 
             var operatorName = value switch
             {
@@ -63,8 +69,10 @@ internal class QuantityStructGenerator(
                 _ => "/",
             };
 
-            if (attributeData.AttributeClass is not { TypeArguments.Length: > 2 } attributeClass)
+            if (attributeData.AttributeClass is not { TypeArguments.Length: > 2, } attributeClass)
+            {
                 continue;
+            }
 
             var leftType = attributeClass.TypeArguments[0];
             var rightType = attributeClass.TypeArguments[1];
@@ -82,6 +90,10 @@ internal class QuantityStructGenerator(
         }
     }
 
+    /// <summary>
+    /// Generate the code.
+    /// </summary>
+    /// <param name="context">context.</param>
     public void GenerateCode(scoped in SourceProductionContext context)
     {
         var quantityType = new DataType(quantity.Name.ToSimpleName());
@@ -158,7 +170,7 @@ internal class QuantityStructGenerator(
                 .AddParameter(Parameter(new DataType(quantity.UnitName), "unit"))
                 .AddParameter(Parameter<string?>("format").AddNull())
                 .AddParameter(Parameter<IFormatProvider?>("formatProvider").AddNull())
-                .AddStatement("format = global::TedToolkit.Quantities.Internal.ParseFormat(format, out var index)"
+                .AddStatement("format = global::TedToolkit.Quantities.Internals.ParseFormat(format, out var index)"
                     .ToSimpleName())
                 .AddStatement("As(unit).ToString(format, formatProvider) + \" \" + unit.ToString(index, formatProvider)"
                     .ToSimpleName().Return))
@@ -176,7 +188,7 @@ internal class QuantityStructGenerator(
                 .AddStatement("Tolerance.CurrentOrDefault.Compare(this, other)".ToSimpleName().Return))
             .AddMember(Method("CompareTo", new(DataType.Int)).Public
                 .AddParameter(Parameter(DataType.Object.Null, "other"))
-                .AddStatement("global::TedToolkit.Quantities.Internal.CompareTo(this, other)".ToSimpleName().Return))
+                .AddStatement("global::TedToolkit.Quantities.Internals.CompareTo(this, other)".ToSimpleName().Return))
             .AddMember(Method("From", new(quantityType)).Public.Static
                 .AddParameter(Parameter(typeType, "value"))
                 .AddParameter(Parameter(new DataType(quantity.UnitName), "unit"))
@@ -259,7 +271,9 @@ internal class QuantityStructGenerator(
                 .AddStatement("(left * right.Value)".ToSimpleName().Cast(quantityType).Return));
 
         foreach (var customOperator in CreateCustomOperators())
+        {
             structDeclaration.AddMember(customOperator);
+        }
 
         var math = DataType.FromType(typeof(Math)).Type;
 
@@ -377,10 +391,13 @@ internal class QuantityStructGenerator(
         get
         {
             if (quantitySymbol?.GetAttributes().FirstOrDefault(a =>
-                    a.AttributeClass is { IsGenericType: true } attributeClass
+                    a.AttributeClass is { IsGenericType: true, } attributeClass
                     && attributeClass.ConstructUnboundGenericType().GetName().FullName is
                         "global::TedToolkit.Quantities.QuantityDisplayUnitAttribute<>") is not
-                { } displayUnitAttribute) return null;
+                        { } displayUnitAttribute)
+            {
+                return null;
+            }
 
             var syntax = displayUnitAttribute.ApplicationSyntaxReference?.GetSyntax()
                 as AttributeSyntax;
@@ -397,10 +414,14 @@ internal class QuantityStructGenerator(
         var none = ZString.Concat(quantity.UnitName, ".None");
 
         if (allUnits.Length == 0)
+        {
             return none;
+        }
 
         if (UnitString is { } argText)
+        {
             return argText;
+        }
 
         if (quantity.IsNoDimensions)
         {
@@ -422,10 +443,14 @@ internal class QuantityStructGenerator(
                 .Where(u =>
                 {
                     if (Math.Abs(Helpers.ToDecimal(u.Conversion.Multiplier) - multiplier) > 1e-9m)
+                    {
                         return false;
+                    }
 
                     if (Math.Abs(Helpers.ToDecimal(u.Conversion.Offset) - offset) > 1e-9m)
+                    {
                         return false;
+                    }
 
                     return true;
                 })
@@ -434,7 +459,9 @@ internal class QuantityStructGenerator(
                 .FirstOrDefault();
 
             if (!string.IsNullOrEmpty(choiceUnit.Name))
+            {
                 return ZString.Concat(quantity.UnitName, '.', choiceUnit.GetUnitName(data.Units.Values));
+            }
         }
 
         return none;

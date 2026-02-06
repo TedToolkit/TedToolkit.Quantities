@@ -1,5 +1,5 @@
 ﻿// -----------------------------------------------------------------------
-// <copyright file="Internal.cs" company="TedToolkit">
+// <copyright file="Internals.cs" company="TedToolkit">
 // Copyright (c) TedToolkit. All rights reserved.
 // Licensed under the LGPL-3.0 license. See COPYING, COPYING.LESSER file in the project root for full license information.
 // </copyright>
@@ -7,14 +7,12 @@
 
 using System.Globalization;
 
-using TedToolkit.Scopes;
-
 namespace TedToolkit.Quantities;
 
 /// <summary>
 /// Some internal methods.
 /// </summary>
-public static class Internal
+public static class Internals
 {
     /// <summary>
     /// Easy to compare.
@@ -53,25 +51,33 @@ public static class Internal
         ArgumentNullException.ThrowIfNull(labels);
 #else
         if (labels is null)
+        {
             throw new ArgumentNullException(nameof(labels));
+        }
 #endif
 
         if (isSymbol)
+        {
             return symbol;
+        }
 
         var culture = formatProvider as CultureInfo ?? CultureInfo.CurrentCulture;
         var letter = culture.Name;
         foreach (var (key, value) in labels)
         {
             if (key.Equals(letter, StringComparison.OrdinalIgnoreCase))
+            {
                 return value;
+            }
         }
 
         letter = culture.TwoLetterISOLanguageName;
         foreach (var (key, value) in labels)
         {
             if (key.Equals(letter, StringComparison.OrdinalIgnoreCase))
+            {
                 return value;
+            }
         }
 
         return defaultLabel;
@@ -91,7 +97,7 @@ public static class Internal
             return null;
         }
 
-#if NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         var splitFormat = format.Split('|');
         isSymbol = splitFormat[0].Contains('s', StringComparison.InvariantCultureIgnoreCase);
         return splitFormat[^1];

@@ -14,8 +14,16 @@ using static TedToolkit.RoslynHelper.Generators.SourceComposer<
 
 namespace TedToolkit.Quantities.Generator;
 
+/// <summary>
+/// The quantity system generator.
+/// </summary>
 internal abstract class QuantitySystemGenerator
 {
+    /// <summary>
+    /// Generate the quantity system.
+    /// </summary>
+    /// <param name="folder">folder.</param>
+    /// <param name="systems">systems.</param>
     public static void GenerateQuantitySystem(string folder, IEnumerable<(string Name, string Description)> systems)
     {
         var classDeclaration = Class("QuantitySystems").Public.Static;
