@@ -27,6 +27,16 @@ public interface IQuantityQuantity<TQuantity> :
     /// Gets one value.
     /// </summary>
     static abstract TQuantity One { get; }
+
+    /// <summary>
+    /// Gets min value.
+    /// </summary>
+    static abstract TQuantity MinValue { get; }
+
+    /// <summary>
+    /// Gets max value.
+    /// </summary>
+    static abstract TQuantity MaxValue { get; }
 #endif
 
     /// <inheritdoc cref="Math.Abs(double)"/>

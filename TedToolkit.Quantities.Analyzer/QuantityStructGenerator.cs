@@ -114,6 +114,12 @@ internal sealed class QuantityStructGenerator(
             .AddMember(Property(quantityType, "One").Static.Public
                 .AddAccessor(Accessor(AccessorType.GET)
                     .AddStatement(1.ToLiteral().Cast(quantityType).Return)))
+            .AddMember(Property(quantityType, "MinValue").Static.Public
+                .AddAccessor(Accessor(AccessorType.GET)
+                    .AddStatement(typeType.Type.Sub("MinValue").Cast(quantityType).Return)))
+            .AddMember(Property(quantityType, "MaxValue").Static.Public
+                .AddAccessor(Accessor(AccessorType.GET)
+                    .AddStatement(typeType.Type.Sub("MaxValue").Cast(quantityType).Return)))
             .AddMember(Property(typeType, "Value").Public
                 .AddAccessor(Accessor(AccessorType.GET)));
 
@@ -314,6 +320,33 @@ internal sealed class QuantityStructGenerator(
                 .AddMember(CreateMathMethod(nameof(Math.Floor)))
                 .AddMember(CreateMathMethod(nameof(Math.Ceiling)))
                 .AddMember(CreateMathMethod(nameof(Math.Round)));
+
+            structDeclaration
+                .AddMember(Property(quantityType, "NaN").Static.Public
+                    .AddAccessor(Accessor(AccessorType.GET)
+                        .AddStatement(typeType.Type.Sub("NaN").Cast(quantityType).Return)))
+                .AddMember(Property(quantityType, "PositiveInfinity").Static.Public
+                    .AddAccessor(Accessor(AccessorType.GET)
+                        .AddStatement(typeType.Type.Sub("PositiveInfinity").Cast(quantityType).Return)))
+                .AddMember(Property(quantityType, "NegativeInfinity").Static.Public
+                    .AddAccessor(Accessor(AccessorType.GET)
+                        .AddStatement(typeType.Type.Sub("NegativeInfinity").Cast(quantityType).Return)))
+                .AddMember(Property(DataType.Bool, "IsNaN").Public
+                    .AddAccessor(Accessor(AccessorType.GET)
+                        .AddStatement(typeType.Type.Sub("IsNaN").Invoke()
+                            .AddArgument(Argument("Value".ToSimpleName())).Return)))
+                .AddMember(Property(DataType.Bool, "IsInfinity").Public
+                    .AddAccessor(Accessor(AccessorType.GET)
+                        .AddStatement(typeType.Type.Sub("IsInfinity").Invoke()
+                            .AddArgument(Argument("Value".ToSimpleName())).Return)))
+                .AddMember(Property(DataType.Bool, "IsPositiveInfinity").Public
+                    .AddAccessor(Accessor(AccessorType.GET)
+                        .AddStatement(typeType.Type.Sub("IsPositiveInfinity").Invoke()
+                            .AddArgument(Argument("Value".ToSimpleName())).Return)))
+                .AddMember(Property(DataType.Bool, "IsNegativeInfinity").Public
+                    .AddAccessor(Accessor(AccessorType.GET)
+                        .AddStatement(typeType.Type.Sub("IsNegativeInfinity").Invoke()
+                            .AddArgument(Argument("Value".ToSimpleName())).Return)));
         }
 
         var convertTo = quantitySymbol?.GetAttributes().Any(a => a.AttributeClass?.GetName().FullName
@@ -394,7 +427,7 @@ internal sealed class QuantityStructGenerator(
                     a.AttributeClass is { IsGenericType: true, } attributeClass
                     && attributeClass.ConstructUnboundGenericType().GetName().FullName is
                         "global::TedToolkit.Quantities.QuantityDisplayUnitAttribute<>") is not
-                        { } displayUnitAttribute)
+                { } displayUnitAttribute)
             {
                 return null;
             }
