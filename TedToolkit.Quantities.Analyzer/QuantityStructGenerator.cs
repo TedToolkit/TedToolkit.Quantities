@@ -51,7 +51,7 @@ internal sealed class QuantityStructGenerator(
                                  && attributeClass.ConstructUnboundGenericType().FullName is
                                      "TedToolkit.Quantities.QuantityOperatorAttribute<,,>"))
         {
-            if (attributeData.ConstructorArguments.FirstOrDefault().Value is not byte value)
+            if (attributeData.ConstructorArguments.FirstOrDefault().Value is not int value)
             {
                 continue;
             }
@@ -85,7 +85,7 @@ internal sealed class QuantityStructGenerator(
             yield return Operator(new(returnType), operatorName)
                 .AddParameter(Parameter(DataType.FromSymbol(leftType), "left"))
                 .AddParameter(Parameter(DataType.FromSymbol(rightType), "right"))
-                .AddStatement(leftValue.ToSimpleName().Operator(operatorName, rightValue.ToSimpleName())
+                .AddStatement(leftValue.ToSimpleName().Operator(operatorName, rightValue.ToSimpleName()).Parenthesized
                     .Cast(returnType).Return);
         }
     }
