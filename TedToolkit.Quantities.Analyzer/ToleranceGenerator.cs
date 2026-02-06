@@ -37,7 +37,7 @@ internal sealed class ToleranceGenerator(
     /// <param name="compilations">compilations.</param>
     public void Generate(in SourceProductionContext context, Compilation compilations)
     {
-        var declaration = Struct("Tolerance").Partial
+        var declaration = RecordStruct("Tolerance").Partial
             .AddBaseType(new DataType("TedToolkit.Scopes.IScope"))
             .AddMember(Constructor().Public)
             .AddMember(Method("TedToolkit.Scopes.IScope.OnEntry"))
