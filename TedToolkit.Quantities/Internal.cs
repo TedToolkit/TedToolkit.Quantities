@@ -7,6 +7,8 @@
 
 using System.Globalization;
 
+using TedToolkit.Scopes;
+
 namespace TedToolkit.Quantities;
 
 /// <summary>
@@ -14,6 +16,25 @@ namespace TedToolkit.Quantities;
 /// </summary>
 public static class Internal
 {
+    /// <summary>
+    /// Easy to compare.
+    /// </summary>
+    /// <param name="self">the self.</param>
+    /// <param name="other">other.</param>
+    /// <typeparam name="TQuantity">the quantity type.</typeparam>
+    /// <returns>compare result.</returns>
+    /// <exception cref="ArgumentException">wrong type.</exception>
+    public static int CompareTo<TQuantity>(TQuantity self, object? other)
+        where TQuantity : IComparable<TQuantity>
+    {
+        return other switch
+        {
+            null => 1,
+            TQuantity otherQuantity => self.CompareTo(otherQuantity),
+            _ => throw new ArgumentException($"Object must be of type {typeof(TQuantity)}"),
+        };
+    }
+
     /// <summary>
     /// Get the unit string.
     /// </summary>

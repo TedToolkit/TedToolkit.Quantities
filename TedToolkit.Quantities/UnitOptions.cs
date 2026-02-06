@@ -11,7 +11,7 @@ namespace TedToolkit.Quantities;
 /// The Generated Type access.
 /// </summary>
 [Flags]
-public enum UnitOption
+public enum UnitOptions
 {
     /// <summary>
     /// Nothing.

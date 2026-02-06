@@ -16,56 +16,6 @@ public interface IQuantityQuantity<TQuantity> :
     IEquatable<TQuantity>,
     IComparable<TQuantity>
     where TQuantity : struct, IQuantityQuantity<TQuantity>
-<<<<<<< TODO: Unmerged change from project 'TedToolkit.Quantities(net7.0)', Before:
-<<<<<<< TODO: Unmerged change from project 'TedToolkit.Quantities(net7.0)', Before:
-    /// Zero value.
-=======
-    /// Gets zero value.
->>>>>>> After
-
-<<<<<<< TODO: Unmerged change from project 'TedToolkit.Quantities(net7.0)', Before:
-    /// One value.
-=======
-    /// Gets one value.
->>>>>>> After
-
-{
-#if NET7_0_OR_GREATER
-    /// <summary>
-    /// Zero value.
-=======
-    // Zero value.
-
-    // One value.
-
-{
-#if NET7_0_OR_GREATER
-    /// <summary>
-    /// Gets zero value.
->>>>>>> After
-
-<<<<<<< TODO: Unmerged change from project 'TedToolkit.Quantities(net472)', Before:
-<<<<<<< TODO: Unmerged change from project 'TedToolkit.Quantities(net7.0)', Before:
-    /// Zero value.
-=======
-    /// Gets zero value.
->>>>>>> After
-
-<<<<<<< TODO: Unmerged change from project 'TedToolkit.Quantities(net7.0)', Before:
-    /// One value.
-=======
-    /// Gets one value.
->>>>>>> After
-=======
-    // Zero value.
-
-    // One value.
->>>>>>> After
-
-    // Zero value.
-
-    // One value.
-
 {
 #if NET7_0_OR_GREATER
     /// <summary>

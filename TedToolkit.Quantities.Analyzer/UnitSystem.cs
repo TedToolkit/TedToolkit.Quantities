@@ -14,12 +14,13 @@ namespace TedToolkit.Quantities.Analyzer;
 /// </summary>
 /// <param name="unitDictionary">unit dictionary.</param>
 /// <param name="collection">collections.</param>
-internal readonly struct UnitSystem(Dictionary<string, string> unitDictionary, DataCollection collection)
+internal readonly struct UnitSystem(Dictionary<string, string>? unitDictionary, DataCollection collection)
 {
     /// <summary>
     /// Gets keys.
     /// </summary>
-    public IReadOnlyCollection<string> Keys { get; } = unitDictionary.Keys;
+    public IReadOnlyCollection<string> Keys { get; } =
+        (IReadOnlyCollection<string>?)unitDictionary?.Keys ?? Array.Empty<string>();
 
     /// <summary>
     /// Get the quantity.
@@ -42,7 +43,7 @@ internal readonly struct UnitSystem(Dictionary<string, string> unitDictionary, D
         var allUnits = data.Units.Values.ToArray();
         var quantityUnits = quantity.Units
             .Select(u => data.Units[u]);
-        if (unitDictionary.TryGetValue(key, out var unitKey))
+        if (unitDictionary?.TryGetValue(key, out var unitKey) ?? false)
             return quantityUnits.First(q => q.GetUnitName(allUnits) == unitKey);
 
         return quantityUnits

@@ -5,121 +5,102 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using System.Diagnostics;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+
 using TedToolkit.Quantities.Data;
 using TedToolkit.RoslynHelper.Extensions;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static TedToolkit.RoslynHelper.Extensions.SyntaxExtensions;
+using TedToolkit.RoslynHelper.Generators;
+using TedToolkit.RoslynHelper.Generators.Syntaxes;
+
+using static TedToolkit.RoslynHelper.Generators.SourceComposer;
+using static TedToolkit.RoslynHelper.Generators.SourceComposer<
+    TedToolkit.Quantities.Analyzer.QuantitiesAttributeGenerator>;
 
 namespace TedToolkit.Quantities.Analyzer;
 
+/// <summary>
+/// The generator for the quantities attribute.
+/// </summary>
+/// <param name="data">the data collection.</param>
 internal sealed class QuantitiesAttributeGenerator(DataCollection data)
 {
+    /// <summary>
+    /// The quantity unit.
+    /// </summary>
+    /// <param name="Quantity">quantity.</param>
+    /// <param name="Unit">the unit.</param>
     public readonly record struct QuantityUnit(Quantity Quantity, string Unit)
     {
+        /// <summary>
+        /// Gets unit name.
+        /// </summary>
         public string UnitName
             => Quantity.UnitName;
 
+        /// <summary>
+        /// Gets name.
+        /// </summary>
         public string Name
             => Quantity.Name;
     }
 
+    /// <summary>
+    /// Gets the quantity units.
+    /// </summary>
     public IEnumerable<QuantityUnit> QuantityUnits
     {
         get
         {
             return data.Quantities.Values.Where(q => q.IsBasic).Select(q =>
-                {
-                    var unit = q.Units
-                        .Select(u => data.Units[u])
-                        .OrderBy(u => u.DistanceToDefault)
-                        .ThenByDescending(u => u.ApplicableSystem)
-                        .First().GetUnitName(data.Units.Values);
-                    return new QuantityUnit(q, unit);
-                });
+            {
+                var unit = q.Units
+                    .Select(u => data.Units[u])
+                    .OrderBy(u => u.DistanceToDefault)
+                    .ThenByDescending(u => u.ApplicableSystem)
+                    .First().GetUnitName(data.Units.Values);
+                return new QuantityUnit(q, unit);
+            });
         }
     }
 
-    public void Generate(SourceProductionContext context)
+    /// <summary>
+    /// Generate the code.
+    /// </summary>
+    /// <param name="context">context.</param>
+    public void Generate(scoped in SourceProductionContext context)
     {
-        var c = ClassDeclaration("QuantitiesAttribute")
-            .WithAttributeLists(
-            [
-                GeneratedCodeAttribute(typeof(QuantitiesAttributeGenerator)).AddAttributes(Attribute(
-                        IdentifierName("global::System.AttributeUsage"))
-                    .WithArgumentList(AttributeArgumentList(
-                    [
-                        AttributeArgument(MemberAccessExpression(
-                            SyntaxKind.SimpleMemberAccessExpression,
-                            IdentifierName("global::System.AttributeTargets"),
-                            IdentifierName("Assembly"))),
-                    ])))
-            ])
-            .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)))
-            .WithTypeParameterList(TypeParameterList([TypeParameter(Identifier("TData"))]))
-            .WithParameterList(ParameterList(
-            [
-                Parameter(Identifier("quantitySystem"))
-                    .WithType(PredefinedType(Token(SyntaxKind.StringKeyword))),
-                Parameter(Identifier("quantities"))
-                    .WithModifiers(TokenList(Token(SyntaxKind.ParamsKeyword)))
-                    .WithType(ArrayType(PredefinedType(Token(SyntaxKind.StringKeyword)))
-                        .WithRankSpecifiers([ArrayRankSpecifier([OmittedArraySizeExpression()])]))
-            ]))
-            .WithMembers(
-            [
-                ..QuantityUnits.Select(q =>
-                    PropertyDeclaration(IdentifierName(q.UnitName),
-                            Identifier(q.Name))
-                        .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
-                        .WithAttributeLists([GeneratedCodeAttribute(typeof(QuantitiesAttributeGenerator))])
-                        .WithAccessorList(AccessorList(
-                        [
-                            AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
-                                .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)),
-                            AccessorDeclaration(SyntaxKind.InitAccessorDeclaration)
-                                .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
-                        ]))
-                        .WithInitializer(
-                            EqualsValueClause(
-                                MemberAccessExpression(
-                                    SyntaxKind.SimpleMemberAccessExpression,
-                                    IdentifierName(q.UnitName),
-                                    IdentifierName(q.Unit))))
-                        .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))),
+        var quantityAttribute = Class("QuantitiesAttribute").Internal.Sealed
+            .AddBaseType<System.Attribute>()
+            .AddAttribute(Attribute<AttributeUsageAttribute>()
+                .AddArgument(Argument(AttributeTargets.Assembly.ToExpression())))
+            .AddAttribute(Attribute<ConditionalAttribute>()
+                .AddArgument(Argument("CODE_ANALYSIS".ToLiteral())))
+            .AddTypeParameter(TypeParameter("TData")
+                .AddStructConstraint()
+                .AddConstraint<IConvertible>())
+            .AddParameter(Parameter(DataType.String, "quantitySystem"))
+            .AddParameter(Parameter<string[]>("quantities").Params);
 
-                PropertyDeclaration(IdentifierName("global::TedToolkit.Quantities.UnitFlag"),
-                        Identifier("Flag"))
-                    .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
-                    .WithAttributeLists([GeneratedCodeAttribute(typeof(QuantitiesAttributeGenerator))])
-                    .WithAccessorList(AccessorList(
-                    [
-                        AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
-                            .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)),
-                        AccessorDeclaration(SyntaxKind.InitAccessorDeclaration)
-                            .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
-                    ]))
-                    .WithInitializer(
-                        EqualsValueClause(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0))))
-                    .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
-            ])
-            .WithBaseList(BaseList(
-            [
-                SimpleBaseType(IdentifierName("global::System.Attribute"))
-            ]))
-            .WithConstraintClauses(
-            [
-                TypeParameterConstraintClause(IdentifierName("TData"))
-                    .WithConstraints(
-                    [
-                        ClassOrStructConstraint(SyntaxKind.StructConstraint),
-                        TypeConstraint(IdentifierName("global::System.IConvertible"))
-                    ])
-            ])
-            .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
+        foreach (var quantityUnit in QuantityUnits)
+        {
+            quantityAttribute.AddMember(
+                Property(new(quantityUnit.UnitName), quantityUnit.Name).Public
+                    .AddAccessor(Accessor(AccessorType.GET))
+                    .AddAccessor(Accessor(AccessorType.INIT))
+                    .AddDefault(quantityUnit.UnitName.ToSimpleName().Sub(quantityUnit.Unit)));
+        }
 
-        context.AddSource("_QuantitiesAttribute.g.cs",
-            NamespaceDeclaration("TedToolkit.Quantities").WithMembers([c]).NodeToString());
+        quantityAttribute.AddMember(Property(new("global::TedToolkit.Quantities.UnitOptions"), "Options").Public
+            .AddAccessor(Accessor(AccessorType.GET))
+            .AddAccessor(Accessor(AccessorType.INIT))
+            .AddDefault(0.ToLiteral()));
+
+        File()
+            .AddNameSpace(NameSpace("TedToolkit.Quantities")
+                .AddMember(quantityAttribute))
+            .Generate(context, "_QuantitiesAttribute");
     }
 }

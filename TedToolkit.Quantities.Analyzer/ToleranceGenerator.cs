@@ -5,15 +5,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using Cysharp.Text;
+
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 using TedToolkit.Quantities.Data;
-using TedToolkit.RoslynHelper.Extensions;
 using TedToolkit.RoslynHelper.Generators;
 using TedToolkit.RoslynHelper.Generators.Syntaxes;
-using TedToolkit.RoslynHelper.Names;
 
 using static TedToolkit.RoslynHelper.Generators.SourceComposer;
 using static TedToolkit.RoslynHelper.Generators.SourceComposer<
@@ -21,135 +19,82 @@ using static TedToolkit.RoslynHelper.Generators.SourceComposer<
 
 namespace TedToolkit.Quantities.Analyzer;
 
+/// <summary>
+/// Create the tolerance generator.
+/// </summary>
+/// <param name="unitSystem">the unit system.</param>
+/// <param name="quantities">the quantities.</param>
+/// <param name="isPublic">is public.</param>
+/// <param name="typeName">type symbol.</param>
 internal sealed class ToleranceGenerator(
     UnitSystem unitSystem,
     IReadOnlyList<Quantity> quantities,
     bool isPublic,
-    TypeName typeName)
+    ITypeSymbol typeName)
 {
-    public void Generate(SourceProductionContext context)
+    /// <summary>
+    /// Generate the code.
+    /// </summary>
+    /// <param name="context">the context.</param>
+    /// <param name="compilations">compilations.</param>
+    public void Generate(in SourceProductionContext context, Compilation compilations)
     {
         var declaration = Struct("Tolerance").Partial
-            .AddBaseType(new DataType("TedToolkit.Scopes.IScope"));
+            .AddBaseType(new DataType("TedToolkit.Scopes.IScope"))
+            .AddMember(Constructor().Public)
+            .AddMember(Method("TedToolkit.Scopes.IScope.OnEntry"))
+            .AddMember(Method("TedToolkit.Scopes.IScope.OnExit"));
         declaration = isPublic ? declaration.Public : declaration.Internal;
+
+        declaration.AddMember(Property(new DataType("Tolerance".ToSimpleName()).RefReadonly, "CurrentOrDefault").Public.Static
+            .AddAccessor(Accessor(AccessorType.GET)
+                .AddStatement("global::TedToolkit.Scopes.ScopeValues.Struct<Tolerance>.HasCurrent".ToSimpleName().If
+                    .AddStatement("global::TedToolkit.Scopes.ScopeValues.Struct<Tolerance>.Current".ToSimpleName().Ref
+                        .Return))
+                .AddStatement("_default".ToSimpleName().Ref.Return)));
+
+        if (compilations.GetTypeByMetadataName("TedToolkit.Quantities.Tolerance") is not { } tolerance
+            || !tolerance.GetMembers("_default").Any())
+        {
+            declaration.AddMember(Field(new DataType("Tolerance".ToSimpleName()), "_default").Private.Static.Readonly
+                .AddDefault(new ObjectCreationExpression()));
+        }
 
         foreach (var quantity in quantities)
         {
             var quantityType = new DataType(quantity.Name);
+
             declaration
                 .AddBaseType(new DataType("System.Collections.Generic.IEqualityComparer".ToSimpleName()
                     .Generic(quantityType)))
                 .AddBaseType(new DataType("System.Collections.Generic.IComparer".ToSimpleName()
                     .Generic(quantityType)))
-                .AddMember(CreateToleranceProperty(quantity.Name));
+                .AddMember(CreateToleranceProperty(quantity.Name))
+                .AddMember(Method("Equals", new(DataType.Bool)).Public
+                    .AddParameter(Parameter(quantityType, "left"))
+                    .AddParameter(Parameter(quantityType, "right"))
+                    .AddStatement("global::System.Math.Abs".ToSimpleName().Invoke()
+                        .AddArgument(Argument("left".ToSimpleName().Sub("Value")
+                            .Operator("-", "right".ToSimpleName().Sub("Value"))))
+                        .Operator("<", quantity.Name.ToSimpleName().Sub("Value")).Return))
+                .AddMember(Method("GetHashCode", new(DataType.Int)).Public
+                    .AddParameter(Parameter(quantityType, "obj"))
+                    .AddStatement(0.ToLiteral().Return))
+                .AddMember(Method("Compare", new(DataType.Int)).Public
+                    .AddParameter(Parameter(quantityType, "left"))
+                    .AddParameter(Parameter(quantityType, "right"))
+                    .AddStatement("Equals".ToSimpleName().Invoke()
+                        .AddArgument(Argument("left".ToSimpleName()))
+                        .AddArgument(Argument("right".ToSimpleName())).If
+                        .AddStatement(0.ToLiteral().Return))
+                    .AddStatement("left.Value.CompareTo(right.Value)".ToSimpleName().Return))
+                .AddMember(ImplicitConversionTo(quantityType).ScopedIn
+                    .AddStatement(ZString.Concat("value.", quantity.Name).ToSimpleName().Return));
         }
 
         File().AddNameSpace(NameSpace("TedToolkit.Quantities")
                 .AddMember(declaration))
             .Generate(context, "_Tolerance");
-
-        return;
-
-        var nameSpace = NamespaceDeclaration("TedToolkit.Quantities")
-            .WithMembers([
-                ClassDeclaration("Tolerance")
-                    .WithModifiers(TokenList(Token(isPublic ? SyntaxKind.PublicKeyword : SyntaxKind.InternalKeyword),
-                        Token(SyntaxKind.PartialKeyword)))
-                    .WithXmlComment()
-                    .WithMembers([
-                        ConstructorDeclaration(Identifier("Tolerance"))
-                            .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
-                            .WithAttributeLists([GeneratedCodeAttribute(typeof(ToleranceGenerator))])
-                            .WithBody(Block()),
-                        ..quantities.Select(q => CreateToleranceProperty(q.Name)),
-                        ..quantities.Select(q =>
-                            MethodDeclaration(PredefinedType(Token(SyntaxKind.BoolKeyword)), Identifier("Equals"))
-                                .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
-                                .WithAttributeLists([GeneratedCodeAttribute(typeof(ToleranceGenerator))])
-                                .WithParameterList(ParameterList(
-                                [
-                                    Parameter(Identifier("x")).WithType(IdentifierName(q.Name)),
-                                    Parameter(Identifier("y")).WithType(IdentifierName(q.Name))
-                                ]))
-                                .WithBody(Block(
-                                    ReturnStatement(BinaryExpression(SyntaxKind.LessThanExpression,
-                                        CastExpression(
-                                            IdentifierName(typeName.FullName), InvocationExpression(
-                                                    MemberAccessExpression(
-                                                        SyntaxKind.SimpleMemberAccessExpression,
-                                                        IdentifierName("global::System.Math"), IdentifierName("Abs")))
-                                                .WithArgumentList(ArgumentList(
-                                                [
-                                                    Argument(BinaryExpression(SyntaxKind.SubtractExpression,
-                                                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                            IdentifierName("x"), IdentifierName("Value")),
-                                                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                            IdentifierName("y"), IdentifierName("Value"))))
-                                                ]))),
-                                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                            IdentifierName(q.Name), IdentifierName("Value"))))))),
-                        ..quantities.Select(q => MethodDeclaration(PredefinedType(Token(SyntaxKind.IntKeyword)),
-                                Identifier("GetHashCode"))
-                            .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
-                            .WithAttributeLists([GeneratedCodeAttribute(typeof(ToleranceGenerator))])
-                            .WithParameterList(ParameterList(
-                            [
-                                Parameter(Identifier("obj")).WithType(IdentifierName(q.Name))
-                            ]))
-                            .WithExpressionBody(ArrowExpressionClause(InvocationExpression(
-                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        IdentifierName("obj"), IdentifierName("Value")),
-                                    IdentifierName("GetHashCode")))))
-                            .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))),
-                        ..quantities.Select(q =>
-                            MethodDeclaration(PredefinedType(Token(SyntaxKind.IntKeyword)), Identifier("Compare"))
-                                .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
-                                .WithAttributeLists([GeneratedCodeAttribute(typeof(ToleranceGenerator))])
-                                .WithParameterList(ParameterList(
-                                [
-                                    Parameter(Identifier("x")).WithType(IdentifierName(q.Name)),
-                                    Parameter(Identifier("y")).WithType(IdentifierName(q.Name))
-                                ]))
-                                .WithBody(Block(
-                                    ReturnStatement(ConditionalExpression(InvocationExpression(IdentifierName("Equals"))
-                                            .WithArgumentList(ArgumentList(
-                                            [
-                                                Argument(IdentifierName("x")),
-                                                Argument(IdentifierName("y"))
-                                            ])),
-                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)),
-                                        InvocationExpression(MemberAccessExpression(
-                                                SyntaxKind.SimpleMemberAccessExpression,
-                                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                    IdentifierName("x"), IdentifierName("Value")),
-                                                IdentifierName("CompareTo")))
-                                            .WithArgumentList(
-                                                ArgumentList(
-                                                [
-                                                    Argument(MemberAccessExpression(
-                                                        SyntaxKind.SimpleMemberAccessExpression,
-                                                        IdentifierName("y"),
-                                                        IdentifierName("Value")))
-                                                ]))))))),
-                        ..quantities.Select(q => ConversionOperatorDeclaration(
-                                Token(SyntaxKind.ImplicitKeyword),
-                                IdentifierName(q.Name))
-                            .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword)))
-                            .WithAttributeLists([GeneratedCodeAttribute(typeof(ToleranceGenerator))])
-                            .WithParameterList(ParameterList(
-                            [
-                                Parameter(Identifier("tolerance"))
-                                    .WithType(IdentifierName("Tolerance"))
-                            ]))
-                            .WithExpressionBody(ArrowExpressionClause(MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
-                                IdentifierName("tolerance"), IdentifierName(q.Name))))
-                            .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))),
-                    ])
-            ]);
-
-        context.AddSource("_Tolerance.g.cs", nameSpace.NodeToString());
     }
 
     private Property CreateToleranceProperty(string name)
@@ -157,6 +102,6 @@ internal sealed class ToleranceGenerator(
         return Property(new DataType(name), name).Public
             .AddAccessor(new Accessor(AccessorType.GET))
             .AddAccessor(new Accessor(AccessorType.INIT))
-            .AddDefault((typeName.Symbol.IsFloatingPoint() ? "1E-6" : "1").ToSimpleName());
+            .AddDefault((typeName.IsFloatingPoint() ? "1E-6" : "1").ToSimpleName().Cast(new DataType(name)));
     }
 }

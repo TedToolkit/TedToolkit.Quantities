@@ -7,13 +7,23 @@
 
 using System.Globalization;
 using System.Text;
+
+using Cysharp.Text;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 using Newtonsoft.Json.Linq;
+
 using PeterO.Numbers;
+
 using TedToolkit.Quantities.Data;
+using TedToolkit.RoslynHelper.Generators;
+using TedToolkit.RoslynHelper.Generators.Syntaxes;
+
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+
 using Conversion = TedToolkit.Quantities.Data.Conversion;
 
 namespace TedToolkit.Quantities.Analyzer;
@@ -53,15 +63,24 @@ internal static class Helpers
         return sb.ToString();
     }
 
-    public static string CreateSummary(string description, IEnumerable<Link> links, string dimension)
+    /// <summary>
+    /// Add the summary things.
+    /// </summary>
+    /// <param name="owner">the owner.</param>
+    /// <param name="description">description.</param>
+    /// <param name="links">links.</param>
+    /// <param name="dimension">dimension.</param>
+    public static void AddSummary(IRootDescription owner, string description, IEnumerable<Link> links,
+        string dimension)
     {
         dimension = string.IsNullOrEmpty(dimension) ? dimension : $"<b>{dimension}</b>";
-        return $"""
-                /// <summary>
-                /// {description.Replace("\n", "\n///")}
-                /// </summary>
-                /// <remarks>{dimension}{string.Join("\t", links.Select(l => l.Remarks))}</remarks>
-                """;
+
+        owner.AddRootDescription(
+            new DescriptionSummary(description.Split('\n').Select(t => new DescriptionText(t)).ToArray()));
+        owner.AddRootDescription(new DescriptionRemarks(
+            new DescriptionText(dimension),
+            new DescriptionText(string.Join("\t", links.Select(l => l.Remarks)))
+        ));
     }
 
     public static DataCollection GetData(string? fileName, IEnumerable<string> jsons, string[] quantities)
@@ -99,59 +118,56 @@ internal static class Helpers
 
         bool QuantityPredict(KeyValuePair<string, Quantity> pair)
         {
-            if (fileName is null) return pair.Value.IsBasic;
-            if (quantities.Length is not 0) return pair.Value.IsBasic || quantities.Contains(pair.Key);
+            if (fileName is null)
+                return pair.Value.IsBasic;
+
+            if (quantities.Length is not 0)
+                return pair.Value.IsBasic || quantities.Contains(pair.Key);
+
             return true;
         }
 
         void AppendObject(JObject obj)
         {
-            jObject.Merge(obj, new JsonMergeSettings
-            {
-                MergeNullValueHandling = MergeNullValueHandling.Merge,
-                MergeArrayHandling = MergeArrayHandling.Union,
-            });
+            jObject.Merge(obj,
+                new JsonMergeSettings
+                {
+                    MergeNullValueHandling = MergeNullValueHandling.Merge,
+                    MergeArrayHandling = MergeArrayHandling.Union,
+                });
         }
     }
 
-    public static ExpressionSyntax GetSystemToUnit(this Unit unit, UnitSystem system, Dimension dimension,
+    public static IExpression? GetSystemToUnit(this in Unit unit, in UnitSystem system, in Dimension dimension,
         ITypeSymbol dataType)
     {
         var conversion = ToSystemConversion(system, dimension)?.TransformTo(unit.Conversion);
-        return ToExpression(conversion, dataType, "Value");
+        return ToExpression(conversion, dataType, "Value".ToSimpleName());
     }
 
-    public static ExpressionSyntax GetUnitToSystem(this Unit unit, UnitSystem system, Dimension dimension,
+    public static IExpression? GetUnitToSystem(this in Unit unit, in UnitSystem system, in Dimension dimension,
         ITypeSymbol dataType)
     {
         var conversion = unit.Conversion.TransformTo(ToSystemConversion(system, dimension));
-        return ToExpression(conversion, dataType, "value");
+        return ToExpression(conversion, dataType, "value".ToSimpleName());
     }
 
-    private static ExpressionSyntax ToExpression(Conversion? conversion, ITypeSymbol dataType, string argument)
+    private static IExpression? ToExpression(Conversion? conversion, ITypeSymbol dataType, SimpleNameExpression argument)
     {
-        if (conversion is null || !conversion.Value.IsValid)
-        {
-            return ThrowExpression(ObjectCreationExpression(IdentifierName("global::System.NotImplementedException"))
-                .WithArgumentList(
-                    ArgumentList()));
-        }
+        if (conversion?.IsValid != true)
+            return null;
 
-        ExpressionSyntax multiple = conversion.Value.Multiplier.ToEDecimal().Equals(EDecimal.One)
-            ? IdentifierName(argument)
-            : BinaryExpression(
-                SyntaxKind.MultiplyExpression,
-                CreateNumber(conversion.Value.Multiplier, dataType),
-                IdentifierName(argument));
+        IExpression multiple = conversion.Value.Multiplier.ToEDecimal().Equals(EDecimal.One)
+            ? argument
+            : CreateNumber(conversion.Value.Multiplier, dataType).Operator("*", argument);
 
-        if (conversion.Value.Offset.IsZero) return multiple;
-        return BinaryExpression(
-            SyntaxKind.AddExpression,
-            multiple,
-            CreateNumber(conversion.Value.Offset, dataType));
+        if (conversion.Value.Offset.IsZero)
+            return multiple;
+
+        return multiple.Operator("+", CreateNumber(conversion.Value.Offset, dataType));
     }
 
-    public static Conversion? ToSystemConversion(UnitSystem system, Dimension dimension)
+    public static Conversion? ToSystemConversion(scoped in UnitSystem system, scoped in Dimension dimension)
     {
         Conversion? result = Conversion.Unit;
         foreach (var systemKey in system.Keys)
@@ -179,72 +195,49 @@ internal static class Helpers
         return (decimal)data.Numerator.ToInt64Unchecked() / data.Denominator.ToInt64Unchecked();
     }
 
-    private static ExpressionSyntax CreateNumber(ERational data, ITypeSymbol dataType)
+    private static IExpression CreateNumber(ERational data, ITypeSymbol dataType)
     {
         var dec = data.ToEDecimal();
         if (!dec.IsNaN())
             return CreateNumber(dec, dataType);
 
-        return BinaryExpression(
-            SyntaxKind.DivideExpression,
-            CreateNumber(data.Numerator, dataType),
-            CreateNumber(data.Denominator, dataType));
+        return CreateNumber(data.Numerator, dataType)
+            .Operator("/", CreateNumber(data.Denominator, dataType));
     }
 
-    private static LiteralExpressionSyntax CreateNumber(EDecimal data, ITypeSymbol dataType)
+    private static IExpression CreateNumber(EDecimal data, ITypeSymbol dataType)
     {
         var num = data.ToString();
 
         if (!IsFloatingPoint(dataType))
         {
             if (int.TryParse(num, out var i))
-            {
-                return LiteralExpression(
-                    SyntaxKind.NumericLiteralExpression,
-                    Literal(i));
-            }
+                return i.ToLiteral();
 
             if (uint.TryParse(num, out var u))
-            {
-                return LiteralExpression(
-                    SyntaxKind.NumericLiteralExpression,
-                    Literal(u));
-            }
+                return u.ToLiteral();
 
             if (long.TryParse(num, out var l))
-            {
-                return LiteralExpression(
-                    SyntaxKind.NumericLiteralExpression,
-                    Literal(l));
-            }
+                return l.ToLiteral();
 
             if (ulong.TryParse(num, out var ul))
-            {
-                return LiteralExpression(
-                    SyntaxKind.NumericLiteralExpression,
-                    Literal(ul));
-            }
+                return ul.ToLiteral();
         }
 
         if (dataType.SpecialType is SpecialType.System_Decimal && decimal.TryParse(num, out var m))
-        {
-            return LiteralExpression(
-                SyntaxKind.NumericLiteralExpression,
-                Literal(num + "m", m));
-        }
+            return ZString.Concat(num, 'm').ToSimpleName();
 
         if (double.TryParse(num, out var d))
-        {
-            return LiteralExpression(
-                SyntaxKind.NumericLiteralExpression,
-                Literal(num + "d", d));
-        }
+            return ZString.Concat(num, 'd').ToSimpleName();
 
-        return LiteralExpression(
-            SyntaxKind.NumericLiteralExpression,
-            Literal(num));
+        return num.ToSimpleName();
     }
 
+    /// <summary>
+    /// Is floating point type.
+    /// </summary>
+    /// <param name="type">the type.</param>
+    /// <returns>result.</returns>
     public static bool IsFloatingPoint(this ITypeSymbol type)
     {
         return type.SpecialType is SpecialType.System_Single

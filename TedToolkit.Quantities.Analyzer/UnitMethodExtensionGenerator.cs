@@ -5,45 +5,47 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
+using Cysharp.Text;
+
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 using TedToolkit.Quantities.Data;
-using TedToolkit.RoslynHelper.Names;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static TedToolkit.RoslynHelper.Extensions.SyntaxExtensions;
+using TedToolkit.RoslynHelper.Generators;
+using TedToolkit.RoslynHelper.Generators.Syntaxes;
+
+using static TedToolkit.RoslynHelper.Generators.SourceComposer;
+using static TedToolkit.RoslynHelper.Generators.SourceComposer<
+    TedToolkit.Quantities.Analyzer.UnitMethodExtensionGenerator>;
 
 namespace TedToolkit.Quantities.Analyzer;
 
-public sealed class UnitMethodExtensionGenerator(bool isPublic, TypeName typeName, DataCollection data)
+/// <summary>
+/// The unit method extension generator.
+/// </summary>
+/// <param name="isPublic">is public.</param>
+/// <param name="typeName">the type symbol.</param>
+/// <param name="data">the data set.</param>
+public sealed class UnitMethodExtensionGenerator(bool isPublic, ITypeSymbol typeName, DataCollection data)
     : UnitExtensionGenerator(isPublic, data)
 {
+    /// <inheritdoc />
     protected override string FileName
         => "_UnitMethodExtension";
 
-    protected override ClassDeclarationSyntax ModifyClass(ClassDeclarationSyntax classDeclaration)
+    /// <inheritdoc />
+    protected override TypeDeclaration ModifyClass(TypeDeclaration classDeclaration)
     {
-        return classDeclaration.WithMembers([
-            ..CreateMembers().Select(i =>
-                MethodDeclaration(IdentifierName(i.quantity), Identifier(i.memberName))
-                    .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword)))
-                    .WithAttributeLists([GeneratedCodeAttribute(typeof(UnitMethodExtensionGenerator))])
-                    .WithXmlCommentInheritDoc($"{i.quantity}.From{i.unit}")
-                    .WithParameterList(ParameterList(
-                    [
-                        Parameter(Identifier("value"))
-                            .WithModifiers(TokenList(Token(SyntaxKind.ThisKeyword)))
-                            .WithType(IdentifierName(typeName.FullName))
-                    ]))
-                    .WithExpressionBody(ArrowExpressionClause(InvocationExpression(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                IdentifierName("Quantities." + i.quantity),
-                                IdentifierName($"From{i.unit}")))
-                        .WithArgumentList(ArgumentList(
-                        [
-                            Argument(IdentifierName("value"))
-                        ]))))
-                    .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)))
-        ]);
+        foreach (var (quantity, unit, memberName) in CreateMembers())
+        {
+            var methodExpression = ZString.Concat("global::TedToolkit.Quantities.", quantity, ".From", unit)
+                .ToSimpleName();
+            classDeclaration.AddMember(Method(memberName, new ReturnType(new DataType(quantity.ToSimpleName()))).Public
+                .Static
+                .AddRootDescription(new DescriptionInheritDoc(methodExpression))
+                .AddParameter(Parameter(DataType.FromSymbol(typeName), "value").This)
+                .AddStatement(methodExpression.Invoke().AddArgument(Argument("@value".ToSimpleName())).Return));
+        }
+
+        return classDeclaration;
     }
 }
