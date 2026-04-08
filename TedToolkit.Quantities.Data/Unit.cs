@@ -14,16 +14,16 @@ namespace TedToolkit.Quantities.Data;
 /// <summary>
 /// The Unit.
 /// </summary>
-/// <param name="Key">key.</param>
-/// <param name="Name">name.</param>
-/// <param name="Description">description.</param>
-/// <param name="Links">links.</param>
-/// <param name="Symbol">symbol.</param>
-/// <param name="Labels">labels.</param>
-/// <param name="Multiplier">multiplier.</param>
-/// <param name="Offset">offset.</param>
-/// <param name="FactorUnits">factor units.</param>
-/// <param name="ApplicableSystem">applicable system.</param>
+/// <param name="Key">The key.</param>
+/// <param name="Name">The name.</param>
+/// <param name="Description">The description.</param>
+/// <param name="Links">The links.</param>
+/// <param name="Symbol">The symbol.</param>
+/// <param name="Labels">The labels.</param>
+/// <param name="Multiplier">The multiplier.</param>
+/// <param name="Offset">The offset.</param>
+/// <param name="FactorUnits">The factor units.</param>
+/// <param name="ApplicableSystem">The applicable system.</param>
 public readonly record struct Unit(
     string Key,
     string Name,
@@ -37,10 +37,10 @@ public readonly record struct Unit(
     int ApplicableSystem)
 {
     /// <summary>
-    /// Get the unit Name.
+    /// Gets the unique unit name.
     /// </summary>
-    /// <param name="allUnits">all units.</param>
-    /// <returns>name.</returns>
+    /// <param name="allUnits">All units in the collection.</param>
+    /// <returns>The unique unit name.</returns>
     public string GetUnitName(IEnumerable<Unit> allUnits)
     {
         var name = Name;
@@ -61,14 +61,19 @@ public readonly record struct Unit(
     }
 
     /// <summary>
-    /// Gets conversion.
+    /// Gets the conversion.
     /// </summary>
     [JsonIgnore]
     public Conversion Conversion
-        => new(EDecimal.FromString(Multiplier), EDecimal.FromString(Offset));
+    {
+        get
+        {
+            return new(EDecimal.FromString(Multiplier), EDecimal.FromString(Offset));
+        }
+    }
 
     /// <summary>
-    /// Gets distance to default.
+    /// Gets the distance to the default unit.
     /// </summary>
     [JsonIgnore]
     public double DistanceToDefault

@@ -14,27 +14,32 @@ namespace TedToolkit.Quantities.Data;
 /// <summary>
 /// The Conversion data.
 /// </summary>
-/// <param name="Multiplier">multiplier.</param>
-/// <param name="Offset">offset.</param>
+/// <param name="Multiplier">The multiplier.</param>
+/// <param name="Offset">The offset.</param>
 public readonly record struct Conversion(ERational Multiplier, ERational Offset)
 {
     /// <summary>
-    /// Gets a value indicating whether the data valid.
+    /// Gets a value indicating whether the conversion is valid.
     /// </summary>
     [JsonIgnore]
     public bool IsValid
-        => !Multiplier.IsInfinity() && !Multiplier.IsZero && !Offset.IsInfinity();
+    {
+        get
+        {
+            return !Multiplier.IsInfinity() && !Multiplier.IsZero && !Offset.IsInfinity();
+        }
+    }
 
     /// <summary>
-    /// Gets the UnitData.
+    /// Gets the identity (unit) conversion.
     /// </summary>
     public static Conversion Unit { get; } = new(ERational.One, ERational.Zero);
 
     /// <summary>
-    /// Transform the conversion to.
+    /// Transforms this conversion relative to another.
     /// </summary>
-    /// <param name="unit">unit.</param>
-    /// <returns>result.</returns>
+    /// <param name="unit">The target conversion.</param>
+    /// <returns>The transformed conversion, or <see langword="null"/> if <paramref name="unit"/> is <see langword="null"/>.</returns>
     public Conversion? TransformTo(Conversion? unit)
     {
         if (unit is null)
@@ -48,10 +53,10 @@ public readonly record struct Conversion(ERational Multiplier, ERational Offset)
     }
 
     /// <summary>
-    /// Power the data.
+    /// Raises this conversion to the specified power.
     /// </summary>
-    /// <param name="exponent">times.</param>
-    /// <returns>result.</returns>
+    /// <param name="exponent">The exponent.</param>
+    /// <returns>The resulting conversion, or <see langword="null"/> if the operation is not supported.</returns>
     public Conversion? Pow(int exponent)
     {
         switch (exponent)
@@ -98,10 +103,10 @@ public readonly record struct Conversion(ERational Multiplier, ERational Offset)
     }
 
     /// <summary>
-    /// Merge two conversions.
+    /// Merges two conversions.
     /// </summary>
-    /// <param name="other">the other.</param>
-    /// <returns>result.</returns>
+    /// <param name="other">The other conversion.</param>
+    /// <returns>The merged conversion, or <see langword="null"/> if the operation is not supported.</returns>
     public Conversion? Merge(Conversion? other)
     {
         if (other is null)

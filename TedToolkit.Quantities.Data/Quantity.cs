@@ -12,13 +12,13 @@ namespace TedToolkit.Quantities.Data;
 /// <summary>
 /// The quantity.
 /// </summary>
-/// <param name="Name">name.</param>
-/// <param name="Description">description.</param>
-/// <param name="Links">links.</param>
-/// <param name="IsBasic">is basic.</param>
-/// <param name="Dimension">dimension.</param>
-/// <param name="IsDimensionDefault">is the dimension default.</param>
-/// <param name="Units">units.</param>
+/// <param name="Name">The name.</param>
+/// <param name="Description">The description.</param>
+/// <param name="Links">The links.</param>
+/// <param name="IsBasic">Whether this is a basic quantity.</param>
+/// <param name="Dimension">The dimension.</param>
+/// <param name="IsDimensionDefault">Whether this is the dimension default.</param>
+/// <param name="Units">The units.</param>
 public readonly record struct Quantity(
     string Name,
     string Description,
@@ -29,31 +29,41 @@ public readonly record struct Quantity(
     IReadOnlyList<string> Units)
 {
     /// <summary>
-    /// Gets denominator.
+    /// Gets the denominator.
     /// </summary>
     public required string Denominator { get; init; }
 
     /// <summary>
-    /// Gets numerator.
+    /// Gets the numerator.
     /// </summary>
     public required string Numerator { get; init; }
 
     /// <summary>
-    /// Gets exactMatch.
+    /// Gets the exact match list.
     /// </summary>
     public required IReadOnlyList<string> ExactMatch { get; init; }
 
     /// <summary>
-    /// Gets unitName.
+    /// Gets the unit name.
     /// </summary>
     [JsonIgnore]
     public string UnitName
-        => Name + "Unit";
+    {
+        get
+        {
+            return Name + "Unit";
+        }
+    }
 
     /// <summary>
-    /// Gets a value indicating whether isNoDimensions.
+    /// Gets a value indicating whether this quantity is dimensionless.
     /// </summary>
     [JsonIgnore]
     public bool IsNoDimensions
-        => Dimension.Contains("A0E0L0I0M0H0T0");
+    {
+        get
+        {
+            return Dimension.Contains("A0E0L0I0M0H0T0");
+        }
+    }
 }
