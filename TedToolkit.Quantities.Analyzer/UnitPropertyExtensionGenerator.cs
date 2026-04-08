@@ -22,15 +22,20 @@ namespace TedToolkit.Quantities.Analyzer;
 /// <summary>
 /// The unit property extension generator.
 /// </summary>
-/// <param name="isPublic">is public.</param>
-/// <param name="typeName">the type.</param>
-/// <param name="data">data.</param>
+/// <param name="isPublic">Whether the generated extensions are public.</param>
+/// <param name="typeName">The type symbol.</param>
+/// <param name="data">The data collection.</param>
 public class UnitPropertyExtensionGenerator(bool isPublic, ITypeSymbol typeName, DataCollection data)
     : UnitExtensionGenerator(isPublic, data)
 {
     /// <inheritdoc />
     protected override string FileName
-        => "_UnitPropertyExtension";
+    {
+        get
+        {
+            return "_UnitPropertyExtension";
+        }
+    }
 
     /// <inheritdoc />
     protected override TypeDeclaration ModifyClass(TypeDeclaration classDeclaration)

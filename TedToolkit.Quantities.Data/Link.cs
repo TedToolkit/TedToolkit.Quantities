@@ -12,16 +12,21 @@ namespace TedToolkit.Quantities.Data;
 /// <summary>
 /// The Link.
 /// </summary>
-/// <param name="Name">name.</param>
-/// <param name="Url">url.</param>
+/// <param name="Name">The name.</param>
+/// <param name="Url">The URL.</param>
 #pragma warning disable CA1054, CA1056
 public readonly record struct Link(string Name, string Url)
 #pragma warning restore CA1054, CA1056
 {
     /// <summary>
-    /// Gets the remarks.
+    /// Gets the XML doc remarks representation.
     /// </summary>
     [JsonIgnore]
     public string Remarks
-        => $"<see href=\"{Url}\">{Name}</see>";
+    {
+        get
+        {
+            return $"<see href=\"{Url}\">{Name}</see>";
+        }
+    }
 }

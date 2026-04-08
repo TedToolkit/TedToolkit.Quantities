@@ -22,15 +22,20 @@ namespace TedToolkit.Quantities.Analyzer;
 /// <summary>
 /// The unit method extension generator.
 /// </summary>
-/// <param name="isPublic">is public.</param>
-/// <param name="typeName">the type symbol.</param>
-/// <param name="data">the data set.</param>
+/// <param name="isPublic">Whether the generated extensions are public.</param>
+/// <param name="typeName">The type symbol.</param>
+/// <param name="data">The data collection.</param>
 public sealed class UnitMethodExtensionGenerator(bool isPublic, ITypeSymbol typeName, DataCollection data)
     : UnitExtensionGenerator(isPublic, data)
 {
     /// <inheritdoc />
     protected override string FileName
-        => "_UnitMethodExtension";
+    {
+        get
+        {
+            return "_UnitMethodExtension";
+        }
+    }
 
     /// <inheritdoc />
     protected override TypeDeclaration ModifyClass(TypeDeclaration classDeclaration)

@@ -30,21 +30,31 @@ internal sealed class QuantitiesAttributeGenerator(DataCollection data)
     /// <summary>
     /// The quantity unit.
     /// </summary>
-    /// <param name="Quantity">quantity.</param>
-    /// <param name="Unit">the unit.</param>
+    /// <param name="Quantity">The quantity.</param>
+    /// <param name="Unit">The unit name.</param>
     public readonly record struct QuantityUnit(Quantity Quantity, string Unit)
     {
         /// <summary>
-        /// Gets unit name.
+        /// Gets the unit name.
         /// </summary>
         public string UnitName
-            => Quantity.UnitName;
+        {
+            get
+            {
+                return Quantity.UnitName;
+            }
+        }
 
         /// <summary>
-        /// Gets name.
+        /// Gets the name.
         /// </summary>
         public string Name
-            => Quantity.Name;
+        {
+            get
+            {
+                return Quantity.Name;
+            }
+        }
     }
 
     /// <summary>
@@ -69,7 +79,7 @@ internal sealed class QuantitiesAttributeGenerator(DataCollection data)
     /// <summary>
     /// Generate the code.
     /// </summary>
-    /// <param name="context">context.</param>
+    /// <param name="context">The source production context.</param>
     public void Generate(scoped in SourceProductionContext context)
     {
         var quantityAttribute = Class("QuantitiesAttribute").Internal.Sealed

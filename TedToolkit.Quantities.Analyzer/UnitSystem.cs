@@ -10,31 +10,33 @@ using TedToolkit.Quantities.Data;
 namespace TedToolkit.Quantities.Analyzer;
 
 /// <summary>
-/// Unit system.
+/// The unit system.
 /// </summary>
-/// <param name="unitDictionary">unit dictionary.</param>
-/// <param name="collection">collections.</param>
+/// <param name="unitDictionary">The unit dictionary mapping quantity names to unit names.</param>
+/// <param name="collection">The data collection.</param>
 internal readonly struct UnitSystem(Dictionary<string, string>? unitDictionary, DataCollection collection)
 {
     /// <summary>
-    /// Gets keys.
+    /// Gets the keys.
     /// </summary>
     public IReadOnlyCollection<string> Keys { get; } =
         (IReadOnlyCollection<string>?)unitDictionary?.Keys ?? Array.Empty<string>();
 
     /// <summary>
-    /// Get the quantity.
+    /// Gets the quantity by name.
     /// </summary>
-    /// <param name="key">key.</param>
-    /// <returns>quantity.</returns>
+    /// <param name="key">The quantity name.</param>
+    /// <returns>The matching quantity.</returns>
     public Quantity GetQuantity(string key)
-        => collection.Quantities.Values.First(q => q.Name == key);
+    {
+        return collection.Quantities.Values.First(q => q.Name == key);
+    }
 
     /// <summary>
-    /// Get the unit.
+    /// Gets the unit for a quantity.
     /// </summary>
-    /// <param name="key">key.</param>
-    /// <returns>unit.</returns>
+    /// <param name="key">The quantity name.</param>
+    /// <returns>The matching unit.</returns>
     public Unit GetUnit(string key)
     {
         var quantity = GetQuantity(key);
