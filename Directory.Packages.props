@@ -4,10 +4,10 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
-    <PackageVersion Include="Polyfill" Version="10.0.0" />
+    <PackageVersion Include="Polyfill" Version="10.3.0" />
     <PackageVersion Include="Sourcy.DotNet" Version="1.1.1" />
-    <PackageVersion Include="TedToolkit.RoslynHelper" Version="2026.3.31" />
-    <PackageVersion Include="TedToolkit.Scopes" Version="2026.1.31" />
+    <PackageVersion Include="TedToolkit.RoslynHelper" Version="2026.4.17.1" />
+    <PackageVersion Include="TedToolkit.Scopes" Version="2026.4.17" />
     <PackageVersion Include="TUnit" Version="1.9.2" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="PeterO.Numbers" Version="1.8.2" />
