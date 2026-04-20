@@ -21,14 +21,23 @@ All code is emitted at compile time — no reflection, no runtime cost.
 ```csharp
 using TedToolkit.Quantities;
 
-// 1. Define your quantity — the generator handles the rest
+// 1. Enable the generator for the quantities you want (typically in GlobalUsings.cs)
+[assembly: Quantities<double>(
+    QuantitySystems.ALL,
+    "Angle",
+    "Length",
+    "DimensionlessRatio",
+    Length = LengthUnit.Millimetre,
+    Options = UnitOptions.GENERATE_EXTENSION_PROPERTIES)]
+
+// 2. (Optional) Customize a quantity — e.g. set a display unit or add cross-quantity operators
 [QuantityDisplayUnit<AngleUnit>(AngleUnit.Degree)]
 [QuantityOperator<Angle, Angle, DimensionlessRatio>(Operator.DIVIDE)]
 [QuantityOperator<Angle, Angle, Angle>(Operator.SUBTRACT)]
 [QuantityOperator<Angle, Length, Length>(Operator.MULTIPLY)]
 public partial struct Angle;
 
-// 2. Use it
+// 3. Use it
 var right = 90.0.Degree;
 var half  = right / 2.0;                           // 45°
 double rad = right.As(AngleUnit.Radian);            // π/2
