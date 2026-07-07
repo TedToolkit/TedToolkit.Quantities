@@ -11,12 +11,11 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
 using TedToolkit.Quantities.Data;
-using TedToolkit.RoslynHelper.Extensions;
-using TedToolkit.RoslynHelper.Generators;
-using TedToolkit.RoslynHelper.Generators.Syntaxes;
+using TedToolkit.RoslynHelper;
+using TedToolkit.RoslynHelper.Syntaxes;
 
-using static TedToolkit.RoslynHelper.Generators.SourceComposer;
-using static TedToolkit.RoslynHelper.Generators.SourceComposer<
+using static TedToolkit.RoslynHelper.SourceComposer;
+using static TedToolkit.RoslynHelper.SourceComposer<
     TedToolkit.Quantities.Analyzer.QuantitiesAttributeGenerator>;
 
 namespace TedToolkit.Quantities.Analyzer;

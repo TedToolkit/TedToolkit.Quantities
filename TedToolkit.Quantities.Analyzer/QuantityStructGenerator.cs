@@ -12,12 +12,11 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 using TedToolkit.Quantities.Data;
-using TedToolkit.RoslynHelper.Extensions;
-using TedToolkit.RoslynHelper.Generators;
-using TedToolkit.RoslynHelper.Generators.Syntaxes;
+using TedToolkit.RoslynHelper;
+using TedToolkit.RoslynHelper.Syntaxes;
 
-using static TedToolkit.RoslynHelper.Generators.SourceComposer;
-using static TedToolkit.RoslynHelper.Generators.SourceComposer<
+using static TedToolkit.RoslynHelper.SourceComposer;
+using static TedToolkit.RoslynHelper.SourceComposer<
     TedToolkit.Quantities.Analyzer.QuantityStructGenerator>;
 
 namespace TedToolkit.Quantities.Analyzer;
@@ -349,12 +348,12 @@ internal sealed class QuantityStructGenerator(
                             .AddArgument(Argument("Value".ToSimpleName())).Return)));
         }
 
-        var convertTo = quantitySymbol?.GetAttributes().Any(a => a.AttributeClass?.GetName().FullName
+        var convertTo = quantitySymbol?.GetAttributes().Any(a => a.AttributeClass?.FullName
             is "global::TedToolkit.Quantities.QuantityImplicitToValueTypeAttribute") ?? false
             ? ImplicitConversionTo(typeType)
             : ExplicitConversionTo(typeType);
 
-        var convertFrom = quantitySymbol?.GetAttributes().Any(a => a.AttributeClass?.GetName().FullName
+        var convertFrom = quantitySymbol?.GetAttributes().Any(a => a.AttributeClass?.FullName
             is "global::TedToolkit.Quantities.QuantityImplicitFromValueTypeAttribute") ?? false
             ? ImplicitConversionFrom(typeType)
             : ExplicitConversionFrom(typeType);
@@ -425,7 +424,7 @@ internal sealed class QuantityStructGenerator(
         {
             if (quantitySymbol?.GetAttributes().FirstOrDefault(a =>
                     a.AttributeClass is { IsGenericType: true, } attributeClass
-                    && attributeClass.ConstructUnboundGenericType().GetName().FullName is
+                    && attributeClass.ConstructUnboundGenericType().FullName is
                         "global::TedToolkit.Quantities.QuantityDisplayUnitAttribute<>") is not
                 { } displayUnitAttribute)
             {
