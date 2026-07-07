@@ -19,9 +19,25 @@ Install the package:
 dotnet add package TedToolkit.Quantities
 ```
 
-### Define a Quantity
+### Enable the Generator
 
-Declare a `partial struct` in the `TedToolkit.Quantities` namespace. The source generator fills in the rest:
+Add an assembly-level `Quantities` attribute (typically in `GlobalUsings.cs`) to tell the generator which quantities to emit:
+
+```csharp
+using TedToolkit.Quantities;
+
+[assembly: Quantities<double>(
+    QuantitySystems.ALL,
+    "Angle",
+    "Length",
+    "DimensionlessRatio",
+    Length = LengthUnit.Millimetre,
+    Options = UnitOptions.GENERATE_EXTENSION_PROPERTIES)]
+```
+
+### Define a Quantity (Optional)
+
+To customize a quantity — e.g. set a display unit or add cross-quantity operators — declare a `partial struct` in the `TedToolkit.Quantities` namespace:
 
 ```csharp
 using TedToolkit.Quantities;

@@ -12,11 +12,10 @@ using Cysharp.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-using TedToolkit.RoslynHelper.Extensions;
-using TedToolkit.RoslynHelper.Generators;
+using TedToolkit.RoslynHelper;
 
-using static TedToolkit.RoslynHelper.Generators.SourceComposer;
-using static TedToolkit.RoslynHelper.Generators.SourceComposer<
+using static TedToolkit.RoslynHelper.SourceComposer;
+using static TedToolkit.RoslynHelper.SourceComposer<
     TedToolkit.Quantities.Analyzer.QuantitiesGenerator>;
 
 namespace TedToolkit.Quantities.Analyzer;

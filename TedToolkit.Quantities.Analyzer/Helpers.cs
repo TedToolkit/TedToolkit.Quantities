@@ -19,8 +19,8 @@ using Newtonsoft.Json.Linq;
 using PeterO.Numbers;
 
 using TedToolkit.Quantities.Data;
-using TedToolkit.RoslynHelper.Generators;
-using TedToolkit.RoslynHelper.Generators.Syntaxes;
+using TedToolkit.RoslynHelper;
+using TedToolkit.RoslynHelper.Syntaxes;
 
 namespace TedToolkit.Quantities.Analyzer;
 
