@@ -349,12 +349,12 @@ internal sealed class QuantityStructGenerator(
         }
 
         var convertTo = quantitySymbol?.GetAttributes().Any(a => a.AttributeClass?.FullName
-            is "global::TedToolkit.Quantities.QuantityImplicitToValueTypeAttribute") ?? false
+            is "TedToolkit.Quantities.QuantityImplicitToValueTypeAttribute") ?? false
             ? ImplicitConversionTo(typeType)
             : ExplicitConversionTo(typeType);
 
         var convertFrom = quantitySymbol?.GetAttributes().Any(a => a.AttributeClass?.FullName
-            is "global::TedToolkit.Quantities.QuantityImplicitFromValueTypeAttribute") ?? false
+            is "TedToolkit.Quantities.QuantityImplicitFromValueTypeAttribute") ?? false
             ? ImplicitConversionFrom(typeType)
             : ExplicitConversionFrom(typeType);
 
