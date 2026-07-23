@@ -1,13 +1,6 @@
 ﻿using TedToolkit.Quantities;
 
-[assembly: Quantities<double>(
-    QuantitySystems.ALL,
-    "Area",
-    "Volume",
-    "Angle",
-    "LinearVelocity",
-    "DimensionlessRatio",
-    "Dimensionless",
-    "InverseLength",
-    Length = LengthUnit.Millimetre,
-    Options = UnitOptions.GENERATE_EXTENSION_PROPERTIES)]
+[assembly: global::TedToolkit.Quantities.Quantities<double>(
+    global::TedToolkit.Quantities.QuantitySystems.SI,
+    Length = global::TedToolkit.Quantities.LengthUnit.Metre,
+    Options = global::TedToolkit.Quantities.UnitOptions.GENERATE_EXTENSION_PROPERTIES)]

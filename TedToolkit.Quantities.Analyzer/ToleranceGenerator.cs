@@ -9,6 +9,8 @@ using Cysharp.Text;
 
 using Microsoft.CodeAnalysis;
 
+using PeterO.Numbers;
+
 using TedToolkit.Quantities.Data;
 using TedToolkit.RoslynHelper;
 using TedToolkit.RoslynHelper.Syntaxes;
@@ -100,9 +102,11 @@ internal sealed class ToleranceGenerator(
 
     private Property CreateToleranceProperty(string name)
     {
+        var value = typeName.IsFloatingPoint() ? "1E-6" : "1";
+
         return Property(new DataType(name), name).Public
             .AddAccessor(new Accessor(AccessorType.GET))
             .AddAccessor(new Accessor(AccessorType.INIT))
-            .AddDefault((typeName.IsFloatingPoint() ? "1E-6" : "1").ToSimpleName().Cast(new DataType(name)));
+            .AddDefault(Helpers.CreateNumber(EDecimal.FromString(value), typeName).Cast(new DataType(name)));
     }
 }

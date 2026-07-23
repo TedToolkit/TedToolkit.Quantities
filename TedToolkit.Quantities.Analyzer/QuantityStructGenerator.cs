@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="QuantityStructGenerator.cs" company="TedToolkit">
 // Copyright (c) TedToolkit. All rights reserved.
 // Licensed under the LGPL-3.0 license. See COPYING, COPYING.LESSER file in the project root for full license information.
@@ -325,7 +325,10 @@ internal sealed class QuantityStructGenerator(
                 .AddMember(CreateMathMethod(nameof(Math.Floor)))
                 .AddMember(CreateMathMethod(nameof(Math.Ceiling)))
                 .AddMember(CreateMathMethod(nameof(Math.Round)));
+        }
 
+        if (typeName.IsIeeeFloatingPoint())
+        {
             structDeclaration
                 .AddMember(Property(quantityType, "NaN").Static.Public
                     .AddAccessor(Accessor(AccessorType.GET)
@@ -432,7 +435,7 @@ internal sealed class QuantityStructGenerator(
                     a.AttributeClass is { IsGenericType: true, } attributeClass
                     && attributeClass.ConstructUnboundGenericType().FullName is
                         "global::TedToolkit.Quantities.QuantityDisplayUnitAttribute<>") is not
-                { } displayUnitAttribute)
+                        { } displayUnitAttribute)
             {
                 return null;
             }
