@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="QuantityStructGenerator.cs" company="TedToolkit">
 // Copyright (c) TedToolkit. All rights reserved.
 // Licensed under the LGPL-3.0 license. See COPYING, COPYING.LESSER file in the project root for full license information.
@@ -120,11 +120,15 @@ internal sealed class QuantityStructGenerator(
                 .AddAccessor(Accessor(AccessorType.GET)
                     .AddStatement(typeType.Type.Sub("MaxValue").Cast(quantityType).Return)))
             .AddMember(Property(typeType, "Value").Public
-                .AddAccessor(Accessor(AccessorType.GET)));
+                .AddAccessor(Accessor(AccessorType.GET)))
+            .AddMember(Method("AssertValue", new(DataType.Void)).Static.Partial
+                .AddParameter(Parameter(typeType, "value")));
 
         var valueConstructor = Constructor()
             .AddParameter(Parameter(typeType, "value"))
-            .AddStatement("Value = @value".ToSimpleName());
+            .AddStatement("Value = @value".ToSimpleName())
+            .AddStatement("AssertValue".ToSimpleName().Invoke()
+                .AddArgument(Argument("Value".ToSimpleName())));
 
         valueConstructor = quantity.IsNoDimensions ? valueConstructor.Public : valueConstructor.Private;
         structDeclaration
@@ -141,6 +145,8 @@ internal sealed class QuantityStructGenerator(
                     section.AddStatement(exp is null
                         ? new ObjectCreationExpression(DataType.FromType<NotImplementedException>()).Throw
                         : "Value".ToSimpleName().Operator("=", exp));
+                    section.AddStatement("AssertValue".ToSimpleName().Invoke()
+                        .AddArgument(Argument("Value".ToSimpleName())));
                     section.AddStatement(new ReturnStatement());
                 })))
             .AddMember(Method("As", new(typeType)).Public
@@ -319,7 +325,10 @@ internal sealed class QuantityStructGenerator(
                 .AddMember(CreateMathMethod(nameof(Math.Floor)))
                 .AddMember(CreateMathMethod(nameof(Math.Ceiling)))
                 .AddMember(CreateMathMethod(nameof(Math.Round)));
+        }
 
+        if (typeName.IsIeeeFloatingPoint())
+        {
             structDeclaration
                 .AddMember(Property(quantityType, "NaN").Static.Public
                     .AddAccessor(Accessor(AccessorType.GET)
@@ -426,7 +435,7 @@ internal sealed class QuantityStructGenerator(
                     a.AttributeClass is { IsGenericType: true, } attributeClass
                     && attributeClass.ConstructUnboundGenericType().FullName is
                         "global::TedToolkit.Quantities.QuantityDisplayUnitAttribute<>") is not
-                { } displayUnitAttribute)
+                        { } displayUnitAttribute)
             {
                 return null;
             }

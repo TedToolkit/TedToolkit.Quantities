@@ -14,6 +14,12 @@
   <Project Path="TedToolkit.Quantities.Tests/TedToolkit.Quantities.Tests.csproj">
     <BuildDependency Project="TedToolkit.Quantities.Analyzer/TedToolkit.Quantities.Analyzer.csproj" />
   </Project>
+  <Project Path="TedToolkit.Quantities.Float.Tests/TedToolkit.Quantities.Float.Tests.csproj">
+    <BuildDependency Project="TedToolkit.Quantities.Analyzer/TedToolkit.Quantities.Analyzer.csproj" />
+  </Project>
+  <Project Path="TedToolkit.Quantities.Decimal.Tests/TedToolkit.Quantities.Decimal.Tests.csproj">
+    <BuildDependency Project="TedToolkit.Quantities.Analyzer/TedToolkit.Quantities.Analyzer.csproj" />
+  </Project>
   <Project Path="TedToolkit.Quantities/TedToolkit.Quantities.csproj">
     <BuildDependency Project="TedToolkit.Quantities.Analyzer/TedToolkit.Quantities.Analyzer.csproj" />
   </Project>

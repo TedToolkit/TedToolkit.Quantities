@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="Helpers.cs" company="TedToolkit">
 // Copyright (c) TedToolkit. All rights reserved.
 // Licensed under the LGPL-3.0 license. See COPYING, COPYING.LESSER file in the project root for full license information.
@@ -252,7 +252,13 @@ internal static class Helpers
             .Operator("/", CreateNumber(data.Denominator, dataType));
     }
 
-    private static IExpression CreateNumber(EDecimal data, ITypeSymbol dataType)
+    /// <summary>
+    /// Creates a numeric source expression compatible with the target data type.
+    /// </summary>
+    /// <param name="data">The source numeric value.</param>
+    /// <param name="dataType">The target data type.</param>
+    /// <returns>A numeric source expression.</returns>
+    internal static IExpression CreateNumber(EDecimal data, ITypeSymbol dataType)
     {
         var num = data.ToString();
 
@@ -279,9 +285,16 @@ internal static class Helpers
             }
         }
 
-        if (dataType.SpecialType is SpecialType.System_Decimal && decimal.TryParse(num, out _))
+        if (dataType.SpecialType is SpecialType.System_Decimal)
         {
-            return ZString.Concat(num, 'm').ToSimpleName();
+            return ZString.Concat("global::System.Decimal.Parse(\"", num,
+                "\", global::System.Globalization.CultureInfo.InvariantCulture)").ToSimpleName();
+        }
+
+        if (dataType.SpecialType is SpecialType.System_Single)
+        {
+            return ZString.Concat("global::System.Single.Parse(\"", num,
+                "\", global::System.Globalization.CultureInfo.InvariantCulture)").ToSimpleName();
         }
 
         if (double.TryParse(num, out _))
@@ -302,5 +315,16 @@ internal static class Helpers
         return type.SpecialType is SpecialType.System_Single
             or SpecialType.System_Double
             or SpecialType.System_Decimal;
+    }
+
+    /// <summary>
+    /// Gets whether the type supports IEEE special floating-point values.
+    /// </summary>
+    /// <param name="type">The type.</param>
+    /// <returns>Whether the type supports NaN and infinity.</returns>
+    public static bool IsIeeeFloatingPoint(this ITypeSymbol type)
+    {
+        return type.SpecialType is SpecialType.System_Single
+            or SpecialType.System_Double;
     }
 }

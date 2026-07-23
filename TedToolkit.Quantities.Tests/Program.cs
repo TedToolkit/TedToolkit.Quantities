@@ -1,11 +1,7 @@
-﻿// See https://aka.ms/new-console-template for more information
-
 using TedToolkit.Quantities;
-using TedToolkit.Scopes;
 
-Console.WriteLine("Hello, World!");
-
-using (new Tolerance().FastPush())
+var length = Length.FromMillimetre(1000d);
+if (length.Value != 1d || length.As(LengthUnit.Millimetre) != 1000d)
 {
-    var length = 10.0.Metre;
+    throw new InvalidOperationException("Double length conversion failed.");
 }
