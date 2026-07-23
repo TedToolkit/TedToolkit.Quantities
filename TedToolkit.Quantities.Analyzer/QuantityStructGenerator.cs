@@ -120,11 +120,15 @@ internal sealed class QuantityStructGenerator(
                 .AddAccessor(Accessor(AccessorType.GET)
                     .AddStatement(typeType.Type.Sub("MaxValue").Cast(quantityType).Return)))
             .AddMember(Property(typeType, "Value").Public
-                .AddAccessor(Accessor(AccessorType.GET)));
+                .AddAccessor(Accessor(AccessorType.GET)))
+            .AddMember(Method("AssertValue", new(DataType.Void)).Static.Partial
+                .AddParameter(Parameter(typeType, "value")));
 
         var valueConstructor = Constructor()
             .AddParameter(Parameter(typeType, "value"))
-            .AddStatement("Value = @value".ToSimpleName());
+            .AddStatement("Value = @value".ToSimpleName())
+            .AddStatement("AssertValue".ToSimpleName().Invoke()
+                .AddArgument(Argument("Value".ToSimpleName())));
 
         valueConstructor = quantity.IsNoDimensions ? valueConstructor.Public : valueConstructor.Private;
         structDeclaration
@@ -141,6 +145,8 @@ internal sealed class QuantityStructGenerator(
                     section.AddStatement(exp is null
                         ? new ObjectCreationExpression(DataType.FromType<NotImplementedException>()).Throw
                         : "Value".ToSimpleName().Operator("=", exp));
+                    section.AddStatement("AssertValue".ToSimpleName().Invoke()
+                        .AddArgument(Argument("Value".ToSimpleName())));
                     section.AddStatement(new ReturnStatement());
                 })))
             .AddMember(Method("As", new(typeType)).Public

@@ -6,3 +6,14 @@ namespace TedToolkit.Quantities;
 [QuantityOperator<Angle, Length, Length>(Operator.MULTIPLY)]
 [QuantityOperator<Length, Angle, Length>(Operator.MULTIPLY)]
 public partial struct Angle;
+
+public partial struct Angle
+{
+    static partial void AssertValue(double value)
+    {
+        if (value < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(value));
+        }
+    }
+}
