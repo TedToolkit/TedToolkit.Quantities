@@ -20,4 +20,9 @@
     <None Include="..\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\Newtonsoft.Json.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
     <PackageReference Include="TedToolkit.Scopes"/>
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../.agents/skills/use-generated-quantities/**/*"
+          Pack="true" PackagePath="skills/use-generated-quantities/" />
+  </ItemGroup>
 </Project>
