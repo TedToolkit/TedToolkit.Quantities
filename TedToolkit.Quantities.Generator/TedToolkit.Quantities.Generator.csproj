@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\externals\TedToolkit\props\CodeAnalysis.props"/>
+  <Import Project="CodeAnalysis.props" Sdk="TedToolkit.Build.Sdk"/>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,12 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AngleSharp" PrivateAssets="all"/>
     <PackageReference Include="dotNetRdf"/>
     <PackageReference Include="AngleSharp"/>
-    <PackageReference Include="Sourcy.DotNet">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="TedToolkit.FileSystem"/>
     <PackageReference Include="TedToolkit.RoslynHelper"/>
     <ProjectReference Include="..\TedToolkit.Quantities.Data\TedToolkit.Quantities.Data.csproj"/>
   </ItemGroup>
