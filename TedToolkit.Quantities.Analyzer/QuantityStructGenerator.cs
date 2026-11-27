@@ -30,7 +30,6 @@ namespace TedToolkit.Quantities.Analyzer;
 /// <param name="unitSystem">unit system.</param>
 /// <param name="isPublic">is public.</param>
 /// <param name="quantitySymbol">quantity symbol.</param>
-/// <param name="generatedNamespace">The namespace of the generated quantity.</param>
 /// <param name="precompiled">Whether the quantity is part of the coherent SI library.</param>
 internal sealed class QuantityStructGenerator(
     DataCollection data,
@@ -39,7 +38,6 @@ internal sealed class QuantityStructGenerator(
     UnitSystem unitSystem,
     bool isPublic,
     INamedTypeSymbol? quantitySymbol,
-    string generatedNamespace,
     bool precompiled)
 {
     private bool IsAbsoluteTemperature
@@ -148,7 +146,7 @@ internal sealed class QuantityStructGenerator(
             }
 
             var target = attributeClass.TypeArguments[0];
-            if (target.ContainingNamespace.ToDisplayString() != generatedNamespace
+            if (target.ContainingNamespace.ToDisplayString() != "TedToolkit.Quantities"
                 || target.Name == quantity.Name
                 || !data.Quantities.TryGetValue(target.Name, out var targetQuantity)
                 || GetSiDimension(targetQuantity) != dimension)
@@ -478,7 +476,7 @@ internal sealed class QuantityStructGenerator(
             structDeclaration.AddMember(conversion);
         }
 
-        var space = NameSpace(generatedNamespace)
+        var space = NameSpace("TedToolkit.Quantities")
             .AddMember(structDeclaration);
 
         if (typeName.IsFloatingPoint())
@@ -639,7 +637,7 @@ internal sealed class QuantityStructGenerator(
 
             var section = new SwitchSection()
                 .AddLabel(new SwitchLabel(ZString
-                    .Concat(quantity.UnitName, '.',
+                    .Concat("global::TedToolkit.Quantities.", quantity.UnitName, '.',
                         unit.GetUnitName(data.Units.Values))
                     .ToSimpleName()));
 

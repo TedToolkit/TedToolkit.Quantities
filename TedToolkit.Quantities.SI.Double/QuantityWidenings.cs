@@ -4,7 +4,7 @@
 // Licensed under the LGPL-3.0 license. See COPYING, COPYING.LESSER file in the project root for full license information.
 // -----------------------------------------------------------------------
 
-namespace TedToolkit.Quantities.SI.Double;
+namespace TedToolkit.Quantities;
 
 // The target must be a semantic generalization. Sharing the same SI dimensions is only a prerequisite.
 [QuantityImplicitlyConvertsTo<Length>]

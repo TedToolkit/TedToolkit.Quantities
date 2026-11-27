@@ -5,7 +5,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TedToolkit.Quantities.SI.Double;
+namespace TedToolkit.Quantities;
 
 public readonly partial struct Frequency
 {

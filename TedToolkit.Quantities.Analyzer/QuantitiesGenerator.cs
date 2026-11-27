@@ -27,10 +27,6 @@ namespace TedToolkit.Quantities.Analyzer;
 [Generator(LanguageNames.CSharp)]
 public sealed class QuantitiesGenerator : IIncrementalGenerator
 {
-    private const string DefaultNamespace = "TedToolkit.Quantities";
-
-    private const string PrecompiledNamespace = "TedToolkit.Quantities.SI.Double";
-
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -134,8 +130,6 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
         try
         {
             var ((compilations, texts), precompiled) = arg;
-            var generatedNamespace = precompiled ? PrecompiledNamespace : DefaultNamespace;
-
             if (!precompiled && compilations.GetTypeByMetadataName("TedToolkit.Quantities.QuantitiesAttribute`1")
                 ?.BaseType?.FullName
                 is "System.Attribute")
@@ -157,13 +151,13 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
 
             var unit = new UnitSystem(units, data);
             {
-                new UnitEnumGenerator([.. data.Units.Values,]).GenerateCode(context, generatedNamespace);
+                new UnitEnumGenerator([.. data.Units.Values,]).GenerateCode(context);
 
                 var toStringExtensions = Class("UnitToStringExtensions").Public.Static;
                 foreach (var quantity in data.Quantities)
                 {
                     var enumGenerator = new QuantityUnitEnumGenerator(data, quantity.Value, unit);
-                    enumGenerator.GenerateCode(context, generatedNamespace);
+                    enumGenerator.GenerateCode(context);
                     if (tDataType is not null)
                     {
                         toStringExtensions = toStringExtensions.AddMember(enumGenerator.GenerateToString());
@@ -171,7 +165,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                 }
 
                 File()
-                    .AddNameSpace(NameSpace(generatedNamespace)
+                    .AddNameSpace(NameSpace("TedToolkit.Quantities")
                         .AddMember(toStringExtensions))
                     .Generate(context, "_UnitToStringExtensions");
 
@@ -194,7 +188,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
             foreach (var quantity in data.Quantities)
             {
                 var quantitySymbol =
-                    compilations.Assembly.GetTypeByMetadataName(ZString.Concat(generatedNamespace, ".",
+                    compilations.Assembly.GetTypeByMetadataName(ZString.Concat("TedToolkit.Quantities.",
                         quantity.Value.Name));
                 if (quantitySymbol is not null)
                 {
@@ -202,7 +196,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                 }
 
                 new QuantityStructGenerator(data, quantity.Value, tDataType, unit,
-                        isPublic, quantitySymbol, generatedNamespace, precompiled)
+                        isPublic, quantitySymbol, precompiled)
                     .GenerateCode(context);
             }
 

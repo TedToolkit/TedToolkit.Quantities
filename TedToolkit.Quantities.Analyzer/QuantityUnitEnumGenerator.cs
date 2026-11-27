@@ -90,7 +90,7 @@ internal sealed class QuantityUnitEnumGenerator(DataCollection data, Quantity qu
 
             var unit = unitSystem.GetUnit(key);
 
-            var member = ZString.Concat(key, "Unit.",
+            var member = ZString.Concat("global::TedToolkit.Quantities.", key, "Unit.",
                     unit.GetUnitName(data.Units.Values), ".ToString")
                 .ToSimpleName().Invoke()
                 .AddArgument(Argument("isSymbol".ToSimpleName()))
@@ -112,8 +112,7 @@ internal sealed class QuantityUnitEnumGenerator(DataCollection data, Quantity qu
     /// Generate the code.
     /// </summary>
     /// <param name="context">the context.</param>
-    /// <param name="generatedNamespace">The namespace of the generated enum.</param>
-    public void GenerateCode(in SourceProductionContext context, string generatedNamespace)
+    public void GenerateCode(in SourceProductionContext context)
     {
         var enumDeclaration = Enum(quantity.UnitName).Public
             .AddEnumMember(new EnumMember("None"));
@@ -132,7 +131,7 @@ internal sealed class QuantityUnitEnumGenerator(DataCollection data, Quantity qu
         }
 
         File()
-            .AddNameSpace(NameSpace(generatedNamespace)
+            .AddNameSpace(NameSpace("TedToolkit.Quantities")
                 .AddMember(enumDeclaration))
             .Generate(context, quantity.UnitName);
     }

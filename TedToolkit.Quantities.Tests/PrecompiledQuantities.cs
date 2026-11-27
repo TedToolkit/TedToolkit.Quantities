@@ -1,4 +1,6 @@
-using Q = TedToolkit.Quantities.SI.Double;
+extern alias SiDouble;
+
+using Q = SiDouble::TedToolkit.Quantities;
 
 internal static class PrecompiledQuantities
 {

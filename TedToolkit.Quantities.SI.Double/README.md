@@ -9,7 +9,7 @@ dotnet add package TedToolkit.Quantities.SI.Double
 ```
 
 ```csharp
-using TedToolkit.Quantities.SI.Double;
+using TedToolkit.Quantities;
 
 Length distance = Length.FromMillimetre(600);
 Time elapsed = Time.FromSecond(30);
@@ -33,8 +33,9 @@ Formulas that require a direction, geometry, or physical interpretation are avai
 named methods in [ContextualFormulas.cs](ContextualFormulas.cs).
 
 When adapting an API that stores millimetres, pass the value through `Length.FromMillimetre` and use
-`Millimetre` on the way back to that API. The package types are under `TedToolkit.Quantities.SI.Double`,
-so existing generated types in `TedToolkit.Quantities` can coexist in the same solution.
+`Millimetre` on the way back to that API. The package provides types in `TedToolkit.Quantities`.
+To migrate from source-generated quantities, replace the direct `TedToolkit.Quantities` package
+reference with `TedToolkit.Quantities.SI.Double` and remove the assembly-level `Quantities<T>` declaration.
 
 ## Quantity conversions
 

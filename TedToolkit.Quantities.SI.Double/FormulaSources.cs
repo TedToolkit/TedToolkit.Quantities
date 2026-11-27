@@ -5,7 +5,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TedToolkit.Quantities.SI.Double;
+namespace TedToolkit.Quantities;
 
 internal static class FormulaSources
 {

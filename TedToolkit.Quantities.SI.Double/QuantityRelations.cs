@@ -5,7 +5,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TedToolkit.Quantities.SI.Double;
+namespace TedToolkit.Quantities;
 
 [QuantityOperator<Length, Length, Area>(Operator.MULTIPLY,
     FormulaId = "geometry/rectangle-area", Equation = "A = ab",

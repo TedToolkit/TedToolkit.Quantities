@@ -9,7 +9,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\TedToolkit.Quantities\TedToolkit.Quantities.csproj" />
-      <ProjectReference Include="..\TedToolkit.Quantities.SI.Double\TedToolkit.Quantities.SI.Double.csproj" />
+      <ProjectReference Include="..\TedToolkit.Quantities.SI.Double\TedToolkit.Quantities.SI.Double.csproj" Aliases="SiDouble" />
       <Analyzer Include="..\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\TedToolkit.Quantities.Analyzer.dll"/>
       <Analyzer Include="..\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\TedToolkit.Quantities.Data.dll"/>
       <Analyzer Include="..\TedToolkit.Quantities.Analyzer\bin\$(Configuration)\netstandard2.0\TedToolkit.RoslynHelper.dll"/>
