@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="QuantityUnits.json"/>
     <ProjectReference Include="../TedToolkit.Quantities/TedToolkit.Quantities.csproj"/>
     <ProjectReference Include="../TedToolkit.Quantities.Analyzer/TedToolkit.Quantities.Analyzer.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all"/>

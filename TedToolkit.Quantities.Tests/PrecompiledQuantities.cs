@@ -26,12 +26,12 @@ internal static class PrecompiledQuantities
         var amount = Q.AmountOfSubstance.FromMole(2.5);
         Close(2500, amount.Millimole);
 
-        var freezing = Q.ThermodynamicTemperature.FromDegreeCelsius(0);
-        var boiling = Q.ThermodynamicTemperature.FromKelvin(373.15);
-        Q.TemperatureDifference interval = boiling - freezing;
-        Close(273.15, freezing.Kelvin);
+        var startTemperature = Q.ThermodynamicTemperature.FromKelvin(280);
+        var endTemperature = Q.ThermodynamicTemperature.FromKelvin(380);
+        Q.TemperatureDifference interval = endTemperature - startTemperature;
+        Close(280, startTemperature.Value);
         Close(100, interval.Kelvin);
-        Close(100, (freezing + interval).DegreeCelsius);
+        Close(380, (startTemperature + interval).Kelvin);
 
         Q.SquareEnergy squaredEnergy = Q.Energy.FromJoule(3) * Q.Energy.FromJoule(4);
         Close(12, squaredEnergy.Value);
@@ -206,8 +206,8 @@ internal static class PrecompiledQuantities
 
     private static void VerifyHeatTransfer()
     {
-        var room = Q.ThermodynamicTemperature.FromDegreeCelsius(20);
-        var heated = Q.ThermodynamicTemperature.FromDegreeCelsius(40);
+        var room = Q.ThermodynamicTemperature.FromKelvin(290);
+        var heated = Q.ThermodynamicTemperature.FromKelvin(310);
         Q.TemperatureDifference temperatureRise = heated - room;
         Q.HeatCapacity capacity = (Q.SpecificHeatCapacity)1000d * Q.Mass.FromKilogram(2);
         Q.Energy heating = capacity * temperatureRise;

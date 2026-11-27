@@ -24,9 +24,8 @@ to construct it. Use named factories and unit accessors such as `FromMillimetre`
 `As(LengthUnit.Millimetre)` at API boundaries. Explicit casts to or from `double` use the coherent
 value. Use `Value` for quantities without named units. Equality and ordering follow the base
 library's `Tolerance` rules. Unit availability and conversions follow the QUDT data used by
-the base generator. [QuantityUnits.json](QuantityUnits.json) adds the existing QUDT Celsius
-unit to `ThermodynamicTemperature` so it has `FromDegreeCelsius` and `DegreeCelsius`.
-The Kelvin conversion, including the offset for an absolute temperature, comes from [QUDT][qudt-celsius].
+the base generator. The SI base unit for `ThermodynamicTemperature` is the kelvin (K).
+[BIPM SI Brochure][bipm-si-brochure]
 
 The cross-quantity operators are declared with the existing `QuantityOperator` attribute in
 [QuantityRelations.cs](QuantityRelations.cs). The operators use scalar values,
@@ -324,4 +323,3 @@ Update the corresponding row when changing a formula's coverage.
 [qudt-quantity-definitions]: https://github.com/qudt/qudt-public-repo/releases/tag/v3.5.4
 [qudt-thermal-conductance]: https://qudt.org/vocab/quantitykind/ThermalConductance
 [qudt-thermal-resistivity]: https://qudt.org/vocab/quantitykind/ThermalResistivity
-[qudt-celsius]: https://qudt.org/vocab/unit/DEG_C
