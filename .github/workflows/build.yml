@@ -18,10 +18,89 @@ jobs:
     permissions:
       contents: write
       id-token: write
+    env:
+      BUILD_GENERATOR_PROJECT: ${{ vars.BUILD_GENERATOR_PROJECT }}
+      BUILD_SOLUTION: ${{ vars.BUILD_SOLUTION }}
+      BUILD_TEST_PROJECTS: ${{ vars.BUILD_TEST_PROJECTS }}
+      BUILD_TEST_FRAMEWORK: ${{ vars.BUILD_TEST_FRAMEWORK }}
+      BUILD_PACK_PROJECTS: ${{ vars.BUILD_PACK_PROJECTS }}
+      BUILD_CONFIGURATION: ${{ vars.BUILD_CONFIGURATION || 'Release' }}
     steps:
-      - uses: TedToolkit/TedToolkit/.github/actions/publish-nuget@b45c29c681eecdec42d23c3324e474a78f1902d9
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          nuget-user: ArchiTed
+          submodules: recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+
+      - name: Generate sources
+        if: env.BUILD_GENERATOR_PROJECT != ''
+        uses: TedToolkit/TedToolkit/.github/actions/run-build@b45c29c681eecdec42d23c3324e474a78f1902d9
+        env:
+          BUILD_STAGE: generate
+
+      - name: Build solution
+        uses: TedToolkit/TedToolkit/.github/actions/run-build@b45c29c681eecdec42d23c3324e474a78f1902d9
+        env:
+          BUILD_STAGE: build
+
+      - name: Run tests
+        if: env.BUILD_TEST_PROJECTS != ''
+        uses: TedToolkit/TedToolkit/.github/actions/run-build@b45c29c681eecdec42d23c3324e474a78f1902d9
+        env:
+          BUILD_STAGE: test
+
+      - name: Upload test reports
+        if: always() && env.BUILD_TEST_PROJECTS != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: output/test/
+          if-no-files-found: warn
+
+      - name: Resolve release version
+        id: version
+        uses: TedToolkit/TedToolkit/.github/actions/run-build@b45c29c681eecdec42d23c3324e474a78f1902d9
+        env:
+          BUILD_STAGE: version
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Pack release packages
+        uses: TedToolkit/TedToolkit/.github/actions/run-build@b45c29c681eecdec42d23c3324e474a78f1902d9
+        env:
+          BUILD_STAGE: pack
+          BUILD_PACKAGE_VERSION: ${{ steps.version.outputs.value }}
+
+      - name: Upload release packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: output/nuget/
+          if-no-files-found: error
+
+      - name: Sign in to NuGet.org
+        id: nuget
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ArchiTed
+
+      - name: Publish NuGet packages
+        uses: TedToolkit/TedToolkit/.github/actions/run-build@b45c29c681eecdec42d23c3324e474a78f1902d9
+        env:
+          BUILD_STAGE: publish
+          NUGET_API_KEY: ${{ steps.nuget.outputs.NUGET_API_KEY }}
+          NUGET_SOURCE: https://api.nuget.org/v3/index.json
+
+      - name: Create GitHub release
+        if: steps.version.outputs.value != ''
+        uses: TedToolkit/TedToolkit/.github/actions/run-build@b45c29c681eecdec42d23c3324e474a78f1902d9
+        env:
+          BUILD_STAGE: release
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.value }}
 
   release-pr:
     needs: run-build-project
