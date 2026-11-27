@@ -47,6 +47,11 @@ Console.WriteLine(right.ToString(AngleUnit.Radian, "F4"));  // "1.5708 rad"
 
 ## Installation
 
+For precompiled `double` quantities with a shared type identity across projects, see
+[`TedToolkit.Quantities.SI.Double`](TedToolkit.Quantities.SI.Double), including the
+[formula coverage](TedToolkit.Quantities.SI.Double/README.md#formula-coverage) and
+[formula references](TedToolkit.Quantities.SI.Double/README.md#formula-references).
+
 ```
 dotnet add package TedToolkit.Quantities
 ```
@@ -71,6 +76,7 @@ Unit data is sourced from the QUDT ontology and available for: **SI**, **CGS** (
 ## Building
 
 ```bash
+dotnet run --project TedToolkit.Quantities.Generator -c Release
 dotnet build
 dotnet test
 ```
