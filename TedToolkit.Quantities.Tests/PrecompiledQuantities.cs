@@ -48,6 +48,7 @@ internal static class PrecompiledQuantities
         VerifyWaves();
         VerifyFluidTransport();
         VerifyElectromagnetism();
+        VerifyCircuitNetworks();
         VerifyHeatTransfer();
         VerifyThermodynamicProcesses();
         VerifyLightChemistryAndDose();
@@ -334,16 +335,74 @@ internal static class PrecompiledQuantities
         Close(0.375, Q.Force.FromCurrentInMagneticField(
             reverseCurrent, Q.Length.FromMillimetre(250), transverseField).Newton);
         Close(-0.03, Q.MagneticFluxDensity.FromLongSolenoid((Q.Permeability)1e-4d, reverseCurrent, 200, path).Tesla);
+        var mediumPermeability = (Q.Permeability)1e-4d;
+        Close(-3e-4 / (4 * Math.PI), Q.MagneticFluxDensity.FromLongStraightWire(
+            mediumPermeability, reverseCurrent, path).Tesla);
+        Close(-3e-4 / Math.PI, Q.ForcePerLength.FromParallelCurrents(
+            mediumPermeability, reverseCurrent, current, path).Value);
+        Close(1, Q.Inductance.FromLongSolenoid(
+            mediumPermeability, Q.Area.FromSquareMetre(0.5), path, 200).Henry);
+        var magnetomotiveForce = Q.MagnetomotiveForce.FromWinding(reverseCurrent, 200);
+        Close(-600, magnetomotiveForce.Value);
+        Q.AuxillaryMagneticField magneticFieldStrength = magnetomotiveForce / path;
+        Close(-300, magneticFieldStrength.Value);
+        Close(-600, (magneticFieldStrength * path).Value);
 
         var permittivity = (Q.Permittivity)(1 / (4 * Math.PI));
         var sourceCharge = (Q.ElectricCharge)(-16d);
         Close(-8, Q.ElectricPotential.FromPointCharge(sourceCharge, permittivity, path).Volt);
         Close(-4, Q.ElectricFieldStrength.FromPointCharge(sourceCharge, permittivity, path).Value);
         Close(-12, Q.Force.FromPointCharges(sourceCharge, (Q.ElectricCharge)3d, permittivity, path).Newton);
+        Close(-4, Q.ElectricFieldStrength.FromLineCharge((Q.ElectricChargeLineDensity)(-4d), permittivity, path).Value);
 
         var dipoleAngle = Q.PlaneAngle.FromRadian(Math.PI / 6);
         Close(5, Q.Torque.FromElectricDipole((Q.ElectricDipoleMoment)2d, (Q.ElectricFieldStrength)5d, dipoleAngle).Value);
-        Close(1.5, Q.Torque.FromMagneticDipole((Q.MagneticDipoleMoment)6d, transverseField, dipoleAngle).Value);
+        Close(-5 * Math.Sqrt(3), Q.Energy.FromElectricDipole(
+            (Q.ElectricDipoleMoment)2d, (Q.ElectricFieldStrength)5d, dipoleAngle).Joule);
+        var vacuumPermeability = (Q.Permeability)1.25e-6d;
+        var magneticDipole = Q.MagneticDipoleMoment.FromCurrentLoop(
+            vacuumPermeability, Q.ElectricCurrent.FromAmpere(3), Q.Area.FromSquareMetre(0.5), 4);
+        Close(7.5e-6, magneticDipole.Value);
+        Close(1.5, Q.Torque.FromMagneticDipole(magneticDipole, transverseField, vacuumPermeability, dipoleAngle).Value);
+        Close(-1.5 * Math.Sqrt(3), Q.Energy.FromMagneticDipole(magneticDipole, transverseField, vacuumPermeability, dipoleAngle).Joule);
+    }
+
+    private static void VerifyCircuitNetworks()
+    {
+        var resistance = Q.Resistance.FromOhm(10);
+        var otherResistance = Q.Resistance.FromOhm(15);
+        Close(25, resistance.InSeriesWith(otherResistance).Ohm);
+        Close(6, resistance.InParallelWith(otherResistance).Ohm);
+        Close(6, Q.ElectricPotential.FromVoltageDivider(
+            Q.ElectricPotential.FromVolt(10), resistance, otherResistance).Volt);
+
+        var capacitance = Q.Capacitance.FromFarad(0.02);
+        var otherCapacitance = Q.Capacitance.FromFarad(0.03);
+        Close(0.012, capacitance.InSeriesWith(otherCapacitance).Farad);
+        Close(0.05, capacitance.InParallelWith(otherCapacitance).Farad);
+        var inductance = Q.Inductance.FromHenry(2);
+        var otherInductance = Q.Inductance.FromHenry(3);
+        Close(5, inductance.InSeriesWith(otherInductance).Henry);
+        Close(1.2, inductance.InParallelWith(otherInductance).Henry);
+
+        var elapsed = Q.Time.FromMillisecond(200);
+        Close(12 - 10 / Math.E, Q.ElectricPotential.FromVolt(2).AfterRcStep(
+            Q.ElectricPotential.FromVolt(12), resistance, capacitance, elapsed).Volt);
+        Close(9 - 10 / Math.E, Q.ElectricCurrent.FromAmpere(-1).AfterRlStep(
+            Q.ElectricCurrent.FromAmpere(9), resistance, inductance, elapsed).Ampere);
+        Close(-1, Q.ElectricCurrent.FromCapacitorVoltageChange(
+            capacitance, Q.ElectricPotential.FromVolt(-10), elapsed).Ampere);
+        Close(-4, Q.ElectricPotential.FromInductorCurrentChange(
+            inductance, Q.ElectricCurrent.FromAmpere(-1), Q.Time.FromMillisecond(500)).Volt);
+
+        var frequency = Q.Frequency.FromHertz(5 / Math.PI);
+        var rmsCurrent = Q.ElectricCurrent.FromAmpere(3);
+        var acInductance = Q.Inductance.FromHenry(0.4);
+        var acCapacitance = Q.Capacitance.FromFarad(0.05);
+        Close(12, Q.ElectricPotential.FromSinusoidalInductor(rmsCurrent, acInductance, frequency).Volt);
+        Close(6, Q.ElectricPotential.FromSinusoidalCapacitor(rmsCurrent, acCapacitance, frequency).Volt);
+        Close(2, Q.ElectricCurrent.FromSeriesRlc(Q.ElectricPotential.FromVolt(2 * Math.Sqrt(13)),
+            Q.Resistance.FromOhm(3), acInductance, acCapacitance, frequency).Ampere);
     }
 
     private static void VerifyHeatTransfer()

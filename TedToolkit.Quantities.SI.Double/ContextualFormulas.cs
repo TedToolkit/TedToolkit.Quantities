@@ -312,6 +312,19 @@ public readonly partial struct Energy
     {
         return Value / heatInput.Value;
     }
+
+    /// <summary>Calculates potential energy of an electric dipole in a uniform field, relative to perpendicular orientation.</summary>
+    public static Energy FromElectricDipole(ElectricDipoleMoment dipoleMoment, ElectricFieldStrength field, PlaneAngle angle)
+    {
+        return (Energy)(-dipoleMoment.Value * field.Value * Math.Cos(angle.Radian));
+    }
+
+    /// <summary>Calculates potential energy of a magnetic dipole in a uniform field, relative to perpendicular orientation.</summary>
+    public static Energy FromMagneticDipole(
+        MagneticDipoleMoment dipoleMoment, MagneticFluxDensity field, Permeability vacuumPermeability, PlaneAngle angle)
+    {
+        return (Energy)(-(dipoleMoment.Value / vacuumPermeability.Value) * field.Value * Math.Cos(angle.Radian));
+    }
 }
 
 public readonly partial struct Force
@@ -408,12 +421,26 @@ public readonly partial struct Torque
     }
 
     /// <summary>Calculates the torque magnitude on a magnetic dipole in a uniform magnetic field.</summary>
-    /// <param name="dipoleMoment">The magnetic dipole moment magnitude.</param>
+    /// <param name="dipoleMoment">The QUDT magnetic dipole moment magnitude in weber metres.</param>
     /// <param name="field">The magnetic flux density magnitude.</param>
+    /// <param name="vacuumPermeability">The vacuum permeability used to recover the magnetic area moment.</param>
     /// <param name="angle">The angle between the dipole and the field, from zero to π radians.</param>
-    public static Torque FromMagneticDipole(MagneticDipoleMoment dipoleMoment, MagneticFluxDensity field, PlaneAngle angle)
+    public static Torque FromMagneticDipole(
+        MagneticDipoleMoment dipoleMoment, MagneticFluxDensity field, Permeability vacuumPermeability, PlaneAngle angle)
     {
-        return (Torque)(dipoleMoment.Value * field.Value * Math.Sin(angle.Radian));
+        return (Torque)((dipoleMoment.Value / vacuumPermeability.Value) * field.Value * Math.Sin(angle.Radian));
+    }
+}
+
+public readonly partial struct ForcePerLength
+{
+    /// <summary>Calculates force per unit length between long parallel conductors in a uniform linear medium.</summary>
+    /// <returns>The signed force per unit length, positive for currents in the same direction and attraction.</returns>
+    public static ForcePerLength FromParallelCurrents(
+        Permeability permeability, ElectricCurrent firstCurrent, ElectricCurrent secondCurrent, Length separation)
+    {
+        var field = MagneticFluxDensity.FromLongStraightWire(permeability, firstCurrent, separation);
+        return (ForcePerLength)(field.Value * secondCurrent.Value);
     }
 }
 
@@ -716,6 +743,13 @@ public readonly partial struct ElectricFieldStrength
         return (ElectricFieldStrength)(ElectricPotential.FromPointCharge(charge, permittivity, distance).Value / distance.Value);
     }
 
+    /// <summary>Calculates the signed radial field of an infinite uniform line charge in a homogeneous linear dielectric.</summary>
+    public static ElectricFieldStrength FromLineCharge(
+        ElectricChargeLineDensity lineCharge, Permittivity permittivity, Length distance)
+    {
+        return (ElectricFieldStrength)(lineCharge.Value / ((2d * Math.PI) * permittivity.Value * distance.Value));
+    }
+
     /// <summary>Calculates the average electric field component along a straight path.</summary>
     /// <param name="potentialChange">The final electric potential minus the initial electric potential.</param>
     /// <param name="distance">The length of the path.</param>
@@ -735,6 +769,64 @@ public readonly partial struct ElectricPotential
     public static ElectricPotential FromPointCharge(ElectricCharge charge, Permittivity permittivity, Length distance)
     {
         return (ElectricPotential)(charge.Value / (4d * Math.PI * permittivity.Value * distance.Value));
+    }
+
+    /// <summary>Calculates the voltage across the lower resistor of an unloaded two-resistor divider.</summary>
+    public static ElectricPotential FromVoltageDivider(
+        ElectricPotential supply, Resistance upperResistance, Resistance lowerResistance)
+    {
+        return supply * (lowerResistance.Value / upperResistance.InSeriesWith(lowerResistance).Value);
+    }
+
+    /// <summary>Calculates this capacitor voltage after a first-order RC step toward a constant final voltage.</summary>
+    public ElectricPotential AfterRcStep(ElectricPotential finalVoltage, Resistance resistance, Capacitance capacitance, Time elapsed)
+    {
+        var decay = Math.Exp(-elapsed.Value / (resistance * capacitance).Value);
+        return FromVolt(finalVoltage.Volt + (Volt - finalVoltage.Volt) * decay);
+    }
+
+    /// <summary>Calculates RMS voltage across an ideal capacitor from RMS current at a positive sinusoidal frequency.</summary>
+    public static ElectricPotential FromSinusoidalCapacitor(ElectricCurrent rmsCurrent, Capacitance capacitance, Frequency frequency)
+    {
+        var angularFrequency = AngularVelocity.FromFrequency(frequency).RadianPerSecond;
+        return FromVolt(rmsCurrent.Ampere / (angularFrequency * capacitance.Farad));
+    }
+
+    /// <summary>Calculates RMS voltage across an ideal inductor from RMS current at a positive sinusoidal frequency.</summary>
+    public static ElectricPotential FromSinusoidalInductor(ElectricCurrent rmsCurrent, Inductance inductance, Frequency frequency)
+    {
+        return FromVolt(rmsCurrent.Ampere * AngularVelocity.FromFrequency(frequency).RadianPerSecond * inductance.Henry);
+    }
+
+    /// <summary>Calculates average passive terminal voltage from the change of current through a linear ideal inductor.</summary>
+    public static ElectricPotential FromInductorCurrentChange(Inductance inductance, ElectricCurrent currentChange, Time elapsed)
+    {
+        return FromVolt(inductance.Henry * currentChange.Ampere / elapsed.Second);
+    }
+}
+
+public readonly partial struct ElectricCurrent
+{
+    /// <summary>Calculates this inductor current after a first-order RL step toward a constant final current.</summary>
+    public ElectricCurrent AfterRlStep(ElectricCurrent finalCurrent, Resistance resistance, Inductance inductance, Time elapsed)
+    {
+        var decay = Math.Exp(-elapsed.Value / (inductance / resistance).Value);
+        return FromAmpere(finalCurrent.Ampere + (Ampere - finalCurrent.Ampere) * decay);
+    }
+
+    /// <summary>Calculates the RMS current of a series RLC circuit in sinusoidal steady state.</summary>
+    public static ElectricCurrent FromSeriesRlc(
+        ElectricPotential rmsVoltage, Resistance resistance, Inductance inductance, Capacitance capacitance, Frequency frequency)
+    {
+        var angularFrequency = AngularVelocity.FromFrequency(frequency).RadianPerSecond;
+        var reactance = angularFrequency * inductance.Henry - 1d / (angularFrequency * capacitance.Farad);
+        return FromAmpere(rmsVoltage.Volt / Math.Sqrt(resistance.Ohm * resistance.Ohm + reactance * reactance));
+    }
+
+    /// <summary>Calculates average passive terminal current from the voltage change across a linear ideal capacitor.</summary>
+    public static ElectricCurrent FromCapacitorVoltageChange(Capacitance capacitance, ElectricPotential voltageChange, Time elapsed)
+    {
+        return (capacitance * voltageChange) / elapsed;
     }
 }
 
@@ -763,8 +855,36 @@ public readonly partial struct MagneticFluxDensity
     public static MagneticFluxDensity FromLongSolenoid(
         Permeability permeability, ElectricCurrent current, int turns, Length axialLength)
     {
-        var field = (AuxillaryMagneticField)(turns * current.Value / axialLength.Value);
-        return permeability * field;
+        return permeability * (MagnetomotiveForce.FromWinding(current, turns) / axialLength);
+    }
+
+    /// <summary>Calculates the signed tangential magnetic flux density outside a long straight current in a uniform linear medium.</summary>
+    public static MagneticFluxDensity FromLongStraightWire(Permeability permeability, ElectricCurrent current, Length distance)
+    {
+        return FromTesla(permeability.Value * current.Ampere / ((2d * Math.PI) * distance.Metre));
+    }
+}
+
+public readonly partial struct MagnetomotiveForce
+{
+    /// <summary>Calculates signed magnetomotive force from a winding's current and number of series turns.</summary>
+    public static MagnetomotiveForce FromWinding(ElectricCurrent current, int turns)
+    {
+        return (MagnetomotiveForce)(turns * current.Value);
+    }
+}
+
+public readonly partial struct MagneticDipoleMoment
+{
+    /// <summary>Calculates the signed QUDT magnetic dipole moment in weber metres of a planar current loop winding.</summary>
+    /// <param name="vacuumPermeability">Vacuum permeability, which scales the current-area moment to the QUDT quantity.</param>
+    /// <param name="current">Signed current with respect to the winding orientation.</param>
+    /// <param name="loopArea">The area enclosed by each planar turn.</param>
+    /// <param name="turns">The number of turns with the same orientation.</param>
+    public static MagneticDipoleMoment FromCurrentLoop(
+        Permeability vacuumPermeability, ElectricCurrent current, Area loopArea, int turns)
+    {
+        return (MagneticDipoleMoment)(vacuumPermeability.Value * turns * current.Value * loopArea.Value);
     }
 }
 
@@ -782,6 +902,20 @@ public readonly partial struct ElectromotiveForce
 
 public readonly partial struct Resistance
 {
+    /// <summary>Calculates effective resistance of two series resistors.</summary>
+    public Resistance InSeriesWith(Resistance other)
+    {
+        return FromOhm(Ohm + other.Ohm);
+    }
+
+    /// <summary>Calculates effective resistance of two positive parallel resistors.</summary>
+    public Resistance InParallelWith(Resistance other)
+    {
+        var smaller = Math.Min(Ohm, other.Ohm);
+        var larger = Math.Max(Ohm, other.Ohm);
+        return FromOhm(smaller / (1d + smaller / larger));
+    }
+
     /// <summary>Calculates the resistance along a uniform conductor.</summary>
     /// <param name="conductivity">The positive electrical conductivity of the conductor material.</param>
     /// <param name="length">The conductor length in the direction of current flow.</param>
@@ -795,6 +929,20 @@ public readonly partial struct Resistance
 
 public readonly partial struct Capacitance
 {
+    /// <summary>Calculates effective capacitance of two positive ideal capacitors in series.</summary>
+    public Capacitance InSeriesWith(Capacitance other)
+    {
+        var smaller = Math.Min(Farad, other.Farad);
+        var larger = Math.Max(Farad, other.Farad);
+        return FromFarad(smaller / (1d + smaller / larger));
+    }
+
+    /// <summary>Calculates effective capacitance of two ideal capacitors in parallel.</summary>
+    public Capacitance InParallelWith(Capacitance other)
+    {
+        return FromFarad(Farad + other.Farad);
+    }
+
     /// <summary>Calculates capacitance for parallel plates with a uniform dielectric.</summary>
     /// <param name="permittivity">The absolute permittivity of the dielectric between the plates.</param>
     /// <param name="overlap">The overlapping plate area.</param>
@@ -803,6 +951,29 @@ public readonly partial struct Capacitance
     public static Capacitance FromParallelPlates(Permittivity permittivity, Area overlap, Length separation)
     {
         return (Capacitance)(permittivity.Value * overlap.Value / separation.Value);
+    }
+}
+
+public readonly partial struct Inductance
+{
+    /// <summary>Calculates effective inductance of two series inductors with negligible mutual coupling.</summary>
+    public Inductance InSeriesWith(Inductance other)
+    {
+        return FromHenry(Henry + other.Henry);
+    }
+
+    /// <summary>Calculates effective inductance of two positive parallel inductors with negligible mutual coupling.</summary>
+    public Inductance InParallelWith(Inductance other)
+    {
+        var smaller = Math.Min(Henry, other.Henry);
+        var larger = Math.Max(Henry, other.Henry);
+        return FromHenry(smaller / (1d + smaller / larger));
+    }
+
+    /// <summary>Calculates self-inductance of a long uniform solenoid in a linear medium with negligible fringing.</summary>
+    public static Inductance FromLongSolenoid(Permeability permeability, Area crossSection, Length axialLength, int turns)
+    {
+        return FromHenry(permeability.Value * turns * turns * crossSection.Value / axialLength.Value);
     }
 }
 

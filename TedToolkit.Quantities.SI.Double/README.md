@@ -77,7 +77,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **197 physical formulas**. Swapped products, solved forms, and typed variants
+The inventory lists **220 physical formulas**. Swapped products, solved forms, and typed variants
 share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
 
@@ -207,13 +207,36 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| Rseries = R₁ + R₂ | `Resistance` | Ohmic resistors in series carry the same current. Supported methods include `Resistance.InSeriesWith`. | [OpenStax RC circuits][openstax-rc-circuits] |
+| 1/Rparallel = 1/R₁ + 1/R₂ | `Resistance` | Two positive ohmic resistances connected between the same nodes. Supported methods include `Resistance.InParallelWith`. | [OpenStax RC circuits][openstax-rc-circuits] |
+| 1/Cseries = 1/C₁ + 1/C₂ | `Capacitance` | Two positive ideal capacitors in series. Supported methods include `Capacitance.InSeriesWith`. | [OpenStax capacitance][openstax-capacitance] |
+| Cparallel = C₁ + C₂ | `Capacitance` | Two ideal capacitors connected across the same nodes. Supported methods include `Capacitance.InParallelWith`. | [OpenStax capacitance][openstax-capacitance] |
+| Lseries = L₁ + L₂ | `Inductance` | Linear series inductors with negligible mutual coupling. Supported methods include `Inductance.InSeriesWith`. | [MIT circuit energy storage][mit-inductors] |
+| 1/Lparallel = 1/L₁ + 1/L₂ | `Inductance` | Two positive linear inductors in parallel with negligible mutual coupling. Supported methods include `Inductance.InParallelWith`. | [MIT circuit energy storage][mit-inductors] |
+| V(t) = V∞ + (V₀ − V∞) exp(−t/(RC)) | `ElectricPotential` | Capacitor voltage after a first-order RC step, with constant final voltage, positive R and C, and nonnegative elapsed time. Supported methods include `ElectricPotential.AfterRcStep`. | [OpenStax RC circuits][openstax-rc-circuits] · [University of Oklahoma RC and RL transients][ou-rc-rl-step] |
+| I(t) = I∞ + (I₀ − I∞) exp(−tR/L) | `ElectricCurrent` | Inductor current after a first-order RL step, with constant final current, positive R and L, and nonnegative elapsed time. Supported methods include `ElectricCurrent.AfterRlStep`. | [OpenStax RL circuits][openstax-rl-circuits] · [University of Oklahoma RC and RL transients][ou-rc-rl-step] |
+| Vᵣₘₛ = Iᵣₘₛ / (ωC) | `ElectricPotential` | Ideal capacitor in sinusoidal steady state, with positive angular frequency ω = 2πf and positive capacitance. The output is an RMS magnitude. Supported methods include `ElectricPotential.FromSinusoidalCapacitor`. | [OpenStax AC power][openstax-ac-power] |
+| Vᵣₘₛ = IᵣₘₛωL | `ElectricPotential` | Ideal inductor in sinusoidal steady state. Input and output are RMS magnitudes. Supported methods include `ElectricPotential.FromSinusoidalInductor`. | [OpenStax AC power][openstax-ac-power] |
+| Iᵣₘₛ = Vᵣₘₛ / √(R² + (ωL − 1/(ωC))²) | `ElectricCurrent` | Linear series RLC circuit in sinusoidal steady state with positive R, L, C, and frequency. Supported methods include `ElectricCurrent.FromSeriesRlc`. | [OpenStax AC power][openstax-ac-power] |
+| Vout = Vin R₂ / (R₁ + R₂) | `ElectricPotential` | Unloaded ohmic divider. R₁ is the upper resistance and R₂ is the resistance across the output. Follows from Ohm's law and the series circuit current. Supported methods include `ElectricPotential.FromVoltageDivider`. | [OpenStax RC circuits][openstax-rc-circuits] · [OpenStax voltage divider][openstax-voltage-divider] |
+| L = μN²A / ℓ | `Inductance` | Long uniformly wound solenoid with uniform linear permeability, constant cross section, and negligible flux leakage and end effects. Supported methods include `Inductance.FromLongSolenoid`. | [OpenStax self-inductance][openstax-self-inductance] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
+| j = μ₀NIA | `MagneticDipoleMoment` | Identical planar turns with the same orientation. QUDT uses the moment j in Wb·m, related to the area moment m = NIA by j = μ₀m. Use signed current with the winding convention. Supported methods include `MagneticDipoleMoment.FromCurrentLoop`. | [OpenStax magnetic dipole torque][openstax-magnetic-dipole-torque] · [QUDT magnetic dipole moment][qudt-magnetic-dipole] |
+| Eᵣ = λq / (2πεr) | `ElectricFieldStrength` | Infinite uniform line charge in an unbounded homogeneous linear dielectric. Use positive radial distance and the signed line charge density. Supported methods include `ElectricFieldStrength.FromLineCharge`. | [OpenStax electric fields][openstax-electric-fields] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
+| Bφ = μI / (2πr) | `MagneticFluxDensity` | Long straight wire with steady signed current and a uniform linear medium. Use perpendicular distance outside the wire. Supported methods include `MagneticFluxDensity.FromLongStraightWire`. | [OpenStax thin straight wire][openstax-straight-wire] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
+| F/ℓ = μI₁I₂ / (2πd) | `ForcePerLength` | Long parallel conductors in a uniform linear medium, separated by distance d. Positive force denotes attraction of currents flowing in the same direction. Supported methods include `ForcePerLength.FromParallelCurrents`. | [OpenStax parallel currents][openstax-parallel-currents] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
+| ℱ = NI | `MagnetomotiveForce` | Winding with N series turns sharing the same signed current and orientation. Supported methods include `MagnetomotiveForce.FromWinding`. | [OpenStax Ampère's law][openstax-ampere] · [QUDT magnetomotive force][qudt-magnetomotive-force] |
+| ℱ = H∥ℓ | `AuxillaryMagneticField`, `Length`, `MagnetomotiveForce` | Constant tangential component of magnetic field strength along the path, or the average tangential component over the path. | [OpenStax Ampère's law][openstax-ampere] · [QUDT magnetomotive force][qudt-magnetomotive-force] |
+| U = −pE cos θ | `Energy` | Fixed electric dipole and uniform external field. Use dipole and field magnitudes and the angle between them. Energy is zero at perpendicular orientation. Supported methods include `Energy.FromElectricDipole`. | [OpenStax electric dipoles][openstax-electric-dipoles] |
+| U = −(j/μ₀)B cos θ | `Energy` | Fixed magnetic dipole and uniform external field. Use the QUDT moment j and vacuum permeability μ₀ to recover the area moment. Energy is zero at perpendicular orientation. Supported methods include `Energy.FromMagneticDipole`. | [OpenStax magnetic dipole torque][openstax-magnetic-dipole-torque] · [QUDT magnetic dipole moment][qudt-magnetic-dipole] |
+| V̄ = LΔI / Δt | `ElectricPotential` | Passive voltage across an ideal linear inductor, averaged over the interval. The current enters the positive terminal and its change is signed. Supported methods include `ElectricPotential.FromInductorCurrentChange`. | [MIT capacitors and inductors][mit-capacitors-inductors] |
+| Ī = CΔV / Δt | `ElectricCurrent` | Passive current into the positive terminal of an ideal linear capacitor, averaged over the interval. The terminal voltage change is signed. Supported methods include `ElectricCurrent.FromCapacitorVoltageChange`. | [MIT capacitors and inductors][mit-capacitors-inductors] |
 | Fᵣ = q₁q₂ / (4πεr²) | `Force` | Two point charges in an unbounded homogeneous, isotropic linear dielectric. The radial force is positive for repulsion. Supported methods include `Force.FromPointCharges`. | [OpenStax electric fields][openstax-electric-fields] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
 | Eᵣ = q / (4πεr²) | `ElectricFieldStrength` | Point charge in an unbounded homogeneous, isotropic linear dielectric. Positive field points radially outward. Supported methods include `ElectricFieldStrength.FromPointCharge`. | [OpenStax electric fields][openstax-electric-fields] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
 | V = q / (4πεr) | `ElectricPotential` | Point charge in an unbounded homogeneous, isotropic linear dielectric, with zero potential at infinity. Supported methods include `ElectricPotential.FromPointCharge`. | [OpenStax point-charge potential][openstax-point-charge-potential] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
 | P = I²R = V² / R | `Power` | Joule dissipation in a positive ohmic resistance. Use current through or voltage across the same resistor. Supported methods include `Power.FromResistiveHeating`. | [OpenStax electrical power][openstax-electrical-power] |
 | B = μNI / ℓ | `MagneticFluxDensity` | Axial field near the centre of a long, uniformly wound solenoid in a uniform linear medium. Use signed current relative to the winding orientation. Supported methods include `MagneticFluxDensity.FromLongSolenoid`. | [OpenStax solenoids][openstax-solenoids] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
 | τ = pE sin θ | `Torque` | Torque magnitude on an electric dipole in a uniform field. θ is the angle between dipole moment and field. Supported methods include `Torque.FromElectricDipole`. | [OpenStax electric dipoles][openstax-electric-dipoles] |
-| τ = mB sin θ | `Torque` | Torque magnitude on a magnetic dipole in a uniform field. θ is the angle between dipole moment and flux density. Supported methods include `Torque.FromMagneticDipole`. | [OpenStax magnetic dipole torque][openstax-magnetic-dipole-torque] |
+| τ = (j/μ₀)B sin θ | `Torque` | Torque magnitude on a magnetic dipole in a uniform field. θ is the angle between the dipole and flux density. The QUDT moment j in Wb·m is divided by vacuum permeability μ₀ to recover the magnetic area moment. Supported methods include `Torque.FromMagneticDipole`. | [OpenStax magnetic dipole torque][openstax-magnetic-dipole-torque] · [QUDT magnetic dipole moment][qudt-magnetic-dipole] |
 | Q = CV | `Capacitance`, `ElectricCharge`, `ElectricPotential` | Linear capacitor with the voltage across its terminals. | [OpenStax capacitance][openstax-capacitance] |
 | U = ½CV² | `Energy` | Energy stored in a linear capacitor. Supported methods include `Energy.FromCapacitor`. | [OpenStax capacitance][openstax-capacitance] |
 | ΔQ = ĪΔt | `ElectricCharge`, `ElectricCurrent`, `Time` | Use average electrical current through the same cross section and interval. | [OpenStax current and resistance][openstax-current-and-resistance] |
@@ -421,6 +444,15 @@ Update the corresponding row when changing a formula's coverage.
 - [Princeton thermal resistance notes, §§8.7–8.8][princeton-thermal-resistance]
 - [Michigan Tech lumped heat transfer][michigan-tech-lumped-heat]
 - [MIT heat and mass transfer dimensionless numbers][mit-transport-numbers]
+- [QUDT magnetic dipole moment][qudt-magnetic-dipole]
+- [QUDT magnetomotive force][qudt-magnetomotive-force]
+- [MIT circuit energy storage][mit-inductors]
+- [MIT capacitors and inductors][mit-capacitors-inductors]
+- [University of Oklahoma RC and RL transients][ou-rc-rl-step]
+- [OpenStax voltage divider][openstax-voltage-divider]
+- [OpenStax thin straight wire][openstax-straight-wire]
+- [OpenStax parallel currents][openstax-parallel-currents]
+- [OpenStax Ampère's law][openstax-ampere]
 
 [bipm-si-brochure]: https://www.bipm.org/en/publications/si-brochure
 [bipm-katal-resolution]: https://www.bipm.org/en/-/resolution-cgpm-21-12
@@ -523,3 +555,12 @@ Update the corresponding row when changing a formula's coverage.
 [princeton-thermal-resistance]: https://rosenreview.cbe.princeton.edu/sites/g/files/toruqf6461/files/documents/Transport_I_12_14_0.pdf
 [michigan-tech-lumped-heat]: https://pages.mtu.edu/~fmorriso/cm3120/lectures/2021_CM3120_module2_6blectureV.pdf
 [mit-transport-numbers]: https://ocw.mit.edu/courses/3-185-transport-phenomena-in-materials-engineering-fall-2003/a55c74dc21def01fc0054de35574d1e5_3_21.pdf
+[qudt-magnetic-dipole]: https://qudt.org/vocab/quantitykind/MagneticDipoleMoment
+[qudt-magnetomotive-force]: https://qudt.org/vocab/quantitykind/MagnetomotiveForce
+[mit-inductors]: https://circuits.mit.edu/_static/S23/handouts/lec07a/lecture07a.pdf
+[mit-capacitors-inductors]: https://ocw.mit.edu/courses/6-071j-introduction-to-electronics-signals-and-measurement-spring-2006/eac1995aca830cfd0de6bab60a8abf10_capactr_inductr.pdf
+[ou-rc-rl-step]: https://www.nhn.ou.edu/~bumm/ELAB/Lect_Notes/RC_RL_transients_v1_2_3.html
+[openstax-voltage-divider]: https://openstax.org/books/university-physics-volume-2/pages/10-additional-problems
+[openstax-straight-wire]: https://openstax.org/books/university-physics-volume-2/pages/12-2-magnetic-field-due-to-a-thin-straight-wire
+[openstax-parallel-currents]: https://openstax.org/books/university-physics-volume-2/pages/12-3-magnetic-force-between-two-parallel-currents
+[openstax-ampere]: https://openstax.org/books/university-physics-volume-2/pages/12-5-amperes-law

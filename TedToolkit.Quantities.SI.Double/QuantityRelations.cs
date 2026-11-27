@@ -414,6 +414,14 @@ public readonly partial struct MagneticFluxPerLength;
 [QuantityOperator<AuxillaryMagneticField, Permeability, MagneticFluxDensity>(Operator.MULTIPLY)]
 public readonly partial struct Permeability;
 
+[QuantityOperator<AuxillaryMagneticField, Length, MagnetomotiveForce>(Operator.MULTIPLY)]
+[QuantityOperator<Length, AuxillaryMagneticField, MagnetomotiveForce>(Operator.MULTIPLY)]
+public readonly partial struct AuxillaryMagneticField;
+
+[QuantityOperator<MagnetomotiveForce, Length, AuxillaryMagneticField>(Operator.DIVIDE)]
+[QuantityOperator<MagnetomotiveForce, AuxillaryMagneticField, Length>(Operator.DIVIDE)]
+public readonly partial struct MagnetomotiveForce;
+
 // Heat and temperature.
 
 // Use a constant heat capacity or its average over the temperature interval.
