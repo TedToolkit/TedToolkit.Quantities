@@ -19,7 +19,13 @@ public readonly partial struct Length;
 [QuantityOperator<Area, Length, Volume>(Operator.MULTIPLY)]
 [QuantityOperator<Length, Area, Volume>(Operator.MULTIPLY)]
 [QuantityOperator<Area, Length, Length>(Operator.DIVIDE)]
+[QuantityOperator<Area, Time, AreaPerTime>(Operator.DIVIDE)]
+[QuantityOperator<Area, AreaPerTime, Time>(Operator.DIVIDE)]
 public readonly partial struct Area;
+
+[QuantityOperator<AreaPerTime, Time, Area>(Operator.MULTIPLY)]
+[QuantityOperator<Time, AreaPerTime, Area>(Operator.MULTIPLY)]
+public readonly partial struct AreaPerTime;
 
 [QuantityOperator<Volume, Area, Length>(Operator.DIVIDE)]
 [QuantityOperator<Volume, Length, Area>(Operator.DIVIDE)]
@@ -30,10 +36,14 @@ public readonly partial struct Volume;
 [QuantityOperator<Time, LinearVelocity, Length>(Operator.MULTIPLY)]
 [QuantityOperator<LinearVelocity, Time, LinearAcceleration>(Operator.DIVIDE)]
 [QuantityOperator<LinearVelocity, LinearAcceleration, Time>(Operator.DIVIDE)]
+[QuantityOperator<LinearVelocity, Length, AngularVelocity>(Operator.DIVIDE)]
+[QuantityOperator<LinearVelocity, AngularVelocity, Length>(Operator.DIVIDE)]
 public readonly partial struct LinearVelocity;
 
 [QuantityOperator<LinearAcceleration, Time, LinearVelocity>(Operator.MULTIPLY)]
 [QuantityOperator<Time, LinearAcceleration, LinearVelocity>(Operator.MULTIPLY)]
+[QuantityOperator<LinearAcceleration, Length, AngularAcceleration>(Operator.DIVIDE)]
+[QuantityOperator<LinearAcceleration, AngularAcceleration, Length>(Operator.DIVIDE)]
 public readonly partial struct LinearAcceleration;
 
 [QuantityOperator<Mass, LinearAcceleration, Force>(Operator.MULTIPLY)]
@@ -112,6 +122,8 @@ public readonly partial struct ForcePerLength;
 [QuantityOperator<Time, AngularVelocity, PlaneAngle>(Operator.MULTIPLY)]
 [QuantityOperator<AngularVelocity, AngularAcceleration, Time>(Operator.DIVIDE)]
 [QuantityOperator<AngularVelocity, Time, AngularAcceleration>(Operator.DIVIDE)]
+[QuantityOperator<AngularVelocity, Length, LinearVelocity>(Operator.MULTIPLY)]
+[QuantityOperator<Length, AngularVelocity, LinearVelocity>(Operator.MULTIPLY)]
 public readonly partial struct AngularVelocity;
 
 [QuantityOperator<PlaneAngle, AngularVelocity, Time>(Operator.DIVIDE)]
@@ -120,6 +132,8 @@ public readonly partial struct PlaneAngle;
 
 [QuantityOperator<AngularAcceleration, Time, AngularVelocity>(Operator.MULTIPLY)]
 [QuantityOperator<Time, AngularAcceleration, AngularVelocity>(Operator.MULTIPLY)]
+[QuantityOperator<AngularAcceleration, Length, LinearAcceleration>(Operator.MULTIPLY)]
+[QuantityOperator<Length, AngularAcceleration, LinearAcceleration>(Operator.MULTIPLY)]
 public readonly partial struct AngularAcceleration;
 
 [QuantityOperator<MomentOfInertia, AngularAcceleration, Torque>(Operator.MULTIPLY)]
@@ -487,8 +501,14 @@ public readonly partial struct Power;
 
 // Amount of substance and radiation dose.
 
+[QuantityOperator<Density, MolarMass, AmountOfSubstancePerVolume>(Operator.DIVIDE)]
+[QuantityOperator<Density, AmountOfSubstancePerVolume, MolarMass>(Operator.DIVIDE)]
+public readonly partial struct Density;
+
 [QuantityOperator<MolarMass, AmountOfSubstance, Mass>(Operator.MULTIPLY)]
 [QuantityOperator<AmountOfSubstance, MolarMass, Mass>(Operator.MULTIPLY)]
+[QuantityOperator<MolarMass, AmountOfSubstancePerVolume, Density>(Operator.MULTIPLY)]
+[QuantityOperator<AmountOfSubstancePerVolume, MolarMass, Density>(Operator.MULTIPLY)]
 [QuantityOperator<MolarMass, Density, MolarVolume>(Operator.DIVIDE)]
 [QuantityOperator<MolarMass, MolarVolume, Density>(Operator.DIVIDE)]
 public readonly partial struct MolarMass;

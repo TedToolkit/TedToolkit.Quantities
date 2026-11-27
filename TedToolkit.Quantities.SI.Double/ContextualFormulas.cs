@@ -29,6 +29,12 @@ public readonly partial struct Frequency
     {
         return (Frequency)(waveSpeed.Value / wavelength.Value);
     }
+
+    /// <summary>Calculates the ordinary frequency of an ideal LC circuit with positive inductance and capacitance.</summary>
+    public static Frequency FromLcResonance(Inductance inductance, Capacitance capacitance)
+    {
+        return AngularVelocity.FromLcResonance(inductance, capacitance).ToFrequency();
+    }
 }
 
 public readonly partial struct AngularVelocity
@@ -46,6 +52,12 @@ public readonly partial struct AngularVelocity
     public Frequency ToFrequency()
     {
         return Frequency.FromHertz(RadianPerSecond / PlaneAngle.FromRevolution(1d).Radian);
+    }
+
+    /// <summary>Calculates the angular frequency of an ideal LC circuit with positive inductance and capacitance.</summary>
+    public static AngularVelocity FromLcResonance(Inductance inductance, Capacitance capacitance)
+    {
+        return FromRadianPerSecond(1d / Math.Sqrt(inductance.Henry * capacitance.Farad));
     }
 }
 
@@ -159,6 +171,53 @@ public readonly partial struct Energy
     {
         return (capacitance * voltage) * voltage * 0.5d;
     }
+
+    /// <summary>Calculates the elastic potential energy relative to equilibrium for a linear spring.</summary>
+    public static Energy FromSpringDisplacement(ForcePerLength stiffness, Length displacement)
+    {
+        return FromMechanicalWork(stiffness * displacement, displacement) * 0.5d;
+    }
+
+    /// <summary>Calculates the magnetic energy stored in a linear inductor at the given current.</summary>
+    public static Energy FromInductor(Inductance inductance, ElectricCurrent current)
+    {
+        return (Energy)(0.5d * MagneticFlux.LinkageFromInductor(inductance, current).Value * current.Value);
+    }
+}
+
+public readonly partial struct Force
+{
+    /// <summary>Calculates the signed restoring force of a linear spring for a displacement from equilibrium.</summary>
+    public static Force FromSpringDisplacement(ForcePerLength stiffness, Length displacement)
+    {
+        return -(stiffness * displacement);
+    }
+
+    /// <summary>Calculates the upward buoyant force in a fluid with uniform density and gravity over the displaced volume.</summary>
+    public static Force FromBuoyancy(Density fluidDensity, Volume displacedVolume, LinearAcceleration gravity)
+    {
+        return (fluidDensity * displacedVolume) * gravity;
+    }
+
+    /// <summary>Calculates the magnetic force magnitude on a moving charge.</summary>
+    /// <param name="charge">The signed electric charge.</param>
+    /// <param name="speed">The speed of the charge.</param>
+    /// <param name="perpendicularFluxDensity">The magnitude of the magnetic flux density component perpendicular to the velocity.</param>
+    public static Force FromMovingChargeInMagneticField(
+        ElectricCharge charge, LinearVelocity speed, MagneticFluxDensity perpendicularFluxDensity)
+    {
+        return (Force)(Math.Abs(charge.Value) * speed.Value * perpendicularFluxDensity.Value);
+    }
+
+    /// <summary>Calculates the magnetic force magnitude on a straight current-carrying segment in a uniform field.</summary>
+    /// <param name="current">The signed electric current.</param>
+    /// <param name="conductorLength">The length of the segment in the field.</param>
+    /// <param name="perpendicularFluxDensity">The magnitude of the magnetic flux density component perpendicular to the segment.</param>
+    public static Force FromCurrentInMagneticField(
+        ElectricCurrent current, Length conductorLength, MagneticFluxDensity perpendicularFluxDensity)
+    {
+        return (Force)(Math.Abs(current.Value) * conductorLength.Value * perpendicularFluxDensity.Value);
+    }
 }
 
 public readonly partial struct Torque
@@ -211,6 +270,23 @@ public readonly partial struct ForcePerArea
     {
         return hydraulicPower / flow;
     }
+
+    /// <summary>Calculates static pressure along a streamline in steady, incompressible, inviscid flow.</summary>
+    /// <param name="referencePressure">The static pressure at the reference point.</param>
+    /// <param name="density">The constant fluid density.</param>
+    /// <param name="referenceSpeed">The fluid speed at the reference point.</param>
+    /// <param name="speed">The fluid speed at the result point on the same streamline.</param>
+    /// <param name="gravity">The gravitational acceleration magnitude.</param>
+    /// <param name="elevationChange">The elevation at the result point minus the reference elevation.</param>
+    public static ForcePerArea FromBernoulli(
+        ForcePerArea referencePressure, Density density, LinearVelocity referenceSpeed, LinearVelocity speed,
+        LinearAcceleration gravity, Length elevationChange)
+    {
+        var dynamicPressureChange = FromDynamicPressure(density, referenceSpeed).Value
+                                    - FromDynamicPressure(density, speed).Value;
+        return (ForcePerArea)(referencePressure.Value + dynamicPressureChange
+                             - density.Value * gravity.Value * elevationChange.Value);
+    }
 }
 
 public readonly partial struct LinearVelocity
@@ -219,6 +295,14 @@ public readonly partial struct LinearVelocity
     public static LinearVelocity FromWavelength(Length wavelength, Frequency frequency)
     {
         return (LinearVelocity)(wavelength.Value * frequency.Value);
+    }
+
+    /// <summary>Calculates the speed of a Newtonian circular orbit about a spherical central body.</summary>
+    /// <param name="gravitationalParameter">The central body's gravitational parameter.</param>
+    /// <param name="radius">The positive distance from the body's centre to the orbit.</param>
+    public static LinearVelocity FromCircularOrbit(StandardGravitationalParameter gravitationalParameter, Length radius)
+    {
+        return FromMetrePerSecond(Math.Sqrt(gravitationalParameter.Value / radius.Metre));
     }
 
     /// <summary>Calculates the Reynolds number for a flow using kinematic viscosity.</summary>
@@ -238,6 +322,48 @@ public readonly partial struct LinearVelocity
     public double ReynoldsNumber(Length characteristicLength, Density density, DynamicViscosity dynamicViscosity)
     {
         return ReynoldsNumber(characteristicLength, dynamicViscosity / density);
+    }
+}
+
+public readonly partial struct LinearAcceleration
+{
+    /// <summary>Calculates the inward acceleration magnitude of circular motion from speed and positive radius.</summary>
+    public static LinearAcceleration FromCentripetalMotion(LinearVelocity tangentialSpeed, Length radius)
+    {
+        return (LinearAcceleration)(tangentialSpeed.Value * tangentialSpeed.Value / radius.Value);
+    }
+
+    /// <summary>Calculates the inward acceleration magnitude of circular motion from angular velocity and positive radius.</summary>
+    public static LinearAcceleration FromCentripetalMotion(AngularVelocity angularVelocity, Length radius)
+    {
+        return (LinearAcceleration)(angularVelocity.Value * angularVelocity.Value * radius.Value);
+    }
+
+    /// <summary>Calculates the acceleration magnitude due to the gravity of a spherical body at an external point.</summary>
+    /// <param name="gravitationalParameter">The body's gravitational parameter.</param>
+    /// <param name="distance">The positive distance from the centre of the body.</param>
+    public static LinearAcceleration FromGravitationalParameter(
+        StandardGravitationalParameter gravitationalParameter, Length distance)
+    {
+        return (LinearAcceleration)(gravitationalParameter.Value / (distance.Value * distance.Value));
+    }
+}
+
+public readonly partial struct Time
+{
+    /// <summary>Calculates the period of a Newtonian circular orbit about a spherical central body.</summary>
+    public static Time FromCircularOrbit(StandardGravitationalParameter gravitationalParameter, Length radius)
+    {
+        return Length.CircumferenceFromRadius(radius) / LinearVelocity.FromCircularOrbit(gravitationalParameter, radius);
+    }
+}
+
+public readonly partial struct MagneticFlux
+{
+    /// <summary>Calculates the signed self-flux linkage summed over all turns of a linear inductor.</summary>
+    public static MagneticFlux LinkageFromInductor(Inductance inductance, ElectricCurrent current)
+    {
+        return (MagneticFlux)(inductance.Value * current.Value);
     }
 }
 
@@ -433,6 +559,17 @@ public readonly partial struct Illuminance
     public static Illuminance FromNormalPointSource(LuminousIntensity intensity, Length distance)
     {
         return FromLux(intensity.Candela / (distance * distance).SquareMetre);
+    }
+}
+
+public readonly partial struct PowerPerArea
+{
+    /// <summary>Calculates irradiance for normal incidence from a point source at a positive distance.</summary>
+    /// <param name="intensity">The radiant intensity in the direction of the receiving surface.</param>
+    /// <param name="distance">The distance from the point source to the surface.</param>
+    public static PowerPerArea FromNormalPointSource(RadiantIntensity intensity, Length distance)
+    {
+        return (PowerPerArea)(intensity.Value / (distance * distance).Value);
     }
 }
 

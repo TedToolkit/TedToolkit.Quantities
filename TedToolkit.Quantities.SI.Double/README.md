@@ -28,6 +28,11 @@ Use `DifferenceInKelvins` to get a signed temperature interval as a `double`. Us
 to apply that interval to an absolute temperature.
 [BIPM SI Brochure][bipm-si-brochure]
 
+The QUDT SI catalog contains two dimension-one quantity kinds, `PlaneAngle` and `SolidAngle`,
+with coherent units radian and steradian respectively. General ratios such as `Length / Length`
+and the Reynolds number use `double`. A temperature interval or gradient also uses `double`,
+with its unit stated in the method name, as in `DifferenceInKelvins` and `GradientInKelvinsPerMetre`.
+
 The cross-quantity operators are declared with the existing `QuantityOperator` attribute in
 [QuantityRelations.cs](QuantityRelations.cs). The operators use scalar values,
 including aligned, normal, projected, and averaged components as specified in the coverage list.
@@ -72,7 +77,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **113 physical formulas**. Swapped products, solved forms, and typed variants
+The inventory lists **131 physical formulas**. Swapped products, solved forms, and typed variants
 share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
 
@@ -80,6 +85,7 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| Ā′ = ΔA / Δt | `Area`, `AreaPerTime`, `Time` | Signed change in area over the same interval. Use a constant or interval-averaged rate when recovering the change. | [QUDT area per time][qudt-area-per-time] |
 | A = πr² | `Area` | Area enclosed by a circle with positive radius. Supported methods include `Area.FromCircle`. | [OpenStax area][openstax-area] |
 | C = 2πr | `Length` | Circumference of a circle with positive radius. Supported methods include `Length.CircumferenceFromRadius`. | [OpenStax geometry][openstax-geometry] |
 | d = 2r | `Length` | The radius and diameter refer to the same circle. Supported methods include `Length.DiameterFromRadius`, `Length.RadiusFromDiameter`. | [OpenStax geometry][openstax-geometry] |
@@ -95,6 +101,14 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| vₜ = rω | `AngularVelocity`, `Length`, `LinearVelocity` | Fixed-axis rotation. Radius is the perpendicular distance to the axis, and velocity is the signed tangential component. | [OpenStax circular motion][openstax-circular-motion] |
+| aₜ = rα | `AngularAcceleration`, `Length`, `LinearAcceleration` | Fixed-axis rotation at a fixed radius. Acceleration is the signed tangential component. | [OpenStax circular motion][openstax-circular-motion] |
+| a꜀ = vₜ² / r = rω² | `LinearAcceleration` | Circular motion at positive radius. Returns the inward acceleration magnitude. Supported methods include `LinearAcceleration.FromCentripetalMotion`. | [OpenStax circular motion][openstax-circular-motion] |
+| Fₛ = −kx | `Force` | Linear spring with positive stiffness. Displacement is signed from equilibrium. Supported methods include `Force.FromSpringDisplacement`. | [OpenStax periodic motion][openstax-periodic-motion] |
+| Uₛ = ½kx² | `Energy` | Elastic potential energy relative to equilibrium in the linear range of the spring. Supported methods include `Energy.FromSpringDisplacement`. | [OpenStax periodic motion][openstax-periodic-motion] |
+| g = μ / r² | `LinearAcceleration` | Newtonian gravitational acceleration magnitude outside a spherical body. Use the body's gravitational parameter μ = GM and distance from its centre. Supported methods include `LinearAcceleration.FromGravitationalParameter`. | [OpenStax gravitation][openstax-gravitation] |
+| v = √(μ / r) | `LinearVelocity` | Newtonian circular orbit with negligible orbiting mass. Use the central body's gravitational parameter and the orbital radius from its centre. Supported methods include `LinearVelocity.FromCircularOrbit`. | [OpenStax satellite orbits][openstax-satellite-orbits] |
+| T = 2πr / v = 2π√(r³ / μ) | `Time` | Newtonian circular orbit with negligible orbiting mass. Use the central body's gravitational parameter and the orbital radius from its centre. Supported methods include `Time.FromCircularOrbit`. | [OpenStax satellite orbits][openstax-satellite-orbits] |
 | Δθ = ω̄Δt | `AngularVelocity`, `PlaneAngle`, `Time` | Fixed axis and angular velocity averaged over the interval. | [OpenStax rotational variables][openstax-rotational-variables] |
 | ω = 2πf | `AngularVelocity`, `Frequency` | One revolution per cycle. Supported methods include `AngularVelocity.FromFrequency`, `AngularVelocity.ToFrequency`. | [OpenStax rotational variables][openstax-rotational-variables] |
 | L = Iω | `AngularMomentum`, `AngularVelocity`, `MomentOfInertia` | Rigid-body angular momentum component about the specified axis. | [OpenStax angular momentum][openstax-angular-momentum] |
@@ -131,6 +145,8 @@ Update the corresponding row when changing a formula's coverage.
 | jₘ = ṁ / A = Δ(m/A) / Δt | `Area`, `MassPerArea`, `MassPerAreaTime`, `MassPerTime`, `Time` | Use the same oriented surface and interval for the areal mass flow rate jₘ. | [NASA mass flow][nasa-mass-flow] · [QUDT quantity definitions][qudt-quantity-definitions] |
 | ρ = m / V, vₛ = V / m = 1 / ρ | `Density`, `Mass`, `SpecificVolume`, `Volume`, `double` | Density and specific volume describe the same material at the same state. | [OpenStax fluid mechanics][openstax-fluid-mechanics] · [QUDT quantity definitions][qudt-quantity-definitions] |
 | q = ½ρv² | `ForcePerArea` | Use local density and speed. Supported methods include `ForcePerArea.FromDynamicPressure`. | [NASA dynamic pressure][nasa-dynamic-pressure] |
+| p₂ = p₁ + ½ρ(v₁² − v₂²) − ρg(z₂ − z₁) | `ForcePerArea` | Steady, incompressible, inviscid flow along a streamline. Use one pressure datum and signed elevation change from point 1 to point 2. Supported methods include `ForcePerArea.FromBernoulli`. | [OpenStax Bernoulli equation][openstax-bernoulli] |
+| Fᵦ = ρgVdisplaced | `Force` | Upward buoyant force magnitude with uniform fluid density and gravity over the displaced volume. Supported methods include `Force.FromBuoyancy`. | [OpenStax buoyancy][openstax-buoyancy] |
 | P = ΔpQᵥ | `ForcePerArea`, `Power`, `VolumePerTime` | Pressure difference and flow refer to the same path. Use pressures referenced to the same datum. Supported methods include `ForcePerArea.FromHydraulicPower`. | [OpenStax fluid mechanics][openstax-fluid-mechanics] · [OpenStax pressure–volume work][openstax-pressure-volume-work] |
 | Δp = ρgh | `ForcePerArea` | Static fluid with uniform density and constant gravity over the vertical depth below the reference level. Supported methods include `ForcePerArea.FromHydrostaticHead`. | [OpenStax fluids, density, and pressure][openstax-fluids-density-and-pressure] |
 | ṁ = ρQᵥ | `Density`, `MassPerTime`, `VolumePerTime` | Use consistent density and volumetric flow at the same section. | [NASA mass flow][nasa-mass-flow] |
@@ -170,6 +186,11 @@ Update the corresponding row when changing a formula's coverage.
 | ΔU = QΔV | `ElectricCharge`, `ElectricPotential`, `Energy` | Change in electrical potential energy for charge moved through a fixed potential difference. | [OpenStax electric potential][openstax-electric-potential] |
 | τ = RC | `Capacitance`, `Resistance`, `Time` | Time constant of the equivalent first-order RC circuit. | [OpenStax RC circuits][openstax-rc-circuits] |
 | τ = L / R | `Inductance`, `Resistance`, `Time` | Time constant of the equivalent first-order RL circuit. | [OpenStax RL circuits][openstax-rl-circuits] |
+| Λ = LI | `MagneticFlux` | Signed self-flux linkage summed over all turns of a linear inductor. Supported methods include `MagneticFlux.LinkageFromInductor`. | [OpenStax self-inductance][openstax-self-inductance] |
+| U = ½LI² | `Energy` | Magnetic energy stored in a linear inductor of fixed inductance. Supported methods include `Energy.FromInductor`. | [OpenStax magnetic energy][openstax-magnetic-energy] |
+| ω₀ = 1 / √(LC), f₀ = ω₀ / (2π) | `AngularVelocity`, `Frequency` | Ideal lossless LC circuit with positive inductance and capacitance. Supported methods include `AngularVelocity.FromLcResonance` and `Frequency.FromLcResonance`. | [OpenStax LC oscillations][openstax-lc-oscillations] |
+| F = abs(q)vB⊥ | `Force` | Magnetic force magnitude. B⊥ is the magnitude of the field component perpendicular to particle velocity. Supported methods include `Force.FromMovingChargeInMagneticField`. | [OpenStax magnetic forces][openstax-magnetic-forces] |
+| F = abs(I)ℓB⊥ | `Force` | Magnetic force magnitude on a straight conductor segment in a uniform field. Use the active length and field component perpendicular to the segment. Supported methods include `Force.FromCurrentInMagneticField`. | [OpenStax magnetic forces][openstax-magnetic-forces] |
 | Q = σqA | `Area`, `ElectricCharge`, `ElectricChargePerArea` | Uniform or mean surface charge density σq over the area. | [OpenStax electric fields][openstax-electric-fields] · [QUDT quantity definitions][qudt-quantity-definitions] |
 | R = ℓ / (σA) | `Resistance` | Uniform conductor with constant cross section and positive electrical conductivity σ. Supported methods include `Resistance.FromUniformConductor`. | [OpenStax resistivity][openstax-resistivity] |
 | Q = ρqV | `ElectricCharge`, `ElectricChargeVolumeDensity`, `Volume` | Uniform or mean volume charge density ρq over the region. | [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
@@ -207,6 +228,7 @@ Update the corresponding row when changing a formula's coverage.
 | Qᵥ = Φ̄ᵥΔt | `LuminousEnergy`, `LuminousFlux`, `Time` | Constant or time-averaged luminous flux over the interval. | [NIST photometric quantities][nist-photometric-quantities] |
 | Φᵥ = IᵥΩ | `LuminousFlux`, `LuminousIntensity`, `SolidAngle` | Use mean luminous intensity over the solid angle. | [NIST photometric quantities][nist-photometric-quantities] · [NIST photometric equations 2–6][nist-photometric-equations-2-6] |
 | Eᵥ = Iᵥ / r² | `Illuminance` | Point source and receiving surface perpendicular to the incident ray. Supported methods include `Illuminance.FromNormalPointSource`. | [NIST photometric equations 2–6][nist-photometric-equations-2-6] |
+| Eₑ = Iₑ / r² | `PowerPerArea` | Point source, positive distance and normal incidence. Use the radiant intensity in the direction of the receiver. From the CIE definitions and dΩ = dA / r² at normal incidence. Supported methods include `PowerPerArea.FromNormalPointSource`. | [CIE irradiance][cie-irradiance] · [CIE radiant intensity][cie-radiant-intensity] · [NIST photometric equations 2–6][nist-photometric-equations-2-6] |
 | Φₑ = IₑΩ | `Power`, `RadiantIntensity`, `SolidAngle` | Use mean radiant intensity over the solid angle. | [NIST photometric quantities][nist-photometric-quantities] |
 
 ### Chemistry and radiation dose
@@ -222,12 +244,15 @@ Update the corresponding row when changing a formula's coverage.
 | Cₘ = C / n | `AmountOfSubstance`, `HeatCapacity`, `MolarHeatCapacity` | Use heat capacity for the same amount and thermodynamic process. | [IUPAC molar quantities][iupac-molar-quantities] · [OpenStax heat and conduction][openstax-heat-and-conduction] |
 | M = m / n | `AmountOfSubstance`, `Mass`, `MolarMass` | Mass and amount describe the same substance or specified entities. | [IUPAC molar mass][iupac-molar-mass] |
 | M = ρVₘ | `Density`, `MolarMass`, `MolarVolume` | Density and molar volume describe the same material at the same state. | [IUPAC molar quantities][iupac-molar-quantities] · [QUDT molar volume][qudt-molar-volume] |
+| c = ρ / M | `AmountOfSubstancePerVolume`, `Density`, `MolarMass` | For a pure substance, use the density and molar mass of the same substance at the same state. Follows from ρ = m / V and M = m / n. | [IUPAC amount concentration][iupac-amount-concentration] · [IUPAC molar mass][iupac-molar-mass] · [OpenStax fluids, density, and pressure][openstax-fluids-density-and-pressure] |
 | Vₘ = V / n | `AmountOfSubstance`, `MolarVolume`, `Volume` | Volume and amount refer to the same sample at the same state. | [IUPAC molar quantities][iupac-molar-quantities] |
 
 ## Formula references
 
 - [BIPM SI Brochure][bipm-si-brochure]
 - [BIPM katal resolution][bipm-katal-resolution]
+- [CIE irradiance][cie-irradiance]
+- [CIE radiant intensity][cie-radiant-intensity]
 - [IAEA dosimetry][iaea-dosimetry]
 - [IUPAC amount concentration][iupac-amount-concentration]
 - [IUPAC molar mass][iupac-molar-mass]
@@ -248,7 +273,10 @@ Update the corresponding row when changing a formula's coverage.
 - [OpenStax RL circuits][openstax-rl-circuits]
 - [OpenStax angular momentum][openstax-angular-momentum]
 - [OpenStax area][openstax-area]
+- [OpenStax Bernoulli equation][openstax-bernoulli]
+- [OpenStax buoyancy][openstax-buoyancy]
 - [OpenStax capacitance][openstax-capacitance]
+- [OpenStax circular motion][openstax-circular-motion]
 - [OpenStax current and resistance][openstax-current-and-resistance]
 - [OpenStax electric fields][openstax-electric-fields]
 - [OpenStax electric potential][openstax-electric-potential]
@@ -256,17 +284,24 @@ Update the corresponding row when changing a formula's coverage.
 - [OpenStax fluid mechanics][openstax-fluid-mechanics]
 - [OpenStax fluids, density, and pressure][openstax-fluids-density-and-pressure]
 - [OpenStax geometry][openstax-geometry]
+- [OpenStax gravitation][openstax-gravitation]
 - [OpenStax heat and conduction][openstax-heat-and-conduction]
 - [OpenStax impulse and momentum][openstax-impulse-and-momentum]
 - [OpenStax kinematics][openstax-kinematics]
+- [OpenStax LC oscillations][openstax-lc-oscillations]
+- [OpenStax magnetic energy][openstax-magnetic-energy]
+- [OpenStax magnetic forces][openstax-magnetic-forces]
 - [OpenStax periodic motion][openstax-periodic-motion]
 - [OpenStax pressure–volume work][openstax-pressure-volume-work]
 - [OpenStax prism volume][openstax-prism-volume]
 - [OpenStax resistivity][openstax-resistivity]
 - [OpenStax rotational variables][openstax-rotational-variables]
+- [OpenStax satellite orbits][openstax-satellite-orbits]
+- [OpenStax self-inductance][openstax-self-inductance]
 - [OpenStax thermal expansion][openstax-thermal-expansion]
 - [OpenStax waves][openstax-waves]
 - [OpenStax work and energy][openstax-work-and-energy]
+- [QUDT area per time][qudt-area-per-time]
 - [QUDT heat flow rate][qudt-heat-flow-rate]
 - [QUDT heat-transfer coefficient][qudt-heat-transfer-coefficient]
 - [QUDT molar volume][qudt-molar-volume]
@@ -276,6 +311,8 @@ Update the corresponding row when changing a formula's coverage.
 
 [bipm-si-brochure]: https://www.bipm.org/en/publications/si-brochure
 [bipm-katal-resolution]: https://www.bipm.org/en/-/resolution-cgpm-21-12
+[cie-irradiance]: https://cie.co.at/eilvterm/17-21-053
+[cie-radiant-intensity]: https://cie.co.at/eilvterm/17-21-044
 [iaea-dosimetry]: https://www-pub.iaea.org/MTCD/Publications/PDF/te_1540_web.pdf
 [iupac-amount-concentration]: https://goldbook.iupac.org/terms/view/A00295
 [iupac-molar-mass]: https://goldbook.iupac.org/terms/view/12214
@@ -296,7 +333,10 @@ Update the corresponding row when changing a formula's coverage.
 [openstax-rl-circuits]: https://openstax.org/books/university-physics-volume-2/pages/14-key-equations
 [openstax-angular-momentum]: https://openstax.org/books/university-physics-volume-1/pages/11-summary
 [openstax-area]: https://openstax.org/books/contemporary-mathematics/pages/10-6-area
+[openstax-bernoulli]: https://openstax.org/books/university-physics-volume-1/pages/14-6-bernoullis-equation
+[openstax-buoyancy]: https://openstax.org/books/university-physics-volume-1/pages/14-4-archimedes-principle-and-buoyancy
 [openstax-capacitance]: https://openstax.org/books/university-physics-volume-2/pages/8-key-equations
+[openstax-circular-motion]: https://openstax.org/books/physics/pages/6-key-equations
 [openstax-current-and-resistance]: https://openstax.org/books/university-physics-volume-2/pages/9-key-equations
 [openstax-electric-fields]: https://openstax.org/books/university-physics-volume-2/pages/5-key-equations
 [openstax-electric-potential]: https://openstax.org/books/university-physics-volume-2/pages/7-key-equations
@@ -304,17 +344,24 @@ Update the corresponding row when changing a formula's coverage.
 [openstax-fluid-mechanics]: https://openstax.org/books/university-physics-volume-1/pages/14-key-equations
 [openstax-fluids-density-and-pressure]: https://openstax.org/books/university-physics-volume-1/pages/14-1-fluids-density-and-pressure
 [openstax-geometry]: https://openstax.org/books/contemporary-mathematics/pages/10-4-polygons-perimeter-and-circumference
+[openstax-gravitation]: https://openstax.org/books/university-physics-volume-1/pages/13-2-gravitation-near-earths-surface
 [openstax-heat-and-conduction]: https://openstax.org/books/university-physics-volume-2/pages/1-key-equations
 [openstax-impulse-and-momentum]: https://openstax.org/books/university-physics-volume-1/pages/9-key-equations
 [openstax-kinematics]: https://openstax.org/books/university-physics-volume-1/pages/3-key-equations
+[openstax-lc-oscillations]: https://openstax.org/books/university-physics-volume-2/pages/14-5-oscillations-in-an-lc-circuit
+[openstax-magnetic-energy]: https://openstax.org/books/university-physics-volume-2/pages/14-3-energy-in-a-magnetic-field
+[openstax-magnetic-forces]: https://openstax.org/books/university-physics-volume-2/pages/11-key-equations
 [openstax-periodic-motion]: https://openstax.org/books/university-physics-volume-1/pages/15-key-equations
 [openstax-pressure-volume-work]: https://openstax.org/books/university-physics-volume-2/pages/3-key-equations
 [openstax-prism-volume]: https://openstax.org/books/contemporary-mathematics/pages/10-7-volume-and-surface-area
 [openstax-resistivity]: https://openstax.org/books/university-physics-volume-2/pages/9-3-resistivity-and-resistance
 [openstax-rotational-variables]: https://openstax.org/books/university-physics-volume-1/pages/10-1-rotational-variables
+[openstax-satellite-orbits]: https://openstax.org/books/university-physics-volume-1/pages/13-4-satellite-orbits-and-energy
+[openstax-self-inductance]: https://openstax.org/books/university-physics-volume-2/pages/14-2-self-inductance-and-inductors
 [openstax-thermal-expansion]: https://openstax.org/books/university-physics-volume-2/pages/1-3-thermal-expansion
 [openstax-waves]: https://openstax.org/books/university-physics-volume-1/pages/16-1-traveling-waves
 [openstax-work-and-energy]: https://openstax.org/books/university-physics-volume-1/pages/7-key-equations
+[qudt-area-per-time]: https://qudt.org/vocab/quantitykind/AreaPerTime
 [qudt-heat-flow-rate]: https://qudt.org/vocab/quantitykind/HeatFlowRate
 [qudt-heat-transfer-coefficient]: https://qudt.org/vocab/quantitykind/CoefficientOfHeatTransfer
 [qudt-molar-volume]: https://qudt.org/vocab/quantitykind/MolarVolume

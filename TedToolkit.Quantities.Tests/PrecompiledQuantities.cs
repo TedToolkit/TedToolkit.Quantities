@@ -19,6 +19,10 @@ internal static class PrecompiledQuantities
         Q.Area area = Q.Length.FromMillimetre(2000) * Q.Length.FromMetre(3);
         Q.Volume volume = area * Q.Length.FromMetre(4);
         Close(6, area.SquareMetre);
+        Q.AreaPerTime areaRate = area / elapsed;
+        Close(0.2, areaRate.Value);
+        Close(6, (areaRate * elapsed).SquareMetre);
+        Close(30, (area / areaRate).Second);
         Close(24, volume.CubicMetre);
         Close(4, (volume / area).Metre);
         Close(2, distance / Q.Length.FromMillimetre(300));
@@ -122,6 +126,26 @@ internal static class PrecompiledQuantities
         Close(torque.Value, (shaftPower / angularVelocity).Value);
         Close(12, (angularVelocity * Q.Time.FromSecond(1)).Radian);
 
+        Q.LinearVelocity tangentialVelocity = radius * angularVelocity;
+        Q.LinearAcceleration tangentialAcceleration = angularAcceleration * radius;
+        Close(24, tangentialVelocity.MetrePerSecond);
+        Close(6, tangentialAcceleration.Value);
+        Close(12, (tangentialVelocity / radius).RadianPerSecond);
+        Close(2, (tangentialAcceleration / angularAcceleration).Metre);
+        Close(288, Q.LinearAcceleration.FromCentripetalMotion(tangentialVelocity, radius).Value);
+        Close(288, Q.LinearAcceleration.FromCentripetalMotion(angularVelocity, radius).Value);
+
+        var stiffness = (Q.ForcePerLength)200d;
+        var displacement = Q.Length.FromMillimetre(40);
+        Close(-8, Q.Force.FromSpringDisplacement(stiffness, displacement).Newton);
+        Close(0.16, Q.Energy.FromSpringDisplacement(stiffness, displacement).Joule);
+
+        var gravitationalParameter = (Q.StandardGravitationalParameter)400d;
+        var orbitRadius = Q.Length.FromMillimetre(4000);
+        Close(10, Q.LinearVelocity.FromCircularOrbit(gravitationalParameter, orbitRadius).MetrePerSecond);
+        Close(0.8 * Math.PI, Q.Time.FromCircularOrbit(gravitationalParameter, orbitRadius).Second);
+        Close(25, Q.LinearAcceleration.FromGravitationalParameter(gravitationalParameter, orbitRadius).Value);
+
         var translatingMass = Q.Mass.FromKilogram(2);
         var speed = Q.LinearVelocity.FromMetrePerSecond(3);
         Close(9, Q.Energy.FromTranslationalKineticEnergy(translatingMass, speed).Joule);
@@ -151,7 +175,12 @@ internal static class PrecompiledQuantities
         Close(0.06, hydraulicPower.Watt);
         Close(40, Q.ForcePerArea.FromHydraulicPower(hydraulicPower, volumeFlow).Pascal);
         Close(0.12, Q.Energy.FromConstantPressureWork(pressure, Q.Volume.FromLitre(3)).Joule);
-        Close(10000, Q.ForcePerArea.FromHydrostaticHead(density, (Q.LinearAcceleration)10d, radius).Pascal);
+        var gravity = (Q.LinearAcceleration)10d;
+        Close(10000, Q.ForcePerArea.FromHydrostaticHead(density, gravity, radius).Pascal);
+        Close(15, Q.Force.FromBuoyancy(density, Q.Volume.FromLitre(3), gravity).Newton);
+        Close(100250, Q.ForcePerArea.FromBernoulli(
+            Q.ForcePerArea.FromPascal(100000), density, speed, Q.LinearVelocity.FromMetrePerSecond(2),
+            gravity, Q.Length.FromMillimetre(200)).Pascal);
         Close(density.Value, (1d / (1d / density)).Value);
         Close(1, density * (1d / density));
         Close(2250, Q.ForcePerArea.FromDynamicPressure(density, speed).Pascal);
@@ -185,8 +214,9 @@ internal static class PrecompiledQuantities
         Close(2, (flux / Q.Area.FromSquareMetre(0.5)).Tesla);
 
         var capacitance = (Q.Capacitance)0.005d;
+        var inductance = Q.Inductance.FromHenry(2);
         Q.Time rcTimeConstant = resistance * capacitance;
-        Q.Time rlTimeConstant = Q.Inductance.FromHenry(2) / resistance;
+        Q.Time rlTimeConstant = inductance / resistance;
         Close(0.05, rcTimeConstant.Second);
         Close(0.2, rlTimeConstant.Second);
         Close(2, (rlTimeConstant * resistance).Henry);
@@ -194,6 +224,17 @@ internal static class PrecompiledQuantities
             (Q.Permittivity)2d, Q.Area.FromSquareMetre(0.5), Q.Length.FromMillimetre(250));
         Close(4, plates.Value);
         Close(8, Q.Energy.FromCapacitor(plates, Q.ElectricPotential.FromVolt(2)).Joule);
+
+        var reverseCurrent = Q.ElectricCurrent.FromAmpere(-3);
+        Close(-6, Q.MagneticFlux.LinkageFromInductor(inductance, reverseCurrent).Weber);
+        Close(9, Q.Energy.FromInductor(inductance, reverseCurrent).Joule);
+        Close(10, Q.AngularVelocity.FromLcResonance(inductance, capacitance).RadianPerSecond);
+        Close(5 / Math.PI, Q.Frequency.FromLcResonance(inductance, capacitance).Hertz);
+        var transverseField = Q.MagneticFluxDensity.FromTesla(0.5);
+        Close(3, Q.Force.FromMovingChargeInMagneticField(
+            (Q.ElectricCharge)(-2d), Q.LinearVelocity.FromMetrePerSecond(3), transverseField).Newton);
+        Close(0.375, Q.Force.FromCurrentInMagneticField(
+            reverseCurrent, Q.Length.FromMillimetre(250), transverseField).Newton);
     }
 
     private static void VerifyHeatTransfer()
@@ -242,6 +283,8 @@ internal static class PrecompiledQuantities
         Close(30, illuminance.Lux);
         Close(5, Q.Illuminance.FromNormalPointSource(
             Q.LuminousIntensity.FromCandela(20), Q.Length.FromMetre(2)).Lux);
+        Close(5, Q.PowerPerArea.FromNormalPointSource(
+            (Q.RadiantIntensity)20d, Q.Length.FromMillimetre(2000)).Value);
 
         var amount = Q.AmountOfSubstance.FromMole(3);
         Q.Mass mass = (Q.MolarMass)0.028d * amount;
@@ -249,7 +292,13 @@ internal static class PrecompiledQuantities
         Close(0.084, mass.Kilogram);
         Close(1500, concentration.Value);
         Close(3, (concentration * Q.Volume.FromLitre(2)).Mole);
-        Q.MolarVolume molarVolume = (Q.MolarMass)0.028d / (Q.Density)1.25d;
+        var molarMass = (Q.MolarMass)0.028d;
+        var density = (Q.Density)1.25d;
+        Q.AmountOfSubstancePerVolume pureSubstanceConcentration = density / molarMass;
+        Close(1.25 / 0.028, pureSubstanceConcentration.Value);
+        Close(1.25, (pureSubstanceConcentration * molarMass).Value);
+        Close(0.028, (density / pureSubstanceConcentration).Value);
+        Q.MolarVolume molarVolume = molarMass / density;
         Close(0.0224, molarVolume.Value);
 
         Q.AbsorbedDose dose = (Q.AbsorbedDoseRate)0.4d * Q.Time.FromSecond(5);
