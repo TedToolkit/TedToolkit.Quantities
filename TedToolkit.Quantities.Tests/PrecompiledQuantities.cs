@@ -111,6 +111,12 @@ internal static class PrecompiledQuantities
         Close(200, Q.Length.DiameterFromRadius(circleRadius).Millimetre);
         Close(0.2 * Math.PI, Q.Length.CircumferenceFromRadius(circleRadius).Metre);
         Close(0.01 * Math.PI, Q.Area.FromCircle(circleRadius).SquareMetre);
+        var sphereRadius = Q.Length.FromMillimetre(500);
+        Close(Math.PI, Q.Area.FromSphere(sphereRadius).SquareMetre);
+        Close(Math.PI / 6, Q.Volume.FromSphere(sphereRadius).CubicMetre);
+        var solidAngle = Q.SolidAngle.FromSphericalPatch(Q.Area.FromSquareMetre(0.5), sphereRadius);
+        Close(2, solidAngle.Steradian);
+        Close(0.5, solidAngle.ToSphericalPatchArea(sphereRadius).SquareMetre);
 
         var wavelength = Q.Length.FromMillimetre(500);
         Q.LinearVelocity waveSpeed = Q.LinearVelocity.FromWavelength(wavelength, frequency);
@@ -148,6 +154,11 @@ internal static class PrecompiledQuantities
 
         var translatingMass = Q.Mass.FromKilogram(2);
         var speed = Q.LinearVelocity.FromMetrePerSecond(3);
+        Close(8, Q.MomentOfInertia.FromPointMass(translatingMass, radius).Value);
+        Close(0.2 * Math.PI, Q.Time.FromMassSpring(translatingMass, stiffness).Second);
+        Close(-200, Q.Energy.FromGravitationalPotential(gravitationalParameter, translatingMass, orbitRadius).Joule);
+        Close(10 * Math.Sqrt(2), Q.LinearVelocity.EscapeSpeed(gravitationalParameter, orbitRadius).MetrePerSecond);
+        Close(-2, Q.Length.FromConstantAcceleration(-speed, (Q.LinearAcceleration)2d, Q.Time.FromSecond(2)).Metre);
         Close(9, Q.Energy.FromTranslationalKineticEnergy(translatingMass, speed).Joule);
         Close(144, Q.Energy.FromRotationalKineticEnergy((Q.MomentOfInertia)2d, angularVelocity).Joule);
         var resistingForce = Q.Force.FromNewton(-5);
@@ -160,6 +171,14 @@ internal static class PrecompiledQuantities
         Close(-5, (impulse / impulseDuration).Newton);
 
         var density = Q.Mass.FromKilogram(2) / Q.Volume.FromLitre(4);
+        var section = Q.Area.FromSquareMetre(0.25);
+        var thickness = Q.Length.FromMillimetre(4);
+        Q.MassPerLength linearDensity = section * density;
+        Q.MassPerArea arealDensity = thickness * density;
+        Close(125, linearDensity.Value);
+        Close(2, arealDensity.Value);
+        Close(500, (linearDensity / section).Value);
+        Close(4, (arealDensity / density).Millimetre);
         var volumeFlow = Q.Volume.FromLitre(3) / Q.Time.FromSecond(2);
         Q.MassPerTime massFlow = density * volumeFlow;
         Close(0.75, massFlow.Value);
@@ -176,6 +195,7 @@ internal static class PrecompiledQuantities
         Close(40, Q.ForcePerArea.FromHydraulicPower(hydraulicPower, volumeFlow).Pascal);
         Close(0.12, Q.Energy.FromConstantPressureWork(pressure, Q.Volume.FromLitre(3)).Joule);
         var gravity = (Q.LinearAcceleration)10d;
+        Close(2 * Math.PI * Math.Sqrt(0.2), Q.Time.FromSimplePendulum(radius, gravity).Second);
         Close(10000, Q.ForcePerArea.FromHydrostaticHead(density, gravity, radius).Pascal);
         Close(15, Q.Force.FromBuoyancy(density, Q.Volume.FromLitre(3), gravity).Newton);
         Close(100250, Q.ForcePerArea.FromBernoulli(
@@ -188,6 +208,11 @@ internal static class PrecompiledQuantities
         var reynolds = speed.ReynoldsNumber(radius, kinematicViscosity);
         Close(1500000, reynolds);
         Close(reynolds, speed.ReynoldsNumber(radius, density, kinematicViscosity * density));
+        Close(-0.4, Q.Stress.FromNewtonianShear(kinematicViscosity * density,
+            Q.LinearVelocity.FromMetrePerSecond(-0.4), Q.Length.FromMillimetre(2)).Value);
+        Close(Math.PI * 2.5e-5, Q.VolumePerTime.FromLaminarPipeFlow(
+            Q.ForcePerArea.FromPascal(100), (Q.DynamicViscosity)0.01d,
+            Q.Length.FromMillimetre(10), Q.Length.FromMillimetre(500)).Value);
     }
 
     private static void VerifyElectromagnetism()
@@ -198,6 +223,8 @@ internal static class PrecompiledQuantities
         Q.Power power = voltage * current;
         Close(40, voltage.Volt);
         Close(160, power.Watt);
+        Close(160, Q.Power.FromResistiveHeating(current, resistance).Watt);
+        Close(160, Q.Power.FromResistiveHeating(-voltage, resistance).Watt);
         Close(10, (voltage / current).Ohm);
         Close(4, (power / voltage).Ampere);
         Close(1, Q.Resistance.FromUniformConductor(
@@ -235,10 +262,30 @@ internal static class PrecompiledQuantities
             (Q.ElectricCharge)(-2d), Q.LinearVelocity.FromMetrePerSecond(3), transverseField).Newton);
         Close(0.375, Q.Force.FromCurrentInMagneticField(
             reverseCurrent, Q.Length.FromMillimetre(250), transverseField).Newton);
+        Close(-0.03, Q.MagneticFluxDensity.FromLongSolenoid((Q.Permeability)1e-4d, reverseCurrent, 200, path).Tesla);
+
+        var permittivity = (Q.Permittivity)(1 / (4 * Math.PI));
+        var sourceCharge = (Q.ElectricCharge)(-16d);
+        Close(-8, Q.ElectricPotential.FromPointCharge(sourceCharge, permittivity, path).Volt);
+        Close(-4, Q.ElectricFieldStrength.FromPointCharge(sourceCharge, permittivity, path).Value);
+        Close(-12, Q.Force.FromPointCharges(sourceCharge, (Q.ElectricCharge)3d, permittivity, path).Newton);
+
+        var dipoleAngle = Q.PlaneAngle.FromRadian(Math.PI / 6);
+        Close(5, Q.Torque.FromElectricDipole((Q.ElectricDipoleMoment)2d, (Q.ElectricFieldStrength)5d, dipoleAngle).Value);
+        Close(1.5, Q.Torque.FromMagneticDipole((Q.MagneticDipoleMoment)6d, transverseField, dipoleAngle).Value);
     }
 
     private static void VerifyHeatTransfer()
     {
+        var warm = Q.ThermodynamicTemperature.FromKelvin(300);
+        var cool = Q.ThermodynamicTemperature.FromKelvin(200);
+        var radiationCoefficient = (Q.PowerPerAreaQuarticTemperature)2e-8d;
+        Close(65, Q.HeatFlowRatePerArea.FromThermalRadiation(radiationCoefficient, 0.5, warm, cool).Value);
+        Close(-65, Q.HeatFlowRatePerArea.FromThermalRadiation(radiationCoefficient, 0.5, cool, warm).Value);
+        var gasPressure = Q.ForcePerArea.FromPascal(100000).AfterIdealGasStateChange(
+            Q.Volume.FromLitre(4), warm, Q.Volume.FromLitre(1), warm.AddKelvins(300));
+        Close(800000, gasPressure.Pascal);
+
         var room = Q.ThermodynamicTemperature.FromKelvin(290);
         var heated = Q.ThermodynamicTemperature.FromKelvin(310);
         double temperatureRise = heated.DifferenceInKelvins(room);
@@ -277,6 +324,9 @@ internal static class PrecompiledQuantities
 
     private static void VerifyLightChemistryAndDose()
     {
+        var initialActivity = (Q.Activity)120d;
+        Close(30, initialActivity.AfterDecay(Q.Time.FromSecond(120), Q.Time.FromMillisecond(60000)).Value);
+
         Q.LuminousFlux light = Q.LuminousIntensity.FromCandela(20) * Q.SolidAngle.FromSteradian(3);
         Q.Illuminance illuminance = light / Q.Area.FromSquareMetre(2);
         Close(60, light.Lumen);

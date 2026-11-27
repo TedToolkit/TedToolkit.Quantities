@@ -81,6 +81,21 @@ public readonly partial struct PlaneAngle
     }
 }
 
+public readonly partial struct SolidAngle
+{
+    /// <summary>Calculates the solid angle subtended at the centre by a patch on a sphere of positive radius.</summary>
+    public static SolidAngle FromSphericalPatch(Area patchArea, Length radius)
+    {
+        return FromSteradian(patchArea.Value / (radius * radius).Value);
+    }
+
+    /// <summary>Calculates the area cut out by this solid angle on a sphere of positive radius.</summary>
+    public Area ToSphericalPatchArea(Length radius)
+    {
+        return (radius * radius) * Steradian;
+    }
+}
+
 public readonly partial struct Length
 {
     /// <summary>Calculates a circle's radius from its diameter.</summary>
@@ -112,6 +127,12 @@ public readonly partial struct Length
     {
         return (Length)(waveSpeed.Value / frequency.Value);
     }
+
+    /// <summary>Calculates signed displacement from initial velocity and constant acceleration along the same axis.</summary>
+    public static Length FromConstantAcceleration(LinearVelocity initialVelocity, LinearAcceleration acceleration, Time elapsed)
+    {
+        return (Length)((initialVelocity.Value + 0.5d * acceleration.Value * elapsed.Value) * elapsed.Value);
+    }
 }
 
 public readonly partial struct Area
@@ -122,6 +143,30 @@ public readonly partial struct Area
     public static Area FromCircle(Length radius)
     {
         return (Area)(Math.PI * radius.Value * radius.Value);
+    }
+
+    /// <summary>Calculates the surface area of a sphere of positive radius.</summary>
+    public static Area FromSphere(Length radius)
+    {
+        return 4d * FromCircle(radius);
+    }
+}
+
+public readonly partial struct Volume
+{
+    /// <summary>Calculates the volume enclosed by a sphere of positive radius.</summary>
+    public static Volume FromSphere(Length radius)
+    {
+        return Area.FromSphere(radius) * (radius / 3d);
+    }
+}
+
+public readonly partial struct MomentOfInertia
+{
+    /// <summary>Calculates a point mass's moment of inertia about an axis at the given perpendicular distance.</summary>
+    public static MomentOfInertia FromPointMass(Mass mass, Length perpendicularDistance)
+    {
+        return (MomentOfInertia)(mass.Value * (perpendicularDistance * perpendicularDistance).Value);
     }
 }
 
@@ -183,6 +228,16 @@ public readonly partial struct Energy
     {
         return (Energy)(0.5d * MagneticFlux.LinkageFromInductor(inductance, current).Value * current.Value);
     }
+
+    /// <summary>Calculates gravitational potential energy outside a spherical body, with zero energy at infinity.</summary>
+    /// <param name="gravitationalParameter">The central body's gravitational parameter.</param>
+    /// <param name="mass">The mass of the other body.</param>
+    /// <param name="distance">The positive distance between the centres.</param>
+    public static Energy FromGravitationalPotential(
+        StandardGravitationalParameter gravitationalParameter, Mass mass, Length distance)
+    {
+        return (Energy)(-(gravitationalParameter.Value / distance.Value) * mass.Value);
+    }
 }
 
 public readonly partial struct Force
@@ -218,6 +273,14 @@ public readonly partial struct Force
     {
         return (Force)(Math.Abs(current.Value) * conductorLength.Value * perpendicularFluxDensity.Value);
     }
+
+    /// <summary>Calculates the radial Coulomb force on a point charge in a homogeneous, isotropic medium.</summary>
+    /// <returns>The signed radial force, positive for repulsion.</returns>
+    public static Force FromPointCharges(
+        ElectricCharge sourceCharge, ElectricCharge testCharge, Permittivity permittivity, Length separation)
+    {
+        return ElectricFieldStrength.FromPointCharge(sourceCharge, permittivity, separation) * testCharge;
+    }
 }
 
 public readonly partial struct Torque
@@ -229,6 +292,24 @@ public readonly partial struct Torque
     public static Torque FromPerpendicularLeverArm(Force force, Length perpendicularLeverArm)
     {
         return (Torque)(force.Value * perpendicularLeverArm.Value);
+    }
+
+    /// <summary>Calculates the torque magnitude on an electric dipole in a uniform electric field.</summary>
+    /// <param name="dipoleMoment">The electric dipole moment magnitude.</param>
+    /// <param name="field">The electric field magnitude.</param>
+    /// <param name="angle">The angle between the dipole and the field, from zero to π radians.</param>
+    public static Torque FromElectricDipole(ElectricDipoleMoment dipoleMoment, ElectricFieldStrength field, PlaneAngle angle)
+    {
+        return (Torque)(dipoleMoment.Value * field.Value * Math.Sin(angle.Radian));
+    }
+
+    /// <summary>Calculates the torque magnitude on a magnetic dipole in a uniform magnetic field.</summary>
+    /// <param name="dipoleMoment">The magnetic dipole moment magnitude.</param>
+    /// <param name="field">The magnetic flux density magnitude.</param>
+    /// <param name="angle">The angle between the dipole and the field, from zero to π radians.</param>
+    public static Torque FromMagneticDipole(MagneticDipoleMoment dipoleMoment, MagneticFluxDensity field, PlaneAngle angle)
+    {
+        return (Torque)(dipoleMoment.Value * field.Value * Math.Sin(angle.Radian));
     }
 }
 
@@ -287,6 +368,44 @@ public readonly partial struct ForcePerArea
         return (ForcePerArea)(referencePressure.Value + dynamicPressureChange
                              - density.Value * gravity.Value * elevationChange.Value);
     }
+
+    /// <summary>Calculates the new absolute pressure of a fixed amount of ideal gas.</summary>
+    /// <remarks>This pressure, both volumes, and both absolute temperatures must be positive.</remarks>
+    public ForcePerArea AfterIdealGasStateChange(
+        Volume initialVolume, ThermodynamicTemperature initialTemperature,
+        Volume finalVolume, ThermodynamicTemperature finalTemperature)
+    {
+        return this * ((initialVolume.Value / finalVolume.Value) * (finalTemperature.Kelvin / initialTemperature.Kelvin));
+    }
+}
+
+public readonly partial struct VolumePerTime
+{
+    /// <summary>Calculates Hagen–Poiseuille flow through a straight, rigid, horizontal circular pipe.</summary>
+    /// <remarks>Applies to steady, fully developed, laminar flow of an incompressible Newtonian fluid with no wall slip.</remarks>
+    /// <param name="pressureDrop">The inlet pressure minus the outlet pressure.</param>
+    /// <param name="viscosity">The positive dynamic viscosity.</param>
+    /// <param name="radius">The positive internal pipe radius.</param>
+    /// <param name="pipeLength">The positive length over which the pressure drop is measured.</param>
+    public static VolumePerTime FromLaminarPipeFlow(
+        ForcePerArea pressureDrop, DynamicViscosity viscosity, Length radius, Length pipeLength)
+    {
+        var radiusSquared = (radius * radius).Value;
+        return (VolumePerTime)(Math.PI * radiusSquared * radiusSquared * pressureDrop.Value
+                               / (8d * viscosity.Value * pipeLength.Value));
+    }
+}
+
+public readonly partial struct Stress
+{
+    /// <summary>Calculates signed Newtonian shear stress for a linear velocity profile.</summary>
+    /// <param name="viscosity">The dynamic viscosity of the fluid.</param>
+    /// <param name="velocityDifference">The signed difference of the velocity component parallel to the layers.</param>
+    /// <param name="separation">The positive distance between the layers, perpendicular to them.</param>
+    public static Stress FromNewtonianShear(DynamicViscosity viscosity, LinearVelocity velocityDifference, Length separation)
+    {
+        return (Stress)(viscosity.Value * (velocityDifference.Value / separation.Value));
+    }
 }
 
 public readonly partial struct LinearVelocity
@@ -303,6 +422,12 @@ public readonly partial struct LinearVelocity
     public static LinearVelocity FromCircularOrbit(StandardGravitationalParameter gravitationalParameter, Length radius)
     {
         return FromMetrePerSecond(Math.Sqrt(gravitationalParameter.Value / radius.Metre));
+    }
+
+    /// <summary>Calculates Newtonian escape speed at a given positive radius outside a spherical body.</summary>
+    public static LinearVelocity EscapeSpeed(StandardGravitationalParameter gravitationalParameter, Length radius)
+    {
+        return Math.Sqrt(2d) * FromCircularOrbit(gravitationalParameter, radius);
     }
 
     /// <summary>Calculates the Reynolds number for a flow using kinematic viscosity.</summary>
@@ -356,6 +481,20 @@ public readonly partial struct Time
     {
         return Length.CircumferenceFromRadius(radius) / LinearVelocity.FromCircularOrbit(gravitationalParameter, radius);
     }
+
+    /// <summary>Calculates the period of a positive mass on an undamped, massless spring with positive stiffness.</summary>
+    public static Time FromMassSpring(Mass mass, ForcePerLength stiffness)
+    {
+        return FromSecond((2d * Math.PI) * Math.Sqrt(mass.Value / stiffness.Value));
+    }
+
+    /// <summary>Calculates the small-angle period of a simple pendulum in uniform gravity.</summary>
+    /// <param name="length">The positive distance from the pivot to the point mass.</param>
+    /// <param name="gravity">The positive magnitude of gravitational acceleration.</param>
+    public static Time FromSimplePendulum(Length length, LinearAcceleration gravity)
+    {
+        return FromSecond((2d * Math.PI) * Math.Sqrt(length.Value / gravity.Value));
+    }
 }
 
 public readonly partial struct MagneticFlux
@@ -369,6 +508,13 @@ public readonly partial struct MagneticFlux
 
 public readonly partial struct ElectricFieldStrength
 {
+    /// <summary>Calculates the signed radial electric field of a point charge in a homogeneous, isotropic medium.</summary>
+    /// <returns>The radial field component, positive outward from the source charge.</returns>
+    public static ElectricFieldStrength FromPointCharge(ElectricCharge charge, Permittivity permittivity, Length distance)
+    {
+        return (ElectricFieldStrength)(ElectricPotential.FromPointCharge(charge, permittivity, distance).Value / distance.Value);
+    }
+
     /// <summary>Calculates the average electric field component along a straight path.</summary>
     /// <param name="potentialChange">The final electric potential minus the initial electric potential.</param>
     /// <param name="distance">The length of the path.</param>
@@ -376,6 +522,48 @@ public readonly partial struct ElectricFieldStrength
     public static ElectricFieldStrength FromPotentialChange(ElectricPotential potentialChange, Length distance)
     {
         return -(potentialChange / distance);
+    }
+}
+
+public readonly partial struct ElectricPotential
+{
+    /// <summary>Calculates the potential of a point charge in a homogeneous, isotropic medium, relative to infinity.</summary>
+    /// <param name="charge">The signed source charge.</param>
+    /// <param name="permittivity">The medium's positive absolute permittivity.</param>
+    /// <param name="distance">The positive distance to the charge.</param>
+    public static ElectricPotential FromPointCharge(ElectricCharge charge, Permittivity permittivity, Length distance)
+    {
+        return (ElectricPotential)(charge.Value / (4d * Math.PI * permittivity.Value * distance.Value));
+    }
+}
+
+public readonly partial struct Power
+{
+    /// <summary>Calculates Joule heating from the current through a positive ohmic resistance.</summary>
+    public static Power FromResistiveHeating(ElectricCurrent current, Resistance resistance)
+    {
+        return (resistance * current) * current;
+    }
+
+    /// <summary>Calculates Joule heating from the voltage across a positive ohmic resistance.</summary>
+    public static Power FromResistiveHeating(ElectricPotential voltage, Resistance resistance)
+    {
+        return voltage * (voltage / resistance);
+    }
+}
+
+public readonly partial struct MagneticFluxDensity
+{
+    /// <summary>Calculates the signed axial flux density near the centre of a long, uniformly wound solenoid.</summary>
+    /// <param name="permeability">The uniform absolute permeability of the linear medium.</param>
+    /// <param name="current">The signed winding current, with positive direction given by the winding orientation.</param>
+    /// <param name="turns">The number of turns.</param>
+    /// <param name="axialLength">The positive length of the winding, large compared with its diameter.</param>
+    public static MagneticFluxDensity FromLongSolenoid(
+        Permeability permeability, ElectricCurrent current, int turns, Length axialLength)
+    {
+        var field = (AuxillaryMagneticField)(turns * current.Value / axialLength.Value);
+        return permeability * field;
     }
 }
 
@@ -537,6 +725,22 @@ public readonly partial struct VolumeThermalExpansion
 
 public readonly partial struct HeatFlowRatePerArea
 {
+    /// <summary>Calculates net outward thermal radiation per unit area from a grey surface to large isothermal surroundings.</summary>
+    /// <param name="stefanBoltzmannConstant">The Stefan–Boltzmann constant as a quantity in power per area per kelvin to the fourth power.</param>
+    /// <param name="emissivity">The surface emissivity, a ratio from zero to one.</param>
+    /// <param name="surfaceTemperature">The absolute surface temperature.</param>
+    /// <param name="surroundingsTemperature">The absolute temperature of the surrounding black enclosure.</param>
+    public static HeatFlowRatePerArea FromThermalRadiation(
+        PowerPerAreaQuarticTemperature stefanBoltzmannConstant, double emissivity,
+        ThermodynamicTemperature surfaceTemperature, ThermodynamicTemperature surroundingsTemperature)
+    {
+        var surface = surfaceTemperature.Kelvin;
+        var surroundings = surroundingsTemperature.Kelvin;
+        var fourthPowerDifference = (surface - surroundings) * (surface + surroundings)
+                                    * (surface * surface + surroundings * surroundings);
+        return (HeatFlowRatePerArea)(emissivity * stefanBoltzmannConstant.Value * fourthPowerDifference);
+    }
+
     /// <summary>Calculates the conductive heat-flux component along an axis using Fourier's law.</summary>
     /// <param name="conductivity">The scalar thermal conductivity of the material.</param>
     /// <param name="start">The absolute temperature at the start of the interval.</param>
@@ -582,5 +786,15 @@ public readonly partial struct AbsorbedDose
     public static AbsorbedDose FromDepositedEnergy(Energy depositedEnergy, Mass mass)
     {
         return (AbsorbedDose)(depositedEnergy / mass).Value;
+    }
+}
+
+public readonly partial struct Activity
+{
+    /// <summary>Calculates the remaining activity of a single radionuclide after radioactive decay.</summary>
+    /// <remarks>The half-life must be positive, elapsed time must be nonnegative, and the nuclide is neither replenished nor removed by other processes.</remarks>
+    public Activity AfterDecay(Time elapsed, Time halfLife)
+    {
+        return this * Math.Pow(0.5d, elapsed.Value / halfLife.Value);
     }
 }

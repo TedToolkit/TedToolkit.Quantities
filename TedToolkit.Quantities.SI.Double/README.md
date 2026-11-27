@@ -77,7 +77,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **131 physical formulas**. Swapped products, solved forms, and typed variants
+The inventory lists **154 physical formulas**. Swapped products, solved forms, and typed variants
 share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
 
@@ -85,6 +85,9 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| A = 4πr² | `Area` | Total surface area of a sphere with positive radius. Supported methods include `Area.FromSphere`. | [OpenStax sphere geometry][openstax-sphere-geometry] |
+| V = 4πr³ / 3 | `Volume` | Volume enclosed by a sphere with positive radius. Supported methods include `Volume.FromSphere`. | [OpenStax sphere geometry][openstax-sphere-geometry] |
+| Ω = A / r² | `Area`, `SolidAngle` | The patch lies on a sphere centred at the point where the solid angle is measured. Use the sphere's positive radius. Supported methods include `SolidAngle.FromSphericalPatch` and `SolidAngle.ToSphericalPatchArea`. | [NIST SI units][nist-si-units] |
 | Ā′ = ΔA / Δt | `Area`, `AreaPerTime`, `Time` | Signed change in area over the same interval. Use a constant or interval-averaged rate when recovering the change. | [QUDT area per time][qudt-area-per-time] |
 | A = πr² | `Area` | Area enclosed by a circle with positive radius. Supported methods include `Area.FromCircle`. | [OpenStax area][openstax-area] |
 | C = 2πr | `Length` | Circumference of a circle with positive radius. Supported methods include `Length.CircumferenceFromRadius`. | [OpenStax geometry][openstax-geometry] |
@@ -101,6 +104,12 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| I = mr² | `MomentOfInertia` | Point mass at perpendicular distance r from the axis. Supported methods include `MomentOfInertia.FromPointMass`. | [OpenStax moments of inertia][openstax-moments-of-inertia] |
+| T = 2π√(m / k) | `Time` | Positive mass and stiffness in an undamped, linear, massless-spring system. Supported methods include `Time.FromMassSpring`. | [OpenStax periodic motion][openstax-periodic-motion] |
+| T = 2π√(ℓ / g) | `Time` | Small-angle, undamped simple pendulum of positive length in uniform gravity. Supported methods include `Time.FromSimplePendulum`. | [OpenStax pendulums][openstax-pendulums] |
+| U = −μm / r | `Energy` | Newtonian potential energy outside a spherical body, with zero energy at infinity. Use centre-to-centre distance r and the central body's gravitational parameter μ = GM. Supported methods include `Energy.FromGravitationalPotential`. | [OpenStax gravitational potential and escape][openstax-gravitational-potential] |
+| vₑ = √(2μ / r) | `LinearVelocity` | Newtonian escape speed from radius r outside an isolated spherical body. Neglect the escaping body's mass. Supported methods include `LinearVelocity.EscapeSpeed`. | [OpenStax gravitational potential and escape][openstax-gravitational-potential] |
+| Δx = v₀Δt + ½aΔt² | `Length` | Constant signed acceleration and initial velocity along the displacement axis. Use a nonnegative elapsed time. Supported methods include `Length.FromConstantAcceleration`. | [OpenStax kinematics][openstax-kinematics] |
 | vₜ = rω | `AngularVelocity`, `Length`, `LinearVelocity` | Fixed-axis rotation. Radius is the perpendicular distance to the axis, and velocity is the signed tangential component. | [OpenStax circular motion][openstax-circular-motion] |
 | aₜ = rα | `AngularAcceleration`, `Length`, `LinearAcceleration` | Fixed-axis rotation at a fixed radius. Acceleration is the signed tangential component. | [OpenStax circular motion][openstax-circular-motion] |
 | a꜀ = vₜ² / r = rω² | `LinearAcceleration` | Circular motion at positive radius. Returns the inward acceleration magnitude. Supported methods include `LinearAcceleration.FromCentripetalMotion`. | [OpenStax circular motion][openstax-circular-motion] |
@@ -142,6 +151,10 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| λₘ = ρA | `Area`, `Density`, `MassPerLength` | Use cross-sectional area and the mean mass density over that section. Follows from m = ρV and V = Aℓ for a uniform section. | [OpenStax fluids, density, and pressure][openstax-fluids-density-and-pressure] · [QUDT quantity definitions][qudt-quantity-definitions] |
+| ρₐ = ρℓ | `Density`, `Length`, `MassPerArea` | Use uniform thickness perpendicular to the surface and mean mass density through the thickness. Follows from m = ρV and V = Aℓ. | [OpenStax fluids, density, and pressure][openstax-fluids-density-and-pressure] · [QUDT quantity definitions][qudt-quantity-definitions] |
+| τ = μΔv / Δy | `Stress` | Newtonian fluid with a linear profile across the gap. Use signed tangential velocity difference and positive normal separation. Supported methods include `Stress.FromNewtonianShear`. | [OpenStax viscosity and laminar flow][openstax-viscosity] |
+| Qᵥ = πr⁴Δp / (8μℓ) | `VolumePerTime` | Steady, fully developed, incompressible Newtonian laminar flow in a straight, rigid, horizontal circular pipe with no wall slip. Use internal radius r and inlet minus outlet pressure across length ℓ. Supported methods include `VolumePerTime.FromLaminarPipeFlow`. | [OpenStax viscosity and laminar flow][openstax-viscosity] |
 | jₘ = ṁ / A = Δ(m/A) / Δt | `Area`, `MassPerArea`, `MassPerAreaTime`, `MassPerTime`, `Time` | Use the same oriented surface and interval for the areal mass flow rate jₘ. | [NASA mass flow][nasa-mass-flow] · [QUDT quantity definitions][qudt-quantity-definitions] |
 | ρ = m / V, vₛ = V / m = 1 / ρ | `Density`, `Mass`, `SpecificVolume`, `Volume`, `double` | Density and specific volume describe the same material at the same state. | [OpenStax fluid mechanics][openstax-fluid-mechanics] · [QUDT quantity definitions][qudt-quantity-definitions] |
 | q = ½ρv² | `ForcePerArea` | Use local density and speed. Supported methods include `ForcePerArea.FromDynamicPressure`. | [NASA dynamic pressure][nasa-dynamic-pressure] |
@@ -162,6 +175,13 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| Fᵣ = q₁q₂ / (4πεr²) | `Force` | Two point charges in an unbounded homogeneous, isotropic linear dielectric. The radial force is positive for repulsion. Supported methods include `Force.FromPointCharges`. | [OpenStax electric fields][openstax-electric-fields] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
+| Eᵣ = q / (4πεr²) | `ElectricFieldStrength` | Point charge in an unbounded homogeneous, isotropic linear dielectric. Positive field points radially outward. Supported methods include `ElectricFieldStrength.FromPointCharge`. | [OpenStax electric fields][openstax-electric-fields] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
+| V = q / (4πεr) | `ElectricPotential` | Point charge in an unbounded homogeneous, isotropic linear dielectric, with zero potential at infinity. Supported methods include `ElectricPotential.FromPointCharge`. | [OpenStax point-charge potential][openstax-point-charge-potential] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
+| P = I²R = V² / R | `Power` | Joule dissipation in a positive ohmic resistance. Use current through or voltage across the same resistor. Supported methods include `Power.FromResistiveHeating`. | [OpenStax electrical power][openstax-electrical-power] |
+| B = μNI / ℓ | `MagneticFluxDensity` | Axial field near the centre of a long, uniformly wound solenoid in a uniform linear medium. Use signed current relative to the winding orientation. Supported methods include `MagneticFluxDensity.FromLongSolenoid`. | [OpenStax solenoids][openstax-solenoids] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
+| τ = pE sin θ | `Torque` | Torque magnitude on an electric dipole in a uniform field. θ is the angle between dipole moment and field. Supported methods include `Torque.FromElectricDipole`. | [OpenStax electric dipoles][openstax-electric-dipoles] |
+| τ = mB sin θ | `Torque` | Torque magnitude on a magnetic dipole in a uniform field. θ is the angle between dipole moment and flux density. Supported methods include `Torque.FromMagneticDipole`. | [OpenStax magnetic dipole torque][openstax-magnetic-dipole-torque] |
 | Q = CV | `Capacitance`, `ElectricCharge`, `ElectricPotential` | Linear capacitor with the voltage across its terminals. | [OpenStax capacitance][openstax-capacitance] |
 | U = ½CV² | `Energy` | Energy stored in a linear capacitor. Supported methods include `Energy.FromCapacitor`. | [OpenStax capacitance][openstax-capacitance] |
 | ΔQ = ĪΔt | `ElectricCharge`, `ElectricCurrent`, `Time` | Use average electrical current through the same cross section and interval. | [OpenStax current and resistance][openstax-current-and-resistance] |
@@ -199,6 +219,8 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| q″ = εσ(Tₛ⁴ − Tₑ⁴) | `HeatFlowRatePerArea` | Net outward flux from a grey surface surrounded by a large black isothermal enclosure. Use absolute temperatures, emissivity from zero to one, and a supplied Stefan–Boltzmann constant. Supported methods include `HeatFlowRatePerArea.FromThermalRadiation`. | [OpenStax radiative heat transfer][openstax-radiative-heat-transfer] |
+| p₂ = p₁(V₁ / V₂)(T₂ / T₁) | `ForcePerArea` | Two equilibrium states of a fixed amount of ideal gas. Use absolute pressures and absolute temperatures. Supported methods include `ForcePerArea.AfterIdealGasStateChange`. | [OpenStax ideal gas law][openstax-ideal-gas-law] |
 | R″ = ARₜ | `Area`, `ThermalInsulance`, `ThermalResistance` | Relate total thermal resistance to area-normalized resistance for the same uniform surface. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT heat-transfer coefficient][qudt-heat-transfer-coefficient] |
 | qₓ″ = −k ΔT / Δx | `HeatFlowRatePerArea` | Use scalar conductivity and the signed average gradient between the two temperatures along the axis. Supported methods include `HeatFlowRatePerArea.FromConduction`. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT heat flow rate][qudt-heat-flow-rate] |
 | Pheat = q″A | `Area`, `HeatFlowRate`, `HeatFlowRatePerArea` | Use average normal heat flux over the surface. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT heat-transfer coefficient][qudt-heat-transfer-coefficient] |
@@ -235,6 +257,7 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| A(t) = A₀ × 0.5^(t / t½) | `Activity` | Single radionuclide with positive half-life, starting activity A₀ and nonnegative elapsed time. The nuclide has no other source or removal process. Supported methods include `Activity.AfterDecay`. | [OpenStax radioactive decay][openstax-radioactive-decay] |
 | D = Edeposited / m | `AbsorbedDose`, `Energy`, `Mass` | Mean energy deposited by ionizing radiation in the specified matter. Supported methods include `AbsorbedDose.FromDepositedEnergy`. | [IAEA dosimetry][iaea-dosimetry] |
 | ΔD = Ḋ̄Δt | `AbsorbedDose`, `AbsorbedDoseRate`, `Time` | Constant or interval-averaged absorbed dose rate for the same matter. | [IAEA dosimetry][iaea-dosimetry] |
 | c = n / V | `AmountOfSubstance`, `AmountOfSubstancePerVolume`, `Volume` | Amount of the constituent divided by the volume of the mixture. | [IUPAC amount concentration][iupac-amount-concentration] |
@@ -308,6 +331,20 @@ Update the corresponding row when changing a formula's coverage.
 - [QUDT quantity definitions][qudt-quantity-definitions]
 - [QUDT thermal conductance][qudt-thermal-conductance]
 - [QUDT thermal resistivity][qudt-thermal-resistivity]
+- [NIST SI units][nist-si-units]
+- [OpenStax sphere geometry][openstax-sphere-geometry]
+- [OpenStax gravitational potential and escape][openstax-gravitational-potential]
+- [OpenStax moments of inertia][openstax-moments-of-inertia]
+- [OpenStax pendulums][openstax-pendulums]
+- [OpenStax viscosity and laminar flow][openstax-viscosity]
+- [OpenStax point-charge potential][openstax-point-charge-potential]
+- [OpenStax electrical power][openstax-electrical-power]
+- [OpenStax solenoids][openstax-solenoids]
+- [OpenStax electric dipoles][openstax-electric-dipoles]
+- [OpenStax magnetic dipole torque][openstax-magnetic-dipole-torque]
+- [OpenStax radiative heat transfer][openstax-radiative-heat-transfer]
+- [OpenStax ideal gas law][openstax-ideal-gas-law]
+- [OpenStax radioactive decay][openstax-radioactive-decay]
 
 [bipm-si-brochure]: https://www.bipm.org/en/publications/si-brochure
 [bipm-katal-resolution]: https://www.bipm.org/en/-/resolution-cgpm-21-12
@@ -368,3 +405,17 @@ Update the corresponding row when changing a formula's coverage.
 [qudt-quantity-definitions]: https://github.com/qudt/qudt-public-repo/releases/tag/v3.5.4
 [qudt-thermal-conductance]: https://qudt.org/vocab/quantitykind/ThermalConductance
 [qudt-thermal-resistivity]: https://qudt.org/vocab/quantitykind/ThermalResistivity
+[nist-si-units]: https://www.nist.gov/pml/special-publication-330/sp-330-section-5
+[openstax-sphere-geometry]: https://openstax.org/books/prealgebra-2e/pages/9-6-solve-geometry-applications-volume-and-surface-area
+[openstax-gravitational-potential]: https://openstax.org/books/university-physics-volume-1/pages/13-3-gravitational-potential-energy-and-total-energy
+[openstax-moments-of-inertia]: https://openstax.org/books/university-physics-volume-1/pages/10-5-calculating-moments-of-inertia
+[openstax-pendulums]: https://openstax.org/books/university-physics-volume-1/pages/15-4-pendulums
+[openstax-viscosity]: https://openstax.org/books/university-physics-volume-1/pages/14-7-viscosity-and-turbulence
+[openstax-point-charge-potential]: https://openstax.org/books/university-physics-volume-2/pages/7-3-calculations-of-electric-potential
+[openstax-electrical-power]: https://openstax.org/books/university-physics-volume-2/pages/9-5-electrical-energy-and-power
+[openstax-solenoids]: https://openstax.org/books/university-physics-volume-2/pages/12-6-solenoids-and-toroids
+[openstax-electric-dipoles]: https://openstax.org/books/university-physics-volume-2/pages/5-7-electric-dipoles
+[openstax-magnetic-dipole-torque]: https://openstax.org/books/university-physics-volume-2/pages/11-5-force-and-torque-on-a-current-loop
+[openstax-radiative-heat-transfer]: https://openstax.org/books/university-physics-volume-2/pages/1-6-mechanisms-of-heat-transfer
+[openstax-ideal-gas-law]: https://openstax.org/books/chemistry-2e/pages/9-2-relating-pressure-volume-amount-and-temperature-the-ideal-gas-law
+[openstax-radioactive-decay]: https://openstax.org/books/university-physics-volume-3/pages/10-3-radioactive-decay

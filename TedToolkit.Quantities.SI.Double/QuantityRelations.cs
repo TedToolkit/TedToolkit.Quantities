@@ -59,6 +59,10 @@ public readonly partial struct Force;
 
 [QuantityOperator<Density, Volume, Mass>(Operator.MULTIPLY)]
 [QuantityOperator<Volume, Density, Mass>(Operator.MULTIPLY)]
+[QuantityOperator<Density, Area, MassPerLength>(Operator.MULTIPLY)]
+[QuantityOperator<Area, Density, MassPerLength>(Operator.MULTIPLY)]
+[QuantityOperator<Density, Length, MassPerArea>(Operator.MULTIPLY)]
+[QuantityOperator<Length, Density, MassPerArea>(Operator.MULTIPLY)]
 public readonly partial struct Density;
 
 [QuantityOperator<Power, Time, Energy>(Operator.MULTIPLY)]
@@ -180,10 +184,14 @@ public readonly partial struct Energy;
 [QuantityOperator<Mass, Time, MassPerTime>(Operator.DIVIDE)]
 public readonly partial struct Mass;
 
+[QuantityOperator<MassPerLength, Area, Density>(Operator.DIVIDE)]
+[QuantityOperator<MassPerLength, Density, Area>(Operator.DIVIDE)]
 [QuantityOperator<MassPerLength, Length, Mass>(Operator.MULTIPLY)]
 [QuantityOperator<Length, MassPerLength, Mass>(Operator.MULTIPLY)]
 public readonly partial struct MassPerLength;
 
+[QuantityOperator<MassPerArea, Length, Density>(Operator.DIVIDE)]
+[QuantityOperator<MassPerArea, Density, Length>(Operator.DIVIDE)]
 [QuantityOperator<MassPerArea, Area, Mass>(Operator.MULTIPLY)]
 [QuantityOperator<Area, MassPerArea, Mass>(Operator.MULTIPLY)]
 [QuantityOperator<MassPerArea, MassPerAreaTime, Time>(Operator.DIVIDE)]
