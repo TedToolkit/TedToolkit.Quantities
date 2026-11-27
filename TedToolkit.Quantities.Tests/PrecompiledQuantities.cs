@@ -45,6 +45,7 @@ internal static class PrecompiledQuantities
         Close(5, (squaredTime / Q.Time.FromSecond(2)).Second);
 
         VerifyMechanicsAndFlow();
+        VerifyWaves();
         VerifyElectromagnetism();
         VerifyHeatTransfer();
         VerifyLightChemistryAndDose();
@@ -131,6 +132,8 @@ internal static class PrecompiledQuantities
         Close(72, shaftPower.Watt);
         Close(torque.Value, (shaftPower / angularVelocity).Value);
         Close(12, (angularVelocity * Q.Time.FromSecond(1)).Radian);
+        Close(30, Q.PlaneAngle.FromConstantAngularAcceleration(
+            angularVelocity, angularAcceleration, Q.Time.FromMillisecond(2000)).Radian);
 
         Q.LinearVelocity tangentialVelocity = radius * angularVelocity;
         Q.LinearAcceleration tangentialAcceleration = angularAcceleration * radius;
@@ -157,8 +160,13 @@ internal static class PrecompiledQuantities
         Close(8, Q.MomentOfInertia.FromPointMass(translatingMass, radius).Value);
         Close(0.2 * Math.PI, Q.Time.FromMassSpring(translatingMass, stiffness).Second);
         Close(-200, Q.Energy.FromGravitationalPotential(gravitationalParameter, translatingMass, orbitRadius).Joule);
+        Close(-100, Q.Energy.FromCircularOrbit(gravitationalParameter, translatingMass, orbitRadius).Joule);
         Close(10 * Math.Sqrt(2), Q.LinearVelocity.EscapeSpeed(gravitationalParameter, orbitRadius).MetrePerSecond);
         Close(-2, Q.Length.FromConstantAcceleration(-speed, (Q.LinearAcceleration)2d, Q.Time.FromSecond(2)).Metre);
+        Close(1, Q.LinearVelocity.SpeedAfterConstantAcceleration(-speed, (Q.LinearAcceleration)2d, -radius).MetrePerSecond);
+        var normalForce = Q.Force.FromNewton(20);
+        Close(10, Q.Force.MaximumStaticFriction(normalForce, 0.5).Newton);
+        Close(4, Q.Force.FromKineticFriction(normalForce, 0.2).Newton);
         Close(9, Q.Energy.FromTranslationalKineticEnergy(translatingMass, speed).Joule);
         Close(144, Q.Energy.FromRotationalKineticEnergy((Q.MomentOfInertia)2d, angularVelocity).Joule);
         var resistingForce = Q.Force.FromNewton(-5);
@@ -195,6 +203,7 @@ internal static class PrecompiledQuantities
         Close(40, Q.ForcePerArea.FromHydraulicPower(hydraulicPower, volumeFlow).Pascal);
         Close(0.12, Q.Energy.FromConstantPressureWork(pressure, Q.Volume.FromLitre(3)).Joule);
         var gravity = (Q.LinearAcceleration)10d;
+        Close(-40, Q.Energy.FromUniformGravity(translatingMass, gravity, -radius).Joule);
         Close(2 * Math.PI * Math.Sqrt(0.2), Q.Time.FromSimplePendulum(radius, gravity).Second);
         Close(10000, Q.ForcePerArea.FromHydrostaticHead(density, gravity, radius).Pascal);
         Close(15, Q.Force.FromBuoyancy(density, Q.Volume.FromLitre(3), gravity).Newton);
@@ -204,6 +213,9 @@ internal static class PrecompiledQuantities
         Close(density.Value, (1d / (1d / density)).Value);
         Close(1, density * (1d / density));
         Close(2250, Q.ForcePerArea.FromDynamicPressure(density, speed).Pascal);
+        var referenceArea = Q.Area.FromSquareMetre(0.5);
+        Close(450, Q.Force.FromDrag(density, speed, referenceArea, 0.4).Newton);
+        Close(-225, Q.Force.FromLift(density, speed, referenceArea, -0.2).Newton);
         var kinematicViscosity = (Q.KinematicViscosity)4e-6;
         var reynolds = speed.ReynoldsNumber(radius, kinematicViscosity);
         Close(1500000, reynolds);
@@ -213,6 +225,34 @@ internal static class PrecompiledQuantities
         Close(Math.PI * 2.5e-5, Q.VolumePerTime.FromLaminarPipeFlow(
             Q.ForcePerArea.FromPascal(100), (Q.DynamicViscosity)0.01d,
             Q.Length.FromMillimetre(10), Q.Length.FromMillimetre(500)).Value);
+    }
+
+    private static void VerifyWaves()
+    {
+        Close(40, Q.LinearVelocity.FromStretchedString(Q.Force.FromNewton(800), (Q.MassPerLength)0.5d).MetrePerSecond);
+        Close(1500, Q.LinearVelocity.FromFluidBulkModulus(
+            Q.ForcePerArea.FromPascal(2.25e9), (Q.Density)1000d).MetrePerSecond);
+
+        var soundSpeed = Q.LinearVelocity.FromMetrePerSecond(320);
+        var frequency = Q.Frequency.FromHertz(480);
+        var sourceVelocity = Q.LinearVelocity.FromMetrePerSecond(20);
+        var observerVelocity = Q.LinearVelocity.FromMetrePerSecond(-5);
+        Close(504, frequency.ObservedWithDopplerShift(soundSpeed, sourceVelocity, observerVelocity).Hertz);
+        Close(0.5, Q.LinearVelocity.FromMetrePerSecond(-160).MachNumber(soundSpeed));
+        Close(4, Q.Frequency.BeatFrequency(Q.Frequency.FromHertz(444), Q.Frequency.FromHertz(440)).Hertz);
+        var length = Q.Length.FromMillimetre(2000);
+        Close(240, Q.Frequency.FromStandingWave(soundSpeed, length, 3).Hertz);
+        Close(120, Q.Frequency.FromQuarterWaveResonance(soundSpeed, length, 2).Hertz);
+        Close(5, Q.PowerPerArea.FromIsotropicSource(Q.Power.FromWatt(80 * Math.PI), length).Value);
+        Close(0.005, Q.PowerPerArea.FromPeakSoundPressure(
+            Q.ForcePerArea.FromPascal(2), (Q.Density)1.25d, soundSpeed).Value);
+
+        var gravity = (Q.LinearAcceleration)10d;
+        var wavelength = Q.Length.FromMetre(2 * Math.PI);
+        var depth = Q.Length.FromMillimetre(1000);
+        Close(Math.Sqrt(10 * Math.Tanh(1)), Q.LinearVelocity.FromSurfaceGravityWave(gravity, wavelength, depth).MetrePerSecond);
+        Close(Math.Sqrt(10), Q.LinearVelocity.FromDeepWaterGravityWave(gravity, wavelength).MetrePerSecond);
+        Close(2, Q.LinearVelocity.FromShallowWaterGravityWave(gravity, Q.Length.FromMillimetre(400)).MetrePerSecond);
     }
 
     private static void VerifyElectromagnetism()

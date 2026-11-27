@@ -77,7 +77,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **154 physical formulas**. Swapped products, solved forms, and typed variants
+The inventory lists **172 physical formulas**. Swapped products, solved forms, and typed variants
 share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
 
@@ -104,6 +104,12 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| Fₛ,max = μₛN | `Force` | Maximum static friction for a dry contact under the Coulomb model. Use the nonnegative coefficient and compressive normal force. Supported methods include `Force.MaximumStaticFriction`. | [OpenStax friction][openstax-friction] |
+| Fₖ = μₖN | `Force` | Kinetic friction magnitude for dry sliding contact under the Coulomb model. Use the nonnegative coefficient and compressive normal force. Supported methods include `Force.FromKineticFriction`. | [OpenStax friction][openstax-friction] |
+| ΔU = mgΔh | `Energy` | Uniform gravity over the height interval. Height change is signed and positive upward. Supported methods include `Energy.FromUniformGravity`. | [OpenStax potential energy][openstax-potential-energy] |
+| E = −μm / (2r) | `Energy` | Total mechanical energy of a Newtonian circular orbit with negligible orbiting mass and potential energy zero at infinity. Supported methods include `Energy.FromCircularOrbit`. | [OpenStax satellite orbits][openstax-satellite-orbits] |
+| Δθ = ω₀Δt + ½αΔt² | `PlaneAngle` | Constant signed angular acceleration about a fixed axis, with initial angular velocity about the same axis. Supported methods include `PlaneAngle.FromConstantAngularAcceleration`. | [OpenStax fixed-axis rotation][openstax-fixed-axis-rotation] |
+| v² = v₀² + 2aΔx | `LinearVelocity` | Constant acceleration along one axis. Use signed acceleration and displacement with a nonnegative squared final speed. The method returns speed magnitude. Supported methods include `LinearVelocity.SpeedAfterConstantAcceleration`. | [OpenStax kinematics][openstax-kinematics] |
 | I = mr² | `MomentOfInertia` | Point mass at perpendicular distance r from the axis. Supported methods include `MomentOfInertia.FromPointMass`. | [OpenStax moments of inertia][openstax-moments-of-inertia] |
 | T = 2π√(m / k) | `Time` | Positive mass and stiffness in an undamped, linear, massless-spring system. Supported methods include `Time.FromMassSpring`. | [OpenStax periodic motion][openstax-periodic-motion] |
 | T = 2π√(ℓ / g) | `Time` | Small-angle, undamped simple pendulum of positive length in uniform gravity. Supported methods include `Time.FromSimplePendulum`. | [OpenStax pendulums][openstax-pendulums] |
@@ -147,10 +153,27 @@ Update the corresponding row when changing a formula's coverage.
 | Δv = āΔt | `LinearAcceleration`, `LinearVelocity`, `Time` | Constant or average acceleration component over the interval. | [OpenStax kinematics][openstax-kinematics] |
 | v = λf | `Frequency`, `Length`, `LinearVelocity` | Wavelength and frequency belong to the same propagating wave. Supported methods include `Frequency.FromWaveSpeed`, `Length.WavelengthFromSpeed`, `LinearVelocity.FromWavelength`. | [OpenStax waves][openstax-waves] |
 
+### Acoustics and surface waves
+
+| Formula | Result types | Applicability and named entry points | Source |
+| --- | --- | --- | --- |
+| c = √(Fₜ / λₘ) | `LinearVelocity` | Transverse waves of small amplitude on a uniform taut string. Use positive tension and linear mass density. Supported methods include `LinearVelocity.FromStretchedString`. | [OpenStax wave speed on a string][openstax-stretched-string] |
+| c = √(B / ρ) | `LinearVelocity` | Small acoustic perturbations in a fluid. Use its adiabatic bulk modulus and density at the same state. Supported methods include `LinearVelocity.FromFluidBulkModulus`. | [OpenStax speed of sound][openstax-speed-of-sound] |
+| fₒ = fₛ(c + vₒ) / (c − vₛ) | `Frequency` | Classical collinear sound in a uniform medium. Measure both velocities relative to the medium, positive toward the other party, with both speeds below c. Supported methods include `Frequency.ObservedWithDopplerShift`. | [OpenStax acoustic Doppler effect][openstax-doppler] |
+| I = p̂² / (2ρc) | `PowerPerArea` | Time-averaged intensity of a progressive sinusoidal plane sound wave. Use peak pressure amplitude, ambient density and local sound speed. Supported methods include `PowerPerArea.FromPeakSoundPressure`. | [OpenStax sound intensity][openstax-sound-intensity] |
+| I = P / (4πr²) | `PowerPerArea` | Isotropic source in a lossless medium. Use total emitted power and positive distance. Supported methods include `PowerPerArea.FromIsotropicSource`. | [OpenStax sound intensity][openstax-sound-intensity] |
+| fbeat = abs(f₁ − f₂) | `Frequency` | Beat frequency for two nearby tones superposed at the observer. Supported methods include `Frequency.BeatFrequency`. | [OpenStax beats][openstax-beats] |
+| fₙ = nc / (2ℓ) | `Frequency` | Positive mode number n. String fixed at both ends or ideal pipe with both ends open or both closed. Supported methods include `Frequency.FromStandingWave`. | [OpenStax standing waves][openstax-standing-waves] · [OpenStax standing sound waves][openstax-sound-modes] |
+| fₙ = (2n − 1)c / (4ℓ) | `Frequency` | Ideal pipe open at one end and closed at the other. Positive mode number n corresponds to harmonic 2n − 1. Supported methods include `Frequency.FromQuarterWaveResonance`. | [OpenStax standing sound waves][openstax-sound-modes] |
+| c = √((g/k)tanh(kh)) | `LinearVelocity` | Phase speed of a linear surface gravity wave in still water of uniform depth h. Use k = 2π/λ and negligible surface tension. When kh is small, c ≈ √(gh). When kh is large, c ≈ √(g/k). Supported methods include `LinearVelocity.FromSurfaceGravityWave`, `LinearVelocity.FromShallowWaterGravityWave`, `LinearVelocity.FromDeepWaterGravityWave`. | [MIT surface gravity waves][mit-surface-gravity-waves] |
+
 ### Fluids and mass flow
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| Ma = v / c | `double` | Use the flow speed magnitude relative to the body and the speed of sound at the relevant local fluid state. Supported methods include `LinearVelocity.MachNumber`. | [NACA compressible flow report][naca-compressible-flow] |
+| D = ½ρv²CᴅA | `Force` | Drag magnitude. Use a nonnegative drag coefficient and the reference area used to define it at the specified flow condition. Supported methods include `Force.FromDrag`. | [NASA drag equation][nasa-drag] |
+| L = ½ρv²CʟA | `Force` | Signed lift along the convention used for the lift coefficient. Use its reference area and the specified flow condition. Supported methods include `Force.FromLift`. | [NASA lift equation][nasa-lift] |
 | λₘ = ρA | `Area`, `Density`, `MassPerLength` | Use cross-sectional area and the mean mass density over that section. Follows from m = ρV and V = Aℓ for a uniform section. | [OpenStax fluids, density, and pressure][openstax-fluids-density-and-pressure] · [QUDT quantity definitions][qudt-quantity-definitions] |
 | ρₐ = ρℓ | `Density`, `Length`, `MassPerArea` | Use uniform thickness perpendicular to the surface and mean mass density through the thickness. Follows from m = ρV and V = Aℓ. | [OpenStax fluids, density, and pressure][openstax-fluids-density-and-pressure] · [QUDT quantity definitions][qudt-quantity-definitions] |
 | τ = μΔv / Δy | `Stress` | Newtonian fluid with a linear profile across the gap. Use signed tangential velocity difference and positive normal separation. Supported methods include `Stress.FromNewtonianShear`. | [OpenStax viscosity and laminar flow][openstax-viscosity] |
@@ -345,6 +368,19 @@ Update the corresponding row when changing a formula's coverage.
 - [OpenStax radiative heat transfer][openstax-radiative-heat-transfer]
 - [OpenStax ideal gas law][openstax-ideal-gas-law]
 - [OpenStax radioactive decay][openstax-radioactive-decay]
+- [MIT surface gravity waves][mit-surface-gravity-waves]
+- [NASA drag equation][nasa-drag]
+- [NASA lift equation][nasa-lift]
+- [NACA compressible flow report][naca-compressible-flow]
+- [OpenStax beats][openstax-beats]
+- [OpenStax acoustic Doppler effect][openstax-doppler]
+- [OpenStax friction][openstax-friction]
+- [OpenStax potential energy][openstax-potential-energy]
+- [OpenStax sound intensity][openstax-sound-intensity]
+- [OpenStax standing sound waves][openstax-sound-modes]
+- [OpenStax speed of sound][openstax-speed-of-sound]
+- [OpenStax standing waves][openstax-standing-waves]
+- [OpenStax wave speed on a string][openstax-stretched-string]
 
 [bipm-si-brochure]: https://www.bipm.org/en/publications/si-brochure
 [bipm-katal-resolution]: https://www.bipm.org/en/-/resolution-cgpm-21-12
@@ -419,3 +455,16 @@ Update the corresponding row when changing a formula's coverage.
 [openstax-radiative-heat-transfer]: https://openstax.org/books/university-physics-volume-2/pages/1-6-mechanisms-of-heat-transfer
 [openstax-ideal-gas-law]: https://openstax.org/books/chemistry-2e/pages/9-2-relating-pressure-volume-amount-and-temperature-the-ideal-gas-law
 [openstax-radioactive-decay]: https://openstax.org/books/university-physics-volume-3/pages/10-3-radioactive-decay
+[mit-surface-gravity-waves]: https://ocw.mit.edu/courses/12-802-wave-motion-in-the-ocean-and-the-atmosphere-spring-2008/fca533a5edb5f5d3e975ec4c2e63019f_MIT12_802S08_lec03.pdf
+[nasa-drag]: https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/
+[nasa-lift]: https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/lift-equation/
+[naca-compressible-flow]: https://www.grc.nasa.gov/www/k-12/airplane/Images/naca1135.pdf
+[openstax-beats]: https://openstax.org/books/university-physics-volume-1/pages/17-6-beats
+[openstax-doppler]: https://openstax.org/books/university-physics-volume-1/pages/17-7-the-doppler-effect
+[openstax-friction]: https://openstax.org/books/university-physics-volume-1/pages/6-2-friction
+[openstax-potential-energy]: https://openstax.org/books/university-physics-volume-1/pages/8-1-potential-energy-of-a-system
+[openstax-sound-intensity]: https://openstax.org/books/university-physics-volume-1/pages/17-3-sound-intensity
+[openstax-sound-modes]: https://openstax.org/books/university-physics-volume-1/pages/17-4-normal-modes-of-a-standing-sound-wave
+[openstax-speed-of-sound]: https://openstax.org/books/university-physics-volume-1/pages/17-2-speed-of-sound
+[openstax-standing-waves]: https://openstax.org/books/university-physics-volume-1/pages/16-6-standing-waves-and-resonance
+[openstax-stretched-string]: https://openstax.org/books/university-physics-volume-1/pages/16-3-wave-speed-on-a-stretched-string

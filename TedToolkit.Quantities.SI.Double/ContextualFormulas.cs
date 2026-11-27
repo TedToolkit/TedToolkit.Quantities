@@ -35,6 +35,37 @@ public readonly partial struct Frequency
     {
         return AngularVelocity.FromLcResonance(inductance, capacitance).ToFrequency();
     }
+
+    /// <summary>Calculates the beat frequency produced by two nearby frequencies.</summary>
+    public static Frequency BeatFrequency(Frequency first, Frequency second)
+    {
+        return FromHertz(Math.Abs(first.Hertz - second.Hertz));
+    }
+
+    /// <summary>Calculates a standing-wave frequency with identical end conditions and positive mode number.</summary>
+    /// <remarks>Use a string fixed at both ends or an ideal pipe open at both ends or closed at both ends.</remarks>
+    public static Frequency FromStandingWave(LinearVelocity waveSpeed, Length resonatorLength, int mode)
+    {
+        return FromHertz((0.5d * mode) * waveSpeed.MetrePerSecond / resonatorLength.Metre);
+    }
+
+    /// <summary>Calculates the frequency of a positive mode number in an ideal pipe open at one end and closed at the other.</summary>
+    public static Frequency FromQuarterWaveResonance(LinearVelocity soundSpeed, Length pipeLength, int mode)
+    {
+        return FromHertz((0.5d * mode - 0.25d) * soundSpeed.MetrePerSecond / pipeLength.Metre);
+    }
+
+    /// <summary>Calculates the classical Doppler shift of this emitted frequency for collinear sound propagation.</summary>
+    /// <param name="soundSpeed">The positive sound speed in the uniform medium.</param>
+    /// <param name="sourceVelocityTowardObserver">The signed source velocity relative to the medium, positive toward the observer.</param>
+    /// <param name="observerVelocityTowardSource">The signed observer velocity relative to the medium, positive toward the source.</param>
+    /// <remarks>Both speeds must be below the sound speed.</remarks>
+    public Frequency ObservedWithDopplerShift(
+        LinearVelocity soundSpeed, LinearVelocity sourceVelocityTowardObserver, LinearVelocity observerVelocityTowardSource)
+    {
+        var speed = soundSpeed.Value;
+        return this * ((speed + observerVelocityTowardSource.Value) / (speed - sourceVelocityTowardObserver.Value));
+    }
 }
 
 public readonly partial struct AngularVelocity
@@ -78,6 +109,13 @@ public readonly partial struct PlaneAngle
     public Length ToArcLength(Length radius)
     {
         return radius * Radian;
+    }
+
+    /// <summary>Calculates signed angular displacement about a fixed axis under constant angular acceleration.</summary>
+    public static PlaneAngle FromConstantAngularAcceleration(
+        AngularVelocity initialAngularVelocity, AngularAcceleration acceleration, Time elapsed)
+    {
+        return FromRadian((initialAngularVelocity.Value + 0.5d * acceleration.Value * elapsed.Value) * elapsed.Value);
     }
 }
 
@@ -238,6 +276,21 @@ public readonly partial struct Energy
     {
         return (Energy)(-(gravitationalParameter.Value / distance.Value) * mass.Value);
     }
+
+    /// <summary>Calculates the signed change in gravitational potential energy in a uniform field.</summary>
+    /// <param name="mass">The mass of the body.</param>
+    /// <param name="gravity">The positive magnitude of gravitational acceleration.</param>
+    /// <param name="heightChange">The signed height change, positive upward.</param>
+    public static Energy FromUniformGravity(Mass mass, LinearAcceleration gravity, Length heightChange)
+    {
+        return FromMechanicalWork(mass * gravity, heightChange);
+    }
+
+    /// <summary>Calculates the total mechanical energy of a Newtonian circular orbit with negligible orbiting mass.</summary>
+    public static Energy FromCircularOrbit(StandardGravitationalParameter gravitationalParameter, Mass orbitingMass, Length radius)
+    {
+        return 0.5d * FromGravitationalPotential(gravitationalParameter, orbitingMass, radius);
+    }
 }
 
 public readonly partial struct Force
@@ -280,6 +333,30 @@ public readonly partial struct Force
         ElectricCharge sourceCharge, ElectricCharge testCharge, Permittivity permittivity, Length separation)
     {
         return ElectricFieldStrength.FromPointCharge(sourceCharge, permittivity, separation) * testCharge;
+    }
+
+    /// <summary>Calculates the maximum static friction magnitude in the dry Coulomb friction model.</summary>
+    public static Force MaximumStaticFriction(Force normalForce, double coefficientOfStaticFriction)
+    {
+        return normalForce * coefficientOfStaticFriction;
+    }
+
+    /// <summary>Calculates the kinetic friction magnitude for sliding surfaces in the dry Coulomb friction model.</summary>
+    public static Force FromKineticFriction(Force normalForce, double coefficientOfKineticFriction)
+    {
+        return normalForce * coefficientOfKineticFriction;
+    }
+
+    /// <summary>Calculates drag magnitude with the coefficient and reference area for the given flow condition.</summary>
+    public static Force FromDrag(Density density, LinearVelocity relativeSpeed, Area referenceArea, double dragCoefficient)
+    {
+        return (ForcePerArea.FromDynamicPressure(density, relativeSpeed) * referenceArea) * dragCoefficient;
+    }
+
+    /// <summary>Calculates signed lift with the coefficient and reference area for the given flow condition.</summary>
+    public static Force FromLift(Density density, LinearVelocity relativeSpeed, Area referenceArea, double liftCoefficient)
+    {
+        return (ForcePerArea.FromDynamicPressure(density, relativeSpeed) * referenceArea) * liftCoefficient;
     }
 }
 
@@ -428,6 +505,52 @@ public readonly partial struct LinearVelocity
     public static LinearVelocity EscapeSpeed(StandardGravitationalParameter gravitationalParameter, Length radius)
     {
         return Math.Sqrt(2d) * FromCircularOrbit(gravitationalParameter, radius);
+    }
+
+    /// <summary>Calculates final speed from signed one-dimensional kinematics under constant acceleration.</summary>
+    /// <remarks>The inputs must describe a reachable displacement, so the squared final speed is nonnegative.</remarks>
+    public static LinearVelocity SpeedAfterConstantAcceleration(
+        LinearVelocity initialVelocity, LinearAcceleration acceleration, Length displacement)
+    {
+        return FromMetrePerSecond(Math.Sqrt(initialVelocity.Value * initialVelocity.Value + 2d * acceleration.Value * displacement.Value));
+    }
+
+    /// <summary>Calculates transverse wave speed along a uniform taut string under small displacement.</summary>
+    public static LinearVelocity FromStretchedString(Force tension, MassPerLength linearDensity)
+    {
+        return FromMetrePerSecond(Math.Sqrt(tension.Value / linearDensity.Value));
+    }
+
+    /// <summary>Calculates small-signal sound speed from a fluid's positive adiabatic bulk modulus and density.</summary>
+    public static LinearVelocity FromFluidBulkModulus(ForcePerArea bulkModulus, Density density)
+    {
+        return FromMetrePerSecond(Math.Sqrt(bulkModulus.Value / density.Value));
+    }
+
+    /// <summary>Calculates phase speed for linear surface gravity waves in still water of uniform positive depth.</summary>
+    /// <remarks>Use a positive wavelength in the gravity-dominated regime, where surface tension is negligible.</remarks>
+    public static LinearVelocity FromSurfaceGravityWave(LinearAcceleration gravity, Length wavelength, Length depth)
+    {
+        var waveNumber = 2d * Math.PI / wavelength.Metre;
+        return FromMetrePerSecond(Math.Sqrt((gravity.Value / waveNumber) * Math.Tanh(waveNumber * depth.Metre)));
+    }
+
+    /// <summary>Calculates phase speed for linear surface gravity waves when depth is small relative to wavelength.</summary>
+    public static LinearVelocity FromShallowWaterGravityWave(LinearAcceleration gravity, Length depth)
+    {
+        return FromMetrePerSecond(Math.Sqrt(gravity.Value * depth.Value));
+    }
+
+    /// <summary>Calculates phase speed for linear surface gravity waves when depth is large relative to wavelength.</summary>
+    public static LinearVelocity FromDeepWaterGravityWave(LinearAcceleration gravity, Length wavelength)
+    {
+        return FromMetrePerSecond(Math.Sqrt(gravity.Value * wavelength.Value / (2d * Math.PI)));
+    }
+
+    /// <summary>Calculates the ratio of this speed magnitude to the positive local sound speed.</summary>
+    public double MachNumber(LinearVelocity soundSpeed)
+    {
+        return Math.Abs(Value) / soundSpeed.Value;
     }
 
     /// <summary>Calculates the Reynolds number for a flow using kinematic viscosity.</summary>
@@ -768,6 +891,18 @@ public readonly partial struct Illuminance
 
 public readonly partial struct PowerPerArea
 {
+    /// <summary>Calculates intensity at positive distance from an isotropic source in a lossless medium.</summary>
+    public static PowerPerArea FromIsotropicSource(Power emittedPower, Length distance)
+    {
+        return emittedPower / Area.FromSphere(distance);
+    }
+
+    /// <summary>Calculates average intensity from the peak acoustic pressure of a progressive sinusoidal plane wave.</summary>
+    public static PowerPerArea FromPeakSoundPressure(ForcePerArea peakPressure, Density density, LinearVelocity soundSpeed)
+    {
+        return (PowerPerArea)(0.5d * peakPressure.Value * peakPressure.Value / (density.Value * soundSpeed.Value));
+    }
+
     /// <summary>Calculates irradiance for normal incidence from a point source at a positive distance.</summary>
     /// <param name="intensity">The radiant intensity in the direction of the receiving surface.</param>
     /// <param name="distance">The distance from the point source to the surface.</param>
