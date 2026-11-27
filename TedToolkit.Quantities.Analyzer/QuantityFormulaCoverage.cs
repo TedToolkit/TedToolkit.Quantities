@@ -10,6 +10,7 @@ using System.Text;
 
 using Microsoft.CodeAnalysis;
 
+using TedToolkit.Quantities.Data;
 using TedToolkit.RoslynHelper;
 
 namespace TedToolkit.Quantities.Analyzer;
@@ -19,6 +20,8 @@ namespace TedToolkit.Quantities.Analyzer;
 /// </summary>
 internal static class QuantityFormulaCoverage
 {
+    private const string FormulaAttribute = "TedToolkit.Quantities.QuantityFormulaAttribute";
+
     private static readonly (string Id, string Heading)[] _domains =
     [
         ("geometry", "Geometry and algebra"),
@@ -34,12 +37,22 @@ internal static class QuantityFormulaCoverage
     /// Validates formula annotations and emits the Markdown as generated source comments.
     /// </summary>
     /// <param name="context">The current source generation context.</param>
-    /// <param name="quantities">The handwritten declarations for precompiled quantities.</param>
-    internal static void Generate(in SourceProductionContext context, IReadOnlyList<INamedTypeSymbol> quantities)
+    /// <param name="quantities">The handwritten quantity declarations.</param>
+    /// <param name="data">The catalog used for the generated quantity types.</param>
+    internal static void Generate(in SourceProductionContext context, IReadOnlyCollection<INamedTypeSymbol> quantities,
+        in DataCollection data)
     {
+        var operators = quantities.SelectMany(QuantityOperatorDeclaration.Read).ToArray();
+        var methods = quantities.SelectMany(type => type.GetMembers().OfType<IMethodSymbol>()).ToArray();
+        if (!operators.Any(item => ReadString(item.Attribute, "FormulaId") is not null)
+            && !methods.Any(method => method.GetAttributes().Any(attr => attr.AttributeClass?.FullName == FormulaAttribute)))
+        {
+            return;
+        }
+
         var formulas = new Dictionary<string, Formula>(StringComparer.Ordinal);
-        AddOperators(formulas, quantities.SelectMany(QuantityOperatorDeclaration.Read));
-        AddMethods(formulas, quantities.SelectMany(type => type.GetMembers().OfType<IMethodSymbol>()));
+        AddOperators(formulas, operators, data);
+        AddMethods(formulas, methods);
         Validate(formulas.Values);
 
         // A comment-only source artifact gives MSBuild the Markdown without adding metadata to the library.
@@ -48,7 +61,7 @@ internal static class QuantityFormulaCoverage
     }
 
     private static void AddOperators(Dictionary<string, Formula> formulas,
-        IEnumerable<QuantityOperatorDeclaration> operators)
+        IEnumerable<QuantityOperatorDeclaration> operators, in DataCollection data)
     {
         foreach (var group in operators.GroupBy(GetEquationShape))
         {
@@ -63,6 +76,7 @@ internal static class QuantityFormulaCoverage
             var formula = GetFormula(formulas, ids[0]);
             foreach (var item in group)
             {
+                ValidateDimensions(item, data);
                 formula.AddDocumentation(item.Attribute);
                 formula.Results.Add(item.Result.Name);
             }
@@ -76,7 +90,7 @@ internal static class QuantityFormulaCoverage
                      && method.MethodKind == MethodKind.Ordinary && !method.IsImplicitlyDeclared))
         {
             var attribute = method.GetAttributes()
-                .FirstOrDefault(attr => attr.AttributeClass?.FullName == "TedToolkit.Quantities.QuantityFormulaAttribute");
+                .FirstOrDefault(attr => attr.AttributeClass?.FullName == FormulaAttribute);
             if (attribute?.ConstructorArguments.FirstOrDefault().Value is not string id)
             {
                 throw new InvalidOperationException($"Named formula '{method}' requires a QuantityFormula attribute.");
@@ -86,6 +100,45 @@ internal static class QuantityFormulaCoverage
             formula.AddDocumentation(attribute);
             formula.Results.Add(method.ReturnType.Name);
             formula.Methods.Add($"{method.ContainingType.Name}.{method.Name}");
+        }
+    }
+
+    private static void ValidateDimensions(in QuantityOperatorDeclaration item, in DataCollection data)
+    {
+        var left = GetDimension(item.Left, data);
+        var right = GetDimension(item.Right, data);
+        var result = GetDimension(item.Result, data);
+        var valid = item.Token switch
+        {
+            "+" or "-" => left == right && left == result,
+            "*" => CombinesDimensions(left, right, result),
+            "/" => CombinesDimensions(right, result, left),
+            _ => false,
+        };
+        if (valid)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"The result of {item.Left.Name} {item.Token} {item.Right.Name} has incompatible dimensions: {item.Result.Name}.");
+
+        static Dimension GetDimension(ITypeSymbol type, in DataCollection data)
+        {
+            return type.SpecialType == SpecialType.System_Double
+                ? default
+                : data.Dimensions[data.Quantities[type.Name].Dimension] with { Dimensionless = 0, };
+        }
+
+        static bool CombinesDimensions(in Dimension left, in Dimension right, in Dimension result)
+        {
+            return left.AmountOfSubstance + right.AmountOfSubstance == result.AmountOfSubstance
+                   && left.ElectricCurrent + right.ElectricCurrent == result.ElectricCurrent
+                   && left.Length + right.Length == result.Length
+                   && left.LuminousIntensity + right.LuminousIntensity == result.LuminousIntensity
+                   && left.Mass + right.Mass == result.Mass
+                   && left.ThermodynamicTemperature + right.ThermodynamicTemperature == result.ThermodynamicTemperature
+                   && left.Time + right.Time == result.Time;
         }
     }
 

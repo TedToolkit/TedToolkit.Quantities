@@ -8,9 +8,6 @@ namespace TedToolkit.Quantities;
 
 // The target must be a semantic generalization. Sharing the same SI dimensions is only a prerequisite.
 [QuantityImplicitlyConvertsTo<Length>]
-public readonly partial struct Thickness;
-
-[QuantityImplicitlyConvertsTo<Length>]
 public readonly partial struct Width;
 
 [QuantityImplicitlyConvertsTo<Length>]

@@ -957,7 +957,7 @@ public readonly partial struct TemperatureDifference;
 public readonly partial struct ThermalConductivity;
 
 [QuantityOperator<double, ThermalResistivity, ThermalConductivity>(Operator.DIVIDE)]
-// Thickness times thermal resistivity gives the areal resistance of a uniform plane layer.
+// A uniform plane layer's depth times thermal resistivity gives its areal resistance.
 [QuantityOperator<ThermalResistivity, Length, ThermalInsulance>(Operator.MULTIPLY,
     FormulaId = "thermal/plane-layer-insulance", Equation = "R″ = ℓ/k = ℓρₜ",
     Applicability = "Uniform plane layer. Use thickness along the heat-flow direction.",

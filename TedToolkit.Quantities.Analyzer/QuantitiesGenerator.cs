@@ -7,12 +7,9 @@
 
 using System.Collections.Immutable;
 
-using Cysharp.Text;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-using TedToolkit.Quantities.Data;
 using TedToolkit.RoslynHelper;
 
 using static TedToolkit.RoslynHelper.SourceComposer;
@@ -35,10 +32,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                            && Path.GetExtension(file.Path).Equals(".json", StringComparison.OrdinalIgnoreCase));
         var compilationProvider = context.CompilationProvider;
 
-        var precompiled = context.AnalyzerConfigOptionsProvider.Select((provider, _) =>
-            provider.GlobalOptions.TryGetValue("build_property.PrecompileSiQuantities", out var value)
-            && string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
-        var combined = compilationProvider.Combine(additionalJsonFiles.Collect()).Combine(precompiled);
+        var combined = compilationProvider.Combine(additionalJsonFiles.Collect());
 
         context.RegisterSourceOutput(combined, Generate);
     }
@@ -125,29 +119,30 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
     }
 
     private static void Generate(SourceProductionContext context,
-        ((Compilation Compilation, ImmutableArray<AdditionalText> Texts) Input, bool Precompiled) arg)
+        (Compilation Compilation, ImmutableArray<AdditionalText> Texts) arg)
     {
         try
         {
-            var ((compilations, texts), precompiled) = arg;
-            if (!precompiled && compilations.GetTypeByMetadataName("TedToolkit.Quantities.QuantitiesAttribute`1")
+            var (compilations, texts) = arg;
+            if (compilations.GetTypeByMetadataName("TedToolkit.Quantities.QuantitiesAttribute`1")
                 ?.BaseType?.FullName
                 is "System.Attribute")
             {
                 return;
             }
 
-            var unitAttribute = precompiled ? null : ReadUnit(compilations);
-            var tDataType = precompiled
-                ? compilations.GetSpecialType(SpecialType.System_Double)
-                : unitAttribute?.TDataType;
+            var unitAttribute = ReadUnit(compilations);
+            var tDataType = unitAttribute?.TDataType;
             var flag = unitAttribute?.Flag ?? 0;
             var units = unitAttribute?.Units;
-            var data = precompiled
-                ? GetPrecompiledData()
-                : Helpers.GetData(unitAttribute?.QuantitySystem,
-                    texts.Select(t => t.GetText(context.CancellationToken)!.ToString()),
-                    unitAttribute?.Quantities ?? Array.Empty<string>());
+            var quantitySystem = unitAttribute?.QuantitySystem;
+            var catalog = texts.SingleOrDefault(text => quantitySystem is not null
+                && string.Equals(Path.GetFileName(text.Path), $"Quantity.{quantitySystem}.Catalog.json",
+                    StringComparison.OrdinalIgnoreCase));
+            var data = Helpers.GetData(quantitySystem,
+                texts.Where(text => text != catalog).Select(text => text.GetText(context.CancellationToken)!.ToString()),
+                unitAttribute?.Quantities ?? Array.Empty<string>(),
+                catalog?.GetText(context.CancellationToken)?.ToString());
 
             var unit = new UnitSystem(units, data);
             {
@@ -169,10 +164,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                         .AddMember(toStringExtensions))
                     .Generate(context, "_UnitToStringExtensions");
 
-                if (!precompiled)
-                {
-                    new QuantitiesAttributeGenerator(data).Generate(context);
-                }
+                new QuantitiesAttributeGenerator(data).Generate(context);
             }
 
             if (tDataType is null)
@@ -183,32 +175,23 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
             var isPublic = (flag & 1 << 0) is 0;
             var generateMethods = (flag & 1 << 1) is not 0;
             var generateProperties = (flag & 1 << 2) is not 0;
-            var declaredQuantities = new List<INamedTypeSymbol>();
+            var declaredQuantities = data.Quantities.Values
+                .Select(quantity => compilations.Assembly.GetTypeByMetadataName("TedToolkit.Quantities." + quantity.Name))
+                .OfType<INamedTypeSymbol>()
+                .ToDictionary(symbol => symbol.Name);
+            var hasDimensionConversions = declaredQuantities.Values.Any(QuantityStructGenerator.HasWidening);
 
             foreach (var quantity in data.Quantities)
             {
-                var quantitySymbol =
-                    compilations.Assembly.GetTypeByMetadataName(ZString.Concat("TedToolkit.Quantities.",
-                        quantity.Value.Name));
-                if (quantitySymbol is not null)
-                {
-                    declaredQuantities.Add(quantitySymbol);
-                }
-
+                declaredQuantities.TryGetValue(quantity.Value.Name, out var quantitySymbol);
                 new QuantityStructGenerator(data, quantity.Value, tDataType, unit,
-                        isPublic, quantitySymbol, precompiled)
+                        isPublic, quantitySymbol, hasDimensionConversions)
                     .GenerateCode(context);
             }
 
-            if (precompiled)
-            {
-                QuantityFormulaCoverage.Generate(context, declaredQuantities);
-            }
-            else
-            {
-                new ToleranceGenerator(data.Quantities.Values.ToArray(), isPublic, tDataType)
-                    .Generate(context, compilations);
-            }
+            QuantityFormulaCoverage.Generate(context, declaredQuantities.Values, data);
+            new ToleranceGenerator(data.Quantities.Values.ToArray(), isPublic, tDataType)
+                .Generate(context, compilations);
 
             if (generateProperties)
             {
@@ -226,64 +209,6 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
             var msg = e.GetType().Name + ": " + e.Message + "\n" + e.StackTrace;
             context.ReportDiagnostic(Diagnostic.Create(
                 new DiagnosticDescriptor("ERR", msg, msg, "Error", DiagnosticSeverity.Error, true), Location.None));
-        }
-    }
-
-    private static DataCollection GetPrecompiledData()
-    {
-        var si = Helpers.GetData("SI", [], [], requireCatalog: true);
-        string[] originalSupplemental = ["DimensionlessRatio", "TemperatureDifference",];
-        string[] additionalSupplemental =
-        [
-            "Pressure", "Conductance", "Resistivity", "TemperatureGradient",
-            "Thickness", "Width", "Height", "Depth", "Radius", "Diameter", "Distance", "Wavelength", "PathLength",
-            "Impulse", "ThermalConductance", "ReynoldsNumber",
-        ];
-        var catalog = Helpers.GetData("ALL", [], [.. originalSupplemental, .. additionalSupplemental,],
-            requireCatalog: true);
-        var quantities = si.Quantities.ToDictionary(pair => pair.Key, pair => pair.Value);
-        var units = si.Units.ToDictionary(pair => pair.Key, pair => pair.Value);
-        var dimensions = si.Dimensions.ToDictionary(pair => pair.Key, pair => pair.Value);
-        AddQuantities(originalSupplemental);
-
-        const string Celsius = "DEGC";
-
-        const string Temperature = "ThermodynamicTemperature";
-        units[Celsius] = catalog.Units[Celsius];
-        var temperature = quantities[Temperature];
-        quantities[Temperature] = temperature with { Units = temperature.Units.Union([Celsius,]).ToArray(), };
-
-        // Append new units after Celsius to keep the existing public enum values stable.
-        AddQuantities(additionalSupplemental);
-
-        var convertibleUnits = units.Where(pair =>
-        {
-            var conversion = pair.Value.Conversion;
-            return conversion.Multiplier.IsFinite && !conversion.Multiplier.IsZero && conversion.Offset.IsFinite;
-        }).ToDictionary(pair => pair.Key, pair => pair.Value);
-        var convertibleQuantities = quantities.ToDictionary(pair => pair.Key, pair => pair.Value with
-        {
-            Units = pair.Value.Units.Where(convertibleUnits.ContainsKey).ToArray(),
-        });
-        return new(convertibleQuantities, convertibleUnits, dimensions);
-
-        void AddQuantities(IEnumerable<string> names)
-        {
-            foreach (var name in names)
-            {
-                if (quantities.ContainsKey(name))
-                {
-                    continue;
-                }
-
-                var quantity = catalog.Quantities[name];
-                quantities.Add(name, quantity);
-                dimensions[quantity.Dimension] = catalog.Dimensions[quantity.Dimension];
-                foreach (var unit in quantity.Units)
-                {
-                    units[unit] = catalog.Units[unit];
-                }
-            }
         }
     }
 }

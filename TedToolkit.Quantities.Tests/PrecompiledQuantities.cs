@@ -56,16 +56,6 @@ internal static class PrecompiledQuantities
 
     private static void VerifyQuantityConversions()
     {
-        var thickness = Q.Thickness.FromMillimetre(6);
-        Q.Length length = thickness;
-        Q.Thickness restored = (Q.Thickness)length;
-        Q.Width width = (Q.Width)thickness;
-        Q.Volume panel = Q.Area.FromSquareMetre(2) * thickness;
-        Close(6, length.Millimetre);
-        Close(6, restored.Millimetre);
-        Close(6, width.Millimetre);
-        Close(0.012, panel.CubicMetre);
-
         var pressure = Q.Pressure.FromPascal(4);
         Q.ForcePerArea forcePerArea = pressure;
         var heatFlow = (Q.HeatFlowRate)5d;
@@ -86,8 +76,7 @@ internal static class PrecompiledQuantities
         Close(4, ((Q.Activity)Q.Frequency.FromHertz(4)).Value);
         Close(2, ((Q.DimensionlessRatio)Q.PlaneAngle.FromRadian(2)).Value);
 
-        if (HasConversion(typeof(Q.Length), typeof(Q.Thickness), "op_Implicit")
-            || HasConversion(typeof(Q.Thickness), typeof(Q.Width), "op_Implicit")
+        if (HasConversion(typeof(Q.Force), typeof(Q.GravitationalAttraction), "op_Implicit")
             || HasConversion(typeof(Q.Energy), typeof(Q.Torque), "op_Implicit")
             || HasConversion(typeof(Q.Torque), typeof(Q.Energy), "op_Implicit")
             || HasConversion(typeof(Q.Length), typeof(Q.Mass), "op_Explicit"))

@@ -86,36 +86,12 @@ internal static class Helpers
     /// <param name="fileName">file name.</param>
     /// <param name="jsons">json values.</param>
     /// <param name="quantities">quantities.</param>
-    /// <param name="requireCatalog">Whether the named catalog must exist.</param>
+    /// <param name="catalog">The supplied catalog when the project provides one.</param>
     /// <returns>results.</returns>
-    /// <exception cref="InvalidOperationException">The required QUDT catalog is missing.</exception>
     public static DataCollection GetData(string? fileName, IEnumerable<string> jsons, string[] quantities,
-        bool requireCatalog = false)
+        string? catalog)
     {
-        var asm = typeof(QuantitiesGenerator).Assembly;
-
-        string? resourceName = null;
-        if (fileName is not null)
-        {
-            resourceName = asm.GetManifestResourceNames()
-                .FirstOrDefault(n => n.EndsWith(fileName + ".json", StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (requireCatalog && resourceName is null)
-        {
-            throw new InvalidOperationException(
-                $"The QUDT {fileName} catalog is missing. Run TedToolkit.Quantities.Generator before building the library.");
-        }
-
-        resourceName ??= asm.GetManifestResourceNames()
-            .FirstOrDefault(n => n.EndsWith("ISQ.json", StringComparison.OrdinalIgnoreCase));
-
-        JObject jObject;
-        using (var stream = asm.GetManifestResourceStream(resourceName)!)
-        using (var reader = new StreamReader(stream))
-        {
-            jObject = JObject.Parse(reader.ReadToEnd());
-        }
+        var jObject = JObject.Parse(catalog ?? ReadEmbeddedCatalog(fileName));
 
         foreach (var json in jsons)
         {
@@ -130,6 +106,18 @@ internal static class Helpers
                 .Where(QuantityPredict)
                 .ToDictionary(i => i.Key, i => i.Value),
         };
+
+        static string ReadEmbeddedCatalog(string? name)
+        {
+            var assembly = typeof(QuantitiesGenerator).Assembly;
+            var resources = assembly.GetManifestResourceNames();
+            var resource = name is null
+                ? null
+                : resources.FirstOrDefault(item => item.EndsWith(name + ".json", StringComparison.OrdinalIgnoreCase));
+            resource ??= resources.FirstOrDefault(item => item.EndsWith("ISQ.json", StringComparison.OrdinalIgnoreCase));
+            using var reader = new StreamReader(assembly.GetManifestResourceStream(resource)!);
+            return reader.ReadToEnd();
+        }
 
         bool QuantityPredict(KeyValuePair<string, Quantity> pair)
         {

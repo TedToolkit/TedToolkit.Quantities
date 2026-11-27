@@ -22,6 +22,12 @@ if (args is ["--formula-readme", var generatedDirectory, var readmePath, var mod
     return;
 }
 
+if (args is ["--quantity-catalog", var basePath, var catalogPath, var outputPath, .. var selections])
+{
+    QuantityCatalogBuilder.Generate(basePath, catalogPath, outputPath, selections);
+    return;
+}
+
 var repository = DirectoryPath.CurrentDirectory;
 var quantityFolder = repository / "TedToolkit.Quantities";
 var unitFolder = (repository / "TedToolkit.Quantities.Analyzer" / "QUDT").Create();

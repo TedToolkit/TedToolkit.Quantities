@@ -4,7 +4,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net7.0</TargetFrameworks>
     <Description>Precompiled double-precision quantities for the QUDT SI quantity system.</Description>
-    <PrecompileSiQuantities>true</PrecompileSiQuantities>
+    <AdditionalQudtQuantities>DimensionlessRatio TemperatureDifference ThermodynamicTemperature:DEGC Pressure Conductance Resistivity TemperatureGradient Width Height Depth Radius Diameter Distance Wavelength PathLength Impulse ThermalConductance ReynoldsNumber</AdditionalQudtQuantities>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net7.0'">
@@ -15,7 +15,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <CompilerVisibleProperty Include="PrecompileSiQuantities"/>
     <ProjectReference Include="../TedToolkit.Quantities/TedToolkit.Quantities.csproj"/>
     <ProjectReference Include="../TedToolkit.Quantities.Analyzer/TedToolkit.Quantities.Analyzer.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all"/>
@@ -25,13 +24,23 @@
     <Analyzer Include="../TedToolkit.Quantities.Analyzer/bin/$(Configuration)/netstandard2.0/Numbers.dll"/>
     <Analyzer Include="../TedToolkit.Quantities.Analyzer/bin/$(Configuration)/netstandard2.0/System.Memory.dll"/>
     <Analyzer Include="../TedToolkit.Quantities.Analyzer/bin/$(Configuration)/netstandard2.0/Newtonsoft.Json.dll"/>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net7.0'">
     <ProjectReference Include="../TedToolkit.Quantities.Generator/TedToolkit.Quantities.Generator.csproj"
                       ReferenceOutputAssembly="false" PrivateAssets="all" SkipGetTargetFrameworkProperties="true"
                       GlobalPropertiesToRemove="TargetFramework;RuntimeIdentifier;SelfContained"/>
   </ItemGroup>
+
+  <Target Name="GenerateQudtCatalog" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <QudtCatalogDirectory>../TedToolkit.Quantities.Analyzer/QUDT</QudtCatalogDirectory>
+      <QudtCatalog>$(IntermediateOutputPath)Quantity.SI.Catalog.json</QudtCatalog>
+    </PropertyGroup>
+    <MakeDir Directories="$(IntermediateOutputPath)" Condition="'$(DesignTimeBuild)' != 'true'"/>
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)" Condition="'$(DesignTimeBuild)' != 'true'"
+          Command="dotnet &quot;../TedToolkit.Quantities.Generator/bin/$(Configuration)/net11.0/TedToolkit.Quantities.Generator.dll&quot; --quantity-catalog &quot;$(QudtCatalogDirectory)/SI.json&quot; &quot;$(QudtCatalogDirectory)/ALL.json&quot; &quot;$(QudtCatalog)&quot; $(AdditionalQudtQuantities)"/>
+    <ItemGroup>
+      <AdditionalFiles Include="$(QudtCatalog)" Condition="Exists('$(QudtCatalog)')"/>
+    </ItemGroup>
+  </Target>
 
   <Target Name="GenerateFormulaReadme" AfterTargets="CoreCompile"
           Condition="'$(TargetFramework)' == 'net7.0' and '$(DesignTimeBuild)' != 'true'">

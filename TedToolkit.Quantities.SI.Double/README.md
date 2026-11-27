@@ -1,7 +1,7 @@
 # TedToolkit.Quantities.SI.Double
 
 Precompiled double-precision quantity types from the repository's QUDT SI catalog, with additional
-QUDT kinds such as `Thickness`, `Pressure`, and `ThermalConductance`. The package targets .NET
+QUDT kinds for typed formulas and conversions, such as `Pressure` and `ThermalConductance`. It targets .NET
 Standard 2.0 and .NET 7, matching the base library's generic math interface on .NET 7 and later.
 
 ```sh
@@ -22,7 +22,7 @@ Quantities are stored in coherent SI units. `Length.Value` is in metres, regardl
 to construct it. Use named factories and unit accessors such as `FromMillimetre`, `Millimetre`, or
 `As(LengthUnit.Millimetre)` at API boundaries. Explicit casts to or from `double` use the coherent
 value. The `None` member of each unit enum also selects the coherent unit, including quantities that
-have no named unit in the catalog. Equality and ordering use the stored `double` values.
+have no named unit in the catalog. Equality and ordering follow the base library's `Tolerance` rules.
 Unit conversions are generated from the multipliers and offsets in the QUDT data. A unit is exposed
 when those parameters describe an invertible affine conversion.
 
@@ -52,7 +52,7 @@ directions are:
 
 | Specialized quantity | General quantity |
 | --- | --- |
-| `Thickness`, `Width`, `Height`, `Depth`, `Radius`, `Diameter`, `Distance`, `Wavelength`, `PathLength` | `Length` |
+| `Width`, `Height`, `Depth`, `Radius`, `Diameter`, `Distance`, `Wavelength`, `PathLength` | `Length` |
 | `GravitationalAttraction` | `Force` |
 | `HeatFlowRate` | `Power` |
 | `HeatFlowRatePerArea` | `PowerPerArea` |
@@ -61,16 +61,18 @@ directions are:
 | `ReynoldsNumber` | `DimensionlessRatio` |
 
 ```csharp
-Thickness panel = Thickness.FromMillimetre(6);
-Length length = panel;
-Thickness measured = (Thickness)length;
-Volume material = Area.FromSquareMetre(2) * panel;
+GravitationalAttraction weight = (GravitationalAttraction)12d;
+Force force = weight;
+GravitationalAttraction restored = (GravitationalAttraction)force;
 ```
 
 The other same-dimension directions use explicit casts. Quantities of different dimensions
 combine through the formulas below. [C# conversion operators](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/user-defined-conversion-operators)
 
 ## Maintaining the formula inventory
+
+The package uses `[assembly: Quantities<double>(QuantitySystems.SI)]` to select the QUDT SI catalog.
+The project supplies any additional QUDT kinds and units through the generator's `AdditionalFiles` input.
 
 Add operators with `QuantityOperator` and named calculations with `QuantityFormula`. One declaration
 per physical relation supplies its formula ID, equation, applicability, and source links. Swapped
