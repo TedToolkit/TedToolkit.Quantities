@@ -54,6 +54,7 @@ internal static class PrecompiledQuantities
         VerifyHeatTransfer();
         VerifyThermodynamicProcesses();
         VerifyOptics();
+        VerifyElectromagneticWavesAndPhotons();
         VerifyLightChemistryAndDose();
         VerifyRadiationAndMixtures();
         VerifyQuantityConversions();
@@ -155,6 +156,11 @@ internal static class PrecompiledQuantities
         var displacement = Q.Length.FromMillimetre(40);
         Close(-8, Q.Force.FromSpringDisplacement(stiffness, displacement).Newton);
         Close(0.16, Q.Energy.FromSpringDisplacement(stiffness, displacement).Joule);
+        var damping = (Q.MassPerTime)4d;
+        var oscillatingMass = Q.Mass.FromKilogram(2);
+        Close(-2, Q.Force.FromViscousDamping(damping, Q.LinearVelocity.FromMetrePerSecond(0.5)).Newton);
+        Close(2, Q.AngularVelocity.FromUnderdampedSpring(oscillatingMass, (Q.ForcePerLength)10d, damping).RadianPerSecond);
+        Close(40 / Math.E, displacement.AfterViscousDamping(oscillatingMass, damping, Q.Time.FromSecond(1)).Millimetre);
 
         var gravitationalParameter = (Q.StandardGravitationalParameter)400d;
         var orbitRadius = Q.Length.FromMillimetre(4000);
@@ -313,6 +319,8 @@ internal static class PrecompiledQuantities
         Close(10, Q.Time.FromSecond(8).DilatedForRelativeVelocity(velocity, lightSpeed).Second);
         Close(8, Q.Length.FromMetre(10).ContractedAlongMotion(velocity, lightSpeed).Metre);
         Close(10d / 7, velocity.ComposeRelativistically(Q.LinearVelocity.FromMetrePerSecond(-5), lightSpeed).MetrePerSecond);
+        Close(200, Q.Frequency.FromHertz(400).ObservedWithRelativisticDopplerShift(velocity, lightSpeed).Hertz);
+        Close(0.5, Q.Length.FromMillimetre(1500).RedshiftFrom(Q.Length.FromMetre(1)));
     }
 
     private static void VerifyFluidTransport()
@@ -460,6 +468,12 @@ internal static class PrecompiledQuantities
         Close(6, Q.ElectricPotential.FromSinusoidalCapacitor(rmsCurrent, acCapacitance, frequency).Volt);
         Close(2, Q.ElectricCurrent.FromSeriesRlc(Q.ElectricPotential.FromVolt(2 * Math.Sqrt(13)),
             Q.Resistance.FromOhm(3), acInductance, acCapacitance, frequency).Ampere);
+        Close(1 / Math.PI, Q.Frequency.FromFirstOrderCutoff(Q.Time.FromMillisecond(500)).Hertz);
+        Close(1, inductance.SeriesQualityFactor(capacitance, resistance));
+        Close(50, Q.Power.FromSinusoidalAc(Q.ElectricPotential.FromVolt(20), Q.ElectricCurrent.FromAmpere(5),
+            Q.PlaneAngle.FromRadian(Math.PI / 3)).Watt);
+        Close(240, Q.ElectricPotential.FromVolt(120).AfterIdealTransformer(10, 20).Volt);
+        Close(1.5, rmsCurrent.AfterIdealTransformer(10, 20).Ampere);
     }
 
     private static void VerifyHeatTransfer()
@@ -605,6 +619,14 @@ internal static class PrecompiledQuantities
         Close(400000, Q.ForcePerArea.FromPascal(100000).AfterIsentropicVolumeChange(
             initialVolume, finalVolume, gamma).Pascal);
         Close(600, hot.AfterIsentropicVolumeChange(initialVolume, finalVolume, gamma).Kelvin);
+        var expansionVolume = Q.Volume.FromLitre(4);
+        var initialPressure = Q.ForcePerArea.FromPascal(100000);
+        Close(200 * Math.Log(2), Q.Energy.FromIsothermalWork(initialPressure, initialVolume, expansionVolume).Joule);
+        Close(100, Q.Energy.FromIsentropicWork(initialPressure, initialVolume, expansionVolume, gamma).Joule);
+        var displacementConstant = (Q.LengthTemperature)0.003d;
+        var peakWavelength = displacementConstant / hot;
+        Close(0.01, peakWavelength.Millimetre);
+        Close(300, (displacementConstant / peakWavelength).Kelvin);
         Close(0.4, Q.Energy.FromJoule(40).HeatEngineEfficiency(Q.Energy.FromJoule(100)));
         Close(1d / 3, hot.CarnotEfficiency(cold));
         Close(2, hot.CarnotRefrigeratorCoefficientOfPerformance(cold));
@@ -633,6 +655,43 @@ internal static class PrecompiledQuantities
         var diffusivity = (Q.ThermalDiffusivity)0.1d;
         Close(2, (Q.KinematicViscosity)0.2d / diffusivity);
         Close(0.8, diffusivity.FourierNumber(Q.Time.FromSecond(2), innerRadius));
+    }
+
+    private static void VerifyElectromagneticWavesAndPhotons()
+    {
+        var permittivity = (Q.Permittivity)0.5d;
+        var permeability = (Q.Permeability)0.5d;
+        var speed = Q.LinearVelocity.FromElectromagneticMedium(permittivity, permeability);
+        Close(2, speed.MetrePerSecond);
+        var magneticField = Q.MagneticFluxDensity.FromTesla(3);
+        var electricField = Q.ElectricFieldStrength.FromPlaneWave(magneticField, speed);
+        Close(6, electricField.Value);
+        Close(3, Q.MagneticFluxDensity.FromPlaneWave(electricField, speed).Tesla);
+        var intensity = Q.PowerPerArea.FromPlaneWave(electricField, magneticField, permeability);
+        Close(36, intensity.Value);
+        Close(18, Q.EnergyDensity.FromElectromagneticFields(
+            electricField, magneticField, permittivity, permeability).Value);
+        Close(4.5, Q.ForcePerArea.FromRadiationPressure(
+            intensity, Q.LinearVelocity.FromMetrePerSecond(12), 0.5).Pascal);
+
+        var photonProduct = (Q.LengthEnergy)2d;
+        var wavelength = Q.Length.FromMillimetre(500);
+        Q.Energy photonEnergy = photonProduct / wavelength;
+        Close(4, photonEnergy.Joule);
+        Close(0.5, (photonProduct / photonEnergy).Metre);
+        Close(2, (wavelength * photonEnergy).Value);
+        Close(2, Q.Length.ComptonWavelengthShift(
+            Q.Length.FromMillimetre(4), Q.PlaneAngle.FromRadian(Math.PI / 3)).Millimetre);
+        if (!Q.Energy.TryPhotoelectronKineticEnergy(photonEnergy, Q.Energy.FromJoule(1), out var kineticEnergy))
+        {
+            throw new InvalidOperationException("Expected a photoelectron above the emission threshold.");
+        }
+
+        Close(3, kineticEnergy.Joule);
+        if (Q.Energy.TryPhotoelectronKineticEnergy(photonEnergy, Q.Energy.FromJoule(5), out _))
+        {
+            throw new InvalidOperationException("Expected no photoelectron below the emission threshold.");
+        }
     }
 
     private static void VerifyRadiationAndMixtures()

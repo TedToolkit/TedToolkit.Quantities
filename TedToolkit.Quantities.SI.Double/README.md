@@ -77,7 +77,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **268 physical formulas**. Swapped products, solved forms, and typed variants
+The inventory lists **288 physical formulas**. Swapped products, solved forms, and typed variants
 share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
 
@@ -105,6 +105,9 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| F = −bv | `Force` | Linear viscous damping. Use nonnegative damping coefficient b in mass per time and signed relative velocity. Supported methods include `Force.FromViscousDamping`. | [OpenStax damped oscillations][openstax-damped-oscillations] |
+| ωd = √(k/m − (b/(2m))²) | `AngularVelocity` | Linear mass–spring oscillator with positive mass and stiffness and subcritical viscous damping. Supported methods include `AngularVelocity.FromUnderdampedSpring`. | [OpenStax damped oscillations][openstax-damped-oscillations] |
+| A(t) = A₀ exp(−bt/(2m)) | `Length` | Amplitude envelope of an underdamped linear oscillator, with viscous damping, positive mass, and nonnegative elapsed time. Supported methods include `Length.AfterViscousDamping`. | [OpenStax damped oscillations][openstax-damped-oscillations] |
 | Fₛ,max = μₛN | `Force` | Maximum static friction for a dry contact under the Coulomb model. Use the nonnegative coefficient and compressive normal force. Supported methods include `Force.MaximumStaticFriction`. | [OpenStax friction][openstax-friction] |
 | Fₖ = μₖN | `Force` | Kinetic friction magnitude for dry sliding contact under the Coulomb model. Use the nonnegative coefficient and compressive normal force. Supported methods include `Force.FromKineticFriction`. | [OpenStax friction][openstax-friction] |
 | ΔU = mgΔh | `Energy` | Uniform gravity over the height interval. Height change is signed and positive upward. Supported methods include `Energy.FromUniformGravity`. | [OpenStax potential energy][openstax-potential-energy] |
@@ -176,6 +179,8 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| fobs = femit√((1 − β)/(1 + β)), β = v/c | `Frequency` | Collinear relative motion in vacuum. The signed subluminal relative velocity v is positive for recession. Supported methods include `Frequency.ObservedWithRelativisticDopplerShift`. | [OpenStax Doppler effect for light][openstax-light-doppler] |
+| z = (λobs − λemit)/λemit | `double` | Use observed and emitted wavelengths of the same spectral feature with positive emitted wavelength. Supported methods include `Length.RedshiftFrom`. | [NASA JPL spectral redshift][nasa-spectral-redshift] |
 | γ = 1/√(1 − v²/c²) | `double` | Relative speed magnitude below the positive vacuum speed of light c. Supported methods include `LinearVelocity.LorentzFactor`. | [OpenStax special relativity equations][openstax-relativity] |
 | E₀ = mc² | `Energy` | Rest energy of a body of rest mass m. Supply the positive vacuum speed of light. Supported methods include `Energy.FromRestMass`. | [OpenStax special relativity equations][openstax-relativity] |
 | E = γmc² | `Energy` | Total energy of a body with positive rest mass and subluminal speed measured in the same inertial frame. Supported methods include `Energy.FromRelativisticMotion`. | [OpenStax special relativity equations][openstax-relativity] |
@@ -240,6 +245,10 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| fc = 1/(2πτ) | `Frequency` | Half-power cutoff of a first-order RC or RL filter. Use positive time constant RC or L/R as appropriate. Supported methods include `Frequency.FromFirstOrderCutoff`. | [University of Oklahoma AC filters][ou-first-order-filters] |
+| Q = ω₀L/R | `double` | Series RLC circuit with positive components. ω₀ is the angular resonant frequency. Supported methods include `Inductance.SeriesQualityFactor`. | [MIT series RLC response][mit-series-rlc] |
+| P = VᵣₘₛIᵣₘₛ cos φ | `Power` | Average active power in sinusoidal steady state. Use the phase difference between terminal voltage and current entering the positive terminal. Supported methods include `Power.FromSinusoidalAc`. | [OpenStax AC power][openstax-ac-power] |
+| V₂ = V₁N₂/N₁, I₂ = I₁N₁/N₂ | `ElectricPotential`, `ElectricCurrent` | Ideal loaded transformer in steady AC operation. Use positive turn counts and RMS magnitudes. Supported methods include `ElectricPotential.AfterIdealTransformer` and `ElectricCurrent.AfterIdealTransformer`. | [OpenStax transformers][openstax-transformers] |
 | Rseries = R₁ + R₂ | `Resistance` | Ohmic resistors in series carry the same current. Supported methods include `Resistance.InSeriesWith`. | [OpenStax RC circuits][openstax-rc-circuits] |
 | 1/Rparallel = 1/R₁ + 1/R₂ | `Resistance` | Two positive ohmic resistances connected between the same nodes. Supported methods include `Resistance.InParallelWith`. | [OpenStax RC circuits][openstax-rc-circuits] |
 | 1/Cseries = 1/C₁ + 1/C₂ | `Capacitance` | Two positive ideal capacitors in series. Supported methods include `Capacitance.InSeriesWith`. | [OpenStax capacitance][openstax-capacitance] |
@@ -307,6 +316,9 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| W = p₁V₁ ln(V₂/V₁) | `Energy` | Reversible isothermal change of a fixed amount of ideal gas. Use initial absolute pressure and positive volumes. Work done by the gas is positive on expansion. Supported methods include `Energy.FromIsothermalWork`. | [OpenStax isothermal work][openstax-isothermal-work] |
+| W = (p₁V₁ − p₂V₂)/(γ − 1) | `Energy` | Reversible adiabatic change of a calorically perfect ideal gas. Use absolute pressure, positive volumes and heat capacity ratio γ greater than one. The final pressure follows the isentropic relation. Supported methods include `Energy.FromIsentropicWork`. | [OpenStax adiabatic work][openstax-adiabatic-work] |
+| λmax T = b | `Length`, `LengthTemperature`, `ThermodynamicTemperature` | Blackbody spectral radiance per unit wavelength at positive absolute temperature. Use the wavelength form of the Wien displacement constant b. | [OpenStax blackbody radiation][openstax-wien] |
 | γ = cₚ / cᵥ | `double` | Use two `SpecificHeatCapacity` inputs with units of J/(kg·K), measured at constant pressure and constant volume for the same gas state. Supported methods include `SpecificHeatCapacity.HeatCapacityRatio`. | [NASA specific heat ratio][nasa-specific-heat-ratio] |
 | p₂ = p₁(V₁ / V₂)ᵞ | `ForcePerArea` | Fixed amount of calorically perfect ideal gas undergoing reversible adiabatic compression or expansion. Use absolute pressure, positive volumes and constant heat capacity ratio γ. Supported methods include `ForcePerArea.AfterIsentropicVolumeChange`. | [NASA isentropic compression and expansion][nasa-isentropic-compression] |
 | T₂ = T₁(V₁ / V₂)^(γ − 1) | `ThermodynamicTemperature` | Same reversible adiabatic model with absolute temperatures and positive volumes. Supported methods include `ThermodynamicTemperature.AfterIsentropicVolumeChange`. | [NASA isentropic compression and expansion][nasa-isentropic-compression] |
@@ -403,6 +415,24 @@ Update the corresponding row when changing a formula's coverage.
 | M = ρVₘ | `Density`, `MolarMass`, `MolarVolume` | Density and molar volume describe the same material at the same state. | [IUPAC molar quantities][iupac-molar-quantities] · [QUDT molar volume][qudt-molar-volume] |
 | c = ρ / M | `AmountOfSubstancePerVolume`, `Density`, `MolarMass` | For a pure substance, use the density and molar mass of the same substance at the same state. Follows from ρ = m / V and M = m / n. | [IUPAC amount concentration][iupac-amount-concentration] · [IUPAC molar mass][iupac-molar-mass] · [OpenStax fluids, density, and pressure][openstax-fluids-density-and-pressure] |
 | Vₘ = V / n | `AmountOfSubstance`, `MolarVolume`, `Volume` | Volume and amount refer to the same sample at the same state. | [IUPAC molar quantities][iupac-molar-quantities] |
+
+### Electromagnetic waves
+
+| Formula | Result types | Applicability and named entry points | Source |
+| --- | --- | --- | --- |
+| v = 1/√(εμ) | `LinearVelocity` | Phase speed in a lossless, isotropic, nondispersive linear medium with positive absolute permittivity and permeability. Supported methods include `LinearVelocity.FromElectromagneticMedium`. | [OpenStax electromagnetic wave equations][openstax-em-wave-equations] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
+| E = vB | `ElectricFieldStrength`, `MagneticFluxDensity` | Progressive plane wave in a lossless medium. Use matching electric and magnetic magnitudes and the phase speed. Supported methods include `ElectricFieldStrength.FromPlaneWave` and `MagneticFluxDensity.FromPlaneWave`. | [OpenStax electromagnetic wave energy][openstax-em-wave-energy] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
+| I = EᵣₘₛBᵣₘₛ/μ | `PowerPerArea` | Time-averaged intensity of a progressive sinusoidal plane wave in a lossless linear medium. The perpendicular field components are in phase. Supported methods include `PowerPerArea.FromPlaneWave`. | [OpenStax electromagnetic wave energy][openstax-em-wave-energy] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
+| u = ½(εE² + B²/μ) | `EnergyDensity` | Instantaneous field energy density in a lossless, isotropic, nondispersive linear medium. Use instantaneous field magnitudes. Supported methods include `EnergyDensity.FromElectromagneticFields`. | [OpenStax electromagnetic wave energy][openstax-em-wave-energy] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
+| p = (1 + R)I/c | `ForcePerArea` | Normal incidence in vacuum on an opaque surface. The specularly reflected fraction is R and the remaining fraction is absorbed. Follows by adding the absorbed and reflected momentum changes. Supported methods include `ForcePerArea.FromRadiationPressure`. | [OpenStax radiation pressure][openstax-radiation-pressure] |
+
+### Photon interactions
+
+| Formula | Result types | Applicability and named entry points | Source |
+| --- | --- | --- | --- |
+| Eλ = hc | `Energy`, `Length`, `LengthEnergy` | Photon energy and vacuum wavelength. The product hc is a `LengthEnergy` input when solving for either quantity. | [OpenStax photon equations][openstax-photon-equations] |
+| Δλ = λ꜀(1 − cos θ) | `Length` | Compton scattering from an initially stationary free electron. Use the electron Compton wavelength and photon scattering angle. Supported methods include `Length.ComptonWavelengthShift`. | [OpenStax Compton scattering][openstax-compton] |
+| Kmax = Eγ − W | `Energy`, `bool` | Single-photon photoemission with material work function W. The method returns false below the emission threshold. Supported methods include `Energy.TryPhotoelectronKineticEnergy`. | [OpenStax photoelectric effect][openstax-photoelectric] |
 
 ## Formula references
 
@@ -541,6 +571,21 @@ Update the corresponding row when changing a formula's coverage.
 - [MIT circular shaft torsion][mit-shaft-torsion]
 - [OpenStax moments of inertia reference table][openstax-rotation-tables]
 - [OpenStax special relativity equations][openstax-relativity]
+- [OpenStax damped oscillations][openstax-damped-oscillations]
+- [OpenStax electromagnetic wave equations][openstax-em-wave-equations]
+- [OpenStax electromagnetic wave energy][openstax-em-wave-energy]
+- [OpenStax radiation pressure][openstax-radiation-pressure]
+- [University of Oklahoma AC filters][ou-first-order-filters]
+- [MIT series RLC response][mit-series-rlc]
+- [OpenStax transformers][openstax-transformers]
+- [OpenStax isothermal work][openstax-isothermal-work]
+- [OpenStax adiabatic work][openstax-adiabatic-work]
+- [OpenStax blackbody radiation][openstax-wien]
+- [OpenStax photon equations][openstax-photon-equations]
+- [OpenStax Compton scattering][openstax-compton]
+- [OpenStax photoelectric effect][openstax-photoelectric]
+- [OpenStax Doppler effect for light][openstax-light-doppler]
+- [NASA JPL spectral redshift][nasa-spectral-redshift]
 
 [bipm-si-brochure]: https://www.bipm.org/en/publications/si-brochure
 [bipm-katal-resolution]: https://www.bipm.org/en/-/resolution-cgpm-21-12
@@ -677,3 +722,18 @@ Update the corresponding row when changing a formula's coverage.
 [mit-shaft-torsion]: https://ocw.mit.edu/courses/1-050-solid-mechanics-fall-2004/emech8_04.pdf
 [openstax-rotation-tables]: https://openstax.org/books/physics/pages/a-reference-tables
 [openstax-relativity]: https://openstax.org/books/university-physics-volume-3/pages/5-key-equations
+[openstax-damped-oscillations]: https://openstax.org/books/university-physics-volume-1/pages/15-5-damped-oscillations
+[openstax-em-wave-equations]: https://openstax.org/books/university-physics-volume-2/pages/16-key-equations
+[openstax-em-wave-energy]: https://openstax.org/books/university-physics-volume-2/pages/16-3-energy-carried-by-electromagnetic-waves
+[openstax-radiation-pressure]: https://openstax.org/books/university-physics-volume-2/pages/16-4-momentum-and-radiation-pressure
+[ou-first-order-filters]: https://www.nhn.ou.edu/~bumm/ELAB/Lect_Notes/AC_impedance_v2_1_1.html
+[mit-series-rlc]: https://circuits.mit.edu/_static/S24/handouts/lec12a/lec22.pdf
+[openstax-transformers]: https://openstax.org/books/university-physics-volume-2/pages/15-6-transformers
+[openstax-isothermal-work]: https://openstax.org/books/university-physics-volume-2/pages/3-2-work-heat-and-internal-energy
+[openstax-adiabatic-work]: https://openstax.org/books/university-physics-volume-2/pages/3-6-adiabatic-processes-for-an-ideal-gas
+[openstax-wien]: https://openstax.org/books/university-physics-volume-3/pages/6-1-blackbody-radiation
+[openstax-photon-equations]: https://openstax.org/books/university-physics-volume-3/pages/6-key-equations
+[openstax-compton]: https://openstax.org/books/university-physics-volume-3/pages/6-3-the-compton-effect
+[openstax-photoelectric]: https://openstax.org/books/university-physics-volume-3/pages/6-2-photoelectric-effect
+[openstax-light-doppler]: https://openstax.org/books/university-physics-volume-3/pages/5-7-doppler-effect-for-light
+[nasa-spectral-redshift]: https://www.jpl.nasa.gov/edu/resources/lesson-plan/math-of-the-expanding-universe/

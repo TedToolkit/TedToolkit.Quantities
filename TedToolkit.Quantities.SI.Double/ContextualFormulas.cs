@@ -66,6 +66,21 @@ public readonly partial struct Frequency
         var speed = soundSpeed.Value;
         return this * ((speed + observerVelocityTowardSource.Value) / (speed - sourceVelocityTowardObserver.Value));
     }
+
+    /// <summary>Calculates the observed frequency of this light for collinear relative motion in vacuum.</summary>
+    /// <param name="recessionVelocity">The signed subluminal relative velocity, positive for recession.</param>
+    /// <param name="vacuumLightSpeed">The positive vacuum speed of light.</param>
+    public Frequency ObservedWithRelativisticDopplerShift(LinearVelocity recessionVelocity, LinearVelocity vacuumLightSpeed)
+    {
+        var beta = recessionVelocity.Value / vacuumLightSpeed.Value;
+        return this * Math.Sqrt((1d - beta) / (1d + beta));
+    }
+
+    /// <summary>Calculates the half-power cutoff frequency of a first-order RC or RL filter with positive time constant.</summary>
+    public static Frequency FromFirstOrderCutoff(Time timeConstant)
+    {
+        return AngularVelocity.FromRadianPerSecond(1d / timeConstant.Second).ToFrequency();
+    }
 }
 
 public readonly partial struct AngularVelocity
@@ -89,6 +104,13 @@ public readonly partial struct AngularVelocity
     public static AngularVelocity FromLcResonance(Inductance inductance, Capacitance capacitance)
     {
         return FromRadianPerSecond(1d / Math.Sqrt(inductance.Henry * capacitance.Farad));
+    }
+
+    /// <summary>Calculates angular frequency for a linear mass–spring system with positive subcritical viscous damping.</summary>
+    public static AngularVelocity FromUnderdampedSpring(Mass mass, ForcePerLength stiffness, MassPerTime dampingCoefficient)
+    {
+        var decayRate = 0.5d * dampingCoefficient.Value / mass.Value;
+        return FromRadianPerSecond(Math.Sqrt(stiffness.Value / mass.Value - decayRate * decayRate));
     }
 }
 
@@ -315,6 +337,27 @@ public readonly partial struct Length
     {
         return this / relativeVelocity.LorentzFactor(vacuumLightSpeed);
     }
+
+    /// <summary>Calculates the wavelength increase for Compton scattering from an initially stationary electron.</summary>
+    public static Length ComptonWavelengthShift(Length electronComptonWavelength, PlaneAngle scatteringAngle)
+    {
+        var sine = Math.Sin(0.5d * scatteringAngle.Radian);
+        return electronComptonWavelength * (2d * sine * sine);
+    }
+
+    /// <summary>Calculates the signed fractional shift of this observed wavelength from a positive emitted wavelength.</summary>
+    public double RedshiftFrom(Length emittedWavelength)
+    {
+        return (Value - emittedWavelength.Value) / emittedWavelength.Value;
+    }
+
+    /// <summary>Calculates the amplitude envelope of an underdamped linear spring with viscous damping.</summary>
+    /// <remarks>Use this initial amplitude, positive mass and damping coefficient, and nonnegative elapsed time.</remarks>
+    public Length AfterViscousDamping(Mass mass, MassPerTime dampingCoefficient, Time elapsed)
+    {
+        var decayRate = 0.5d * dampingCoefficient.Value / mass.Value;
+        return this * Math.Exp(-decayRate * elapsed.Value);
+    }
 }
 
 public readonly partial struct Area
@@ -400,6 +443,15 @@ public readonly partial struct EnergyDensity
     public static EnergyDensity FromElasticStrain(Stress stress, double strain)
     {
         return (EnergyDensity)(0.5d * stress.Value * strain);
+    }
+
+    /// <summary>Calculates instantaneous field energy density in a lossless, linear, isotropic, nondispersive medium.</summary>
+    public static EnergyDensity FromElectromagneticFields(
+        ElectricFieldStrength electricField, MagneticFluxDensity magneticField, Permittivity permittivity, Permeability permeability)
+    {
+        var electric = electricField.Value;
+        var magnetic = magneticField.Value;
+        return (EnergyDensity)(0.5d * (permittivity.Value * electric * electric + magnetic * magnetic / permeability.Value));
     }
 }
 
@@ -534,6 +586,36 @@ public readonly partial struct Energy
         var momentumTimesLightSpeed = momentum.Value * vacuumLightSpeed.Value;
         return (Energy)Math.Sqrt(restEnergy * restEnergy + momentumTimesLightSpeed * momentumTimesLightSpeed);
     }
+
+    /// <summary>Calculates maximum photoelectron kinetic energy from photon energy and a positive work function.</summary>
+    /// <returns>True when the photon energy reaches the emission threshold.</returns>
+    public static bool TryPhotoelectronKineticEnergy(Energy photonEnergy, Energy workFunction, out Energy kineticEnergy)
+    {
+        var difference = photonEnergy.Value - workFunction.Value;
+        if (!(difference >= 0d))
+        {
+            kineticEnergy = default;
+            return false;
+        }
+
+        kineticEnergy = (Energy)difference;
+        return true;
+    }
+
+    /// <summary>Calculates work done by a fixed amount of ideal gas during a reversible isothermal volume change.</summary>
+    public static Energy FromIsothermalWork(ForcePerArea initialPressure, Volume initialVolume, Volume finalVolume)
+    {
+        return (Energy)(initialPressure.Value * initialVolume.Value * Math.Log(finalVolume.Value / initialVolume.Value));
+    }
+
+    /// <summary>Calculates work done by a calorically perfect ideal gas during a reversible adiabatic volume change.</summary>
+    public static Energy FromIsentropicWork(
+        ForcePerArea initialPressure, Volume initialVolume, Volume finalVolume, double heatCapacityRatio)
+    {
+        var finalPressure = initialPressure.AfterIsentropicVolumeChange(initialVolume, finalVolume, heatCapacityRatio);
+        return (Energy)((initialPressure.Value * initialVolume.Value - finalPressure.Value * finalVolume.Value)
+                        / (heatCapacityRatio - 1d));
+    }
 }
 
 public readonly partial struct LinearMomentum
@@ -615,6 +697,12 @@ public readonly partial struct Force
     public static Force FromStokesDrag(DynamicViscosity viscosity, Length sphereRadius, LinearVelocity relativeSpeed)
     {
         return (Force)((6d * Math.PI) * viscosity.Value * sphereRadius.Value * Math.Abs(relativeSpeed.Value));
+    }
+
+    /// <summary>Calculates the signed force opposing relative motion under linear viscous damping.</summary>
+    public static Force FromViscousDamping(MassPerTime dampingCoefficient, LinearVelocity relativeVelocity)
+    {
+        return (Force)(-dampingCoefficient.Value * relativeVelocity.Value);
     }
 }
 
@@ -773,6 +861,14 @@ public readonly partial struct ForcePerArea
     public static ForcePerArea FromSphericalSurfaceTension(ForcePerLength surfaceTension, Length radius)
     {
         return (ForcePerArea)(2d * surfaceTension.Value / radius.Value);
+    }
+
+    /// <summary>Calculates pressure on an opaque surface illuminated at normal incidence in vacuum.</summary>
+    /// <remarks>Specular reflectance is a fraction from zero to one, and the remaining irradiance is absorbed.</remarks>
+    public static ForcePerArea FromRadiationPressure(
+        PowerPerArea irradiance, LinearVelocity vacuumLightSpeed, double specularReflectance)
+    {
+        return (ForcePerArea)((1d + specularReflectance) * irradiance.Value / vacuumLightSpeed.Value);
     }
 }
 
@@ -946,6 +1042,12 @@ public readonly partial struct LinearVelocity
         return FromMetrePerSecond((Value + frameVelocity.Value) / (1d + normalizedProduct));
     }
 
+    /// <summary>Calculates electromagnetic phase speed in a lossless, isotropic, nondispersive linear medium.</summary>
+    public static LinearVelocity FromElectromagneticMedium(Permittivity permittivity, Permeability permeability)
+    {
+        return FromMetrePerSecond(1d / Math.Sqrt(permittivity.Value * permeability.Value));
+    }
+
     /// <summary>Calculates the Reynolds number for a flow using kinematic viscosity.</summary>
     /// <param name="characteristicLength">The representative length for the flow geometry.</param>
     /// <param name="kinematicViscosity">The fluid's kinematic viscosity at the flow conditions.</param>
@@ -1044,6 +1146,12 @@ public readonly partial struct ElectricFieldStrength
         return (ElectricFieldStrength)(lineCharge.Value / ((2d * Math.PI) * permittivity.Value * distance.Value));
     }
 
+    /// <summary>Calculates the electric field magnitude from the matching magnetic magnitude in a progressive plane wave.</summary>
+    public static ElectricFieldStrength FromPlaneWave(MagneticFluxDensity magneticField, LinearVelocity phaseSpeed)
+    {
+        return (ElectricFieldStrength)(magneticField.Value * phaseSpeed.Value);
+    }
+
     /// <summary>Calculates the average electric field component along a straight path.</summary>
     /// <param name="potentialChange">The final electric potential minus the initial electric potential.</param>
     /// <param name="distance">The length of the path.</param>
@@ -1097,6 +1205,12 @@ public readonly partial struct ElectricPotential
     {
         return FromVolt(inductance.Henry * currentChange.Ampere / elapsed.Second);
     }
+
+    /// <summary>Calculates secondary RMS voltage from this primary RMS voltage in an ideal transformer.</summary>
+    public ElectricPotential AfterIdealTransformer(int primaryTurns, int secondaryTurns)
+    {
+        return this * ((double)secondaryTurns / primaryTurns);
+    }
 }
 
 public readonly partial struct ElectricCurrent
@@ -1122,10 +1236,23 @@ public readonly partial struct ElectricCurrent
     {
         return (capacitance * voltageChange) / elapsed;
     }
+
+    /// <summary>Calculates secondary RMS current from this primary RMS current in an ideal loaded transformer.</summary>
+    public ElectricCurrent AfterIdealTransformer(int primaryTurns, int secondaryTurns)
+    {
+        return this * ((double)primaryTurns / secondaryTurns);
+    }
 }
 
 public readonly partial struct Power
 {
+    /// <summary>Calculates average active power from RMS voltage and current in sinusoidal steady state.</summary>
+    /// <remarks>Measure the phase difference between terminal voltage and current entering its positive terminal.</remarks>
+    public static Power FromSinusoidalAc(ElectricPotential rmsVoltage, ElectricCurrent rmsCurrent, PlaneAngle phaseDifference)
+    {
+        return (rmsVoltage * rmsCurrent) * Math.Cos(phaseDifference.Radian);
+    }
+
     /// <summary>Calculates Joule heating from the current through a positive ohmic resistance.</summary>
     public static Power FromResistiveHeating(ElectricCurrent current, Resistance resistance)
     {
@@ -1156,6 +1283,12 @@ public readonly partial struct MagneticFluxDensity
     public static MagneticFluxDensity FromLongStraightWire(Permeability permeability, ElectricCurrent current, Length distance)
     {
         return FromTesla(permeability.Value * current.Ampere / ((2d * Math.PI) * distance.Metre));
+    }
+
+    /// <summary>Calculates magnetic flux density magnitude from the matching electric magnitude in a progressive plane wave.</summary>
+    public static MagneticFluxDensity FromPlaneWave(ElectricFieldStrength electricField, LinearVelocity phaseSpeed)
+    {
+        return FromTesla(electricField.Value / phaseSpeed.Value);
     }
 }
 
@@ -1268,6 +1401,12 @@ public readonly partial struct Inductance
     public static Inductance FromLongSolenoid(Permeability permeability, Area crossSection, Length axialLength, int turns)
     {
         return FromHenry(permeability.Value * turns * turns * crossSection.Value / axialLength.Value);
+    }
+
+    /// <summary>Calculates the quality factor of a series RLC circuit from this inductance and positive capacitance and resistance.</summary>
+    public double SeriesQualityFactor(Capacitance capacitance, Resistance seriesResistance)
+    {
+        return AngularVelocity.FromLcResonance(this, capacitance).Value * Value / seriesResistance.Value;
     }
 }
 
@@ -1535,6 +1674,13 @@ public readonly partial struct Illuminance
 
 public readonly partial struct PowerPerArea
 {
+    /// <summary>Calculates average intensity of a progressive sinusoidal plane wave in a lossless linear medium.</summary>
+    public static PowerPerArea FromPlaneWave(
+        ElectricFieldStrength rmsElectricField, MagneticFluxDensity rmsMagneticField, Permeability permeability)
+    {
+        return (PowerPerArea)(rmsElectricField.Value * rmsMagneticField.Value / permeability.Value);
+    }
+
     /// <summary>Calculates transmitted irradiance for a narrow monoenergetic beam crossing a uniform material.</summary>
     /// <remarks>Use the linear attenuation coefficient at the photon energy and the path length through the material.</remarks>
     public PowerPerArea AfterExponentialAttenuation(InverseLength linearAttenuationCoefficient, Length pathLength)

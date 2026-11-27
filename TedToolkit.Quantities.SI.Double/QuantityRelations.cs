@@ -72,7 +72,21 @@ public readonly partial struct Power;
 [QuantityOperator<Energy, Time, Power>(Operator.DIVIDE)]
 [QuantityOperator<Energy, Power, Time>(Operator.DIVIDE)]
 [QuantityOperator<Energy, Energy, SquareEnergy>(Operator.MULTIPLY)]
+[QuantityOperator<Energy, Length, LengthEnergy>(Operator.MULTIPLY)]
+[QuantityOperator<Length, Energy, LengthEnergy>(Operator.MULTIPLY)]
 public readonly partial struct Energy;
+
+[QuantityOperator<LengthEnergy, Length, Energy>(Operator.DIVIDE)]
+[QuantityOperator<LengthEnergy, Energy, Length>(Operator.DIVIDE)]
+public readonly partial struct LengthEnergy;
+
+[QuantityOperator<Length, ThermodynamicTemperature, LengthTemperature>(Operator.MULTIPLY)]
+[QuantityOperator<ThermodynamicTemperature, Length, LengthTemperature>(Operator.MULTIPLY)]
+public readonly partial struct ThermodynamicTemperature;
+
+[QuantityOperator<LengthTemperature, ThermodynamicTemperature, Length>(Operator.DIVIDE)]
+[QuantityOperator<LengthTemperature, Length, ThermodynamicTemperature>(Operator.DIVIDE)]
+public readonly partial struct LengthTemperature;
 
 [QuantityOperator<ElectricCurrent, Time, ElectricCharge>(Operator.MULTIPLY)]
 [QuantityOperator<Time, ElectricCurrent, ElectricCharge>(Operator.MULTIPLY)]
