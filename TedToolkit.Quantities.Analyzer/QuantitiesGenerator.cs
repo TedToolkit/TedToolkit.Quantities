@@ -189,7 +189,6 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                     .GenerateCode(context);
             }
 
-            QuantityFormulaCoverage.Generate(context, declaredQuantities.Values, data);
             new ToleranceGenerator(data.Quantities.Values.ToArray(), isPublic, tDataType)
                 .Generate(context, compilations);
 

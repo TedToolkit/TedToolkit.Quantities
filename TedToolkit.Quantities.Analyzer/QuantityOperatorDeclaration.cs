@@ -14,13 +14,12 @@ namespace TedToolkit.Quantities.Analyzer;
 /// <summary>
 /// Represents a quantity operator resolved from its attribute.
 /// </summary>
-/// <param name="Attribute">The attribute that declares the operator.</param>
 /// <param name="Left">The left operand type.</param>
 /// <param name="Right">The right operand type.</param>
 /// <param name="Result">The result type.</param>
 /// <param name="Token">The C# operator token.</param>
 internal readonly record struct QuantityOperatorDeclaration(
-    AttributeData Attribute, ITypeSymbol Left, ITypeSymbol Right, ITypeSymbol Result, string Token)
+    ITypeSymbol Left, ITypeSymbol Right, ITypeSymbol Result, string Token)
 {
     /// <summary>
     /// Reads the operator declarations on a quantity.
@@ -53,7 +52,7 @@ internal readonly record struct QuantityOperatorDeclaration(
                 _ => "/",
             };
             var types = attributeClass.TypeArguments;
-            yield return new(attribute, types[0], types[1], types[2], token);
+            yield return new(types[0], types[1], types[2], token);
         }
     }
 }

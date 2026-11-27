@@ -65,7 +65,7 @@ internal sealed class QuantityStructGenerator(
 
     private IEnumerable<Operator> CreateCustomOperators()
     {
-        foreach (var (_, leftType, rightType, resultType, operatorName) in
+        foreach (var (leftType, rightType, resultType, operatorName) in
                  QuantityOperatorDeclaration.Read(quantitySymbol))
         {
             var leftValue = leftType.SpecialType is SpecialType.None ? "left.Value" : "left";

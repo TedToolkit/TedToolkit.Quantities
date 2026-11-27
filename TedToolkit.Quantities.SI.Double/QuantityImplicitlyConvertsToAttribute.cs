@@ -16,5 +16,5 @@ namespace TedToolkit.Quantities;
 /// <remarks>The generated conversion preserves the coherent SI value.</remarks>
 [AttributeUsage(AttributeTargets.Struct, AllowMultiple = true)]
 [Conditional("CODE_ANALYSIS")]
-public sealed class QuantityImplicitlyConvertsToAttribute<TTarget> : Attribute
+internal sealed class QuantityImplicitlyConvertsToAttribute<TTarget> : Attribute
     where TTarget : struct;

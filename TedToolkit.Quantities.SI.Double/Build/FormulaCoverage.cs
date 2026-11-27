@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------
-// <copyright file="QuantityFormulaCoverage.cs" company="TedToolkit">
+// <copyright file="FormulaCoverage.cs" company="TedToolkit">
 // Copyright (c) TedToolkit. All rights reserved.
 // Licensed under the LGPL-3.0 license. See COPYING, COPYING.LESSER file in the project root for full license information.
 // </copyright>
@@ -9,19 +9,19 @@ using System.Globalization;
 using System.Text;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
+using TedToolkit.FileSystem;
 using TedToolkit.Quantities.Data;
-using TedToolkit.RoslynHelper;
 
-namespace TedToolkit.Quantities.Analyzer;
+namespace TedToolkit.Quantities.SI.Double.Build;
 
 /// <summary>
-/// Builds the formula inventory from the same symbols used to generate quantity operators.
+/// Builds the formula inventory from comments beside the quantity declarations.
 /// </summary>
-internal static class QuantityFormulaCoverage
+internal static class FormulaCoverage
 {
-    private const string FormulaAttribute = "TedToolkit.Quantities.QuantityFormulaAttribute";
-
     private static readonly (string Id, string Heading)[] _domains =
     [
         ("geometry", "Geometry and algebra"),
@@ -34,38 +34,82 @@ internal static class QuantityFormulaCoverage
     ];
 
     /// <summary>
-    /// Validates formula annotations and emits the Markdown as generated source comments.
+    /// Validates formula comments and produces the README inventory.
     /// </summary>
-    /// <param name="context">The current source generation context.</param>
-    /// <param name="quantities">The handwritten quantity declarations.</param>
+    /// <param name="sourcePaths">The package's C# source paths.</param>
     /// <param name="data">The catalog used for the generated quantity types.</param>
-    internal static void Generate(in SourceProductionContext context, IReadOnlyCollection<INamedTypeSymbol> quantities,
-        in DataCollection data)
+    /// <returns>The Markdown for the formula coverage section.</returns>
+    internal static string Generate(IEnumerable<string> sourcePaths, in DataCollection data)
     {
-        var operators = quantities.SelectMany(QuantityOperatorDeclaration.Read).ToArray();
-        var methods = quantities.SelectMany(type => type.GetMembers().OfType<IMethodSymbol>()).ToArray();
-        if (!operators.Any(item => ReadString(item.Attribute, "FormulaId") is not null)
-            && !methods.Any(method => method.GetAttributes().Any(attr => attr.AttributeClass?.FullName == FormulaAttribute)))
-        {
-            return;
-        }
+        var parseOptions = new CSharpParseOptions(LanguageVersion.Preview);
+        var declarations = sourcePaths.Select(path => new FilePath(path))
+            .SelectMany(file => CSharpSyntaxTree.ParseText(file.ReadAllText(),
+                    parseOptions, file.FullName)
+                .GetRoot().DescendantNodes().OfType<StructDeclarationSyntax>())
+            .ToArray();
 
         var formulas = new Dictionary<string, Formula>(StringComparer.Ordinal);
-        AddOperators(formulas, operators, data);
-        AddMethods(formulas, methods);
+        AddOperators(formulas, declarations.SelectMany(ReadOperators), data);
+        AddMethods(formulas, declarations, data.Quantities);
         Validate(formulas.Values);
+        return Render(formulas.Values);
+    }
 
-        // A comment-only source artifact gives MSBuild the Markdown without adding metadata to the library.
-        var markdown = Render(formulas.Values);
-        context.AddSource("FormulaCoverage.g.cs", "// " + markdown.Replace("\n", "\n// "));
+    private static IEnumerable<OperatorDeclaration> ReadOperators(StructDeclarationSyntax declaration)
+    {
+        foreach (var list in declaration.AttributeLists)
+        {
+            foreach (var attribute in list.Attributes)
+            {
+                var attributeName = attribute.Name switch
+                {
+                    QualifiedNameSyntax qualified => qualified.Right,
+                    AliasQualifiedNameSyntax aliased => aliased.Name,
+                    _ => attribute.Name,
+                };
+                if (attributeName is not GenericNameSyntax
+                    { Identifier.ValueText: "QuantityOperator" or "QuantityOperatorAttribute", } name)
+                {
+                    continue;
+                }
+
+                var types = name.TypeArgumentList.Arguments;
+                if (types.Count != 3 || attribute.ArgumentList?.Arguments is not { Count: 1, } arguments
+                    || arguments[0].Expression is not MemberAccessExpressionSyntax operation)
+                {
+                    throw new InvalidDataException($"Invalid quantity operator declaration on {declaration.Identifier.ValueText}.");
+                }
+
+                var token = operation.Name.Identifier.ValueText switch
+                {
+                    "ADD" => "+",
+                    "SUBTRACT" => "-",
+                    "MULTIPLY" => "*",
+                    "DIVIDE" => "/",
+                    _ => throw new InvalidDataException($"Unknown quantity operator {operation}."),
+                };
+                yield return new(TypeName(types[0]), TypeName(types[1]), TypeName(types[2]), token, FormulaComment.Read(list));
+            }
+        }
+
+        foreach (var operation in declaration.Members.OfType<OperatorDeclarationSyntax>())
+        {
+            var token = operation.OperatorToken.Text;
+            var parameters = operation.ParameterList.Parameters;
+            if (parameters.Count == 2 && token is "+" or "-" or "*" or "/")
+            {
+                yield return new(TypeName(parameters[0].Type!), TypeName(parameters[1].Type!),
+                    TypeName(operation.ReturnType), token, FormulaComment.Read(operation));
+            }
+        }
     }
 
     private static void AddOperators(Dictionary<string, Formula> formulas,
-        IEnumerable<QuantityOperatorDeclaration> operators, in DataCollection data)
+        IEnumerable<OperatorDeclaration> operators, in DataCollection data)
     {
         foreach (var group in operators.GroupBy(GetEquationShape))
         {
-            var ids = group.Select(item => ReadString(item.Attribute, "FormulaId"))
+            var ids = group.Select(item => item.Comment.Id)
                 .OfType<string>().Distinct(StringComparer.Ordinal).ToArray();
             if (ids.Length != 1)
             {
@@ -77,33 +121,46 @@ internal static class QuantityFormulaCoverage
             foreach (var item in group)
             {
                 ValidateDimensions(item, data);
-                formula.AddDocumentation(item.Attribute);
-                formula.Results.Add(item.Result.Name);
+                formula.AddDocumentation(item.Comment);
+                formula.Results.Add(item.Result);
             }
         }
     }
 
-    private static void AddMethods(Dictionary<string, Formula> formulas, IEnumerable<IMethodSymbol> methods)
+    private static void AddMethods(Dictionary<string, Formula> formulas,
+        IEnumerable<StructDeclarationSyntax> declarations, IReadOnlyDictionary<string, Quantity> quantities)
     {
-        foreach (var method in methods.Where(method =>
-                     method.DeclaredAccessibility == Microsoft.CodeAnalysis.Accessibility.Public
-                     && method.MethodKind == MethodKind.Ordinary && !method.IsImplicitlyDeclared))
+        foreach (var declaration in declarations.Where(item => quantities.ContainsKey(item.Identifier.ValueText)))
         {
-            var attribute = method.GetAttributes()
-                .FirstOrDefault(attr => attr.AttributeClass?.FullName == FormulaAttribute);
-            if (attribute?.ConstructorArguments.FirstOrDefault().Value is not string id)
+            foreach (var method in declaration.Members.OfType<MethodDeclarationSyntax>()
+                         .Where(method => method.Modifiers.Any(SyntaxKind.PublicKeyword)))
             {
-                throw new InvalidOperationException($"Named formula '{method}' requires a QuantityFormula attribute.");
-            }
+                var comment = FormulaComment.Read(method);
+                var name = $"{declaration.Identifier.ValueText}.{method.Identifier.ValueText}";
+                var id = comment.Id
+                    ?? throw new InvalidDataException($"Named formula '{name}' requires a Formula comment.");
 
-            var formula = GetFormula(formulas, id);
-            formula.AddDocumentation(attribute);
-            formula.Results.Add(method.ReturnType.Name);
-            formula.Methods.Add($"{method.ContainingType.Name}.{method.Name}");
+                var formula = GetFormula(formulas, id);
+                formula.AddDocumentation(comment);
+                formula.Results.Add(TypeName(method.ReturnType));
+                formula.Methods.Add(name);
+            }
         }
     }
 
-    private static void ValidateDimensions(in QuantityOperatorDeclaration item, in DataCollection data)
+    private static string TypeName(TypeSyntax type)
+    {
+        return type switch
+        {
+            PredefinedTypeSyntax predefined => predefined.Keyword.ValueText,
+            QualifiedNameSyntax qualified => qualified.Right.Identifier.ValueText,
+            AliasQualifiedNameSyntax aliased => aliased.Name.Identifier.ValueText,
+            SimpleNameSyntax simple => simple.Identifier.ValueText,
+            _ => throw new InvalidDataException($"Unsupported quantity type {type}."),
+        };
+    }
+
+    private static void ValidateDimensions(OperatorDeclaration item, in DataCollection data)
     {
         var left = GetDimension(item.Left, data);
         var right = GetDimension(item.Right, data);
@@ -121,13 +178,13 @@ internal static class QuantityFormulaCoverage
         }
 
         throw new InvalidOperationException(
-            $"The result of {item.Left.Name} {item.Token} {item.Right.Name} has incompatible dimensions: {item.Result.Name}.");
+            $"The result of {item.Left} {item.Token} {item.Right} has incompatible dimensions: {item.Result}.");
 
-        static Dimension GetDimension(ITypeSymbol type, in DataCollection data)
+        static Dimension GetDimension(string type, in DataCollection data)
         {
-            return type.SpecialType == SpecialType.System_Double
+            return type is "double" or "Double"
                 ? default
-                : data.Dimensions[data.Quantities[type.Name].Dimension] with { Dimensionless = 0, };
+                : data.Dimensions[data.Quantities[type].Dimension] with { Dimensionless = 0, };
         }
 
         static bool CombinesDimensions(in Dimension left, in Dimension right, in Dimension result)
@@ -142,7 +199,7 @@ internal static class QuantityFormulaCoverage
         }
     }
 
-    private static string GetEquationShape(QuantityOperatorDeclaration item)
+    private static string GetEquationShape(OperatorDeclaration item)
     {
         var inverse = item.Token is "/" or "-";
         var token = item.Token is "+" or "-" ? "+" : "*";
@@ -154,9 +211,9 @@ internal static class QuantityFormulaCoverage
             : $"{right} {token} {left} = {result}";
 
         // Reciprocal operators use double for the unitless numerator.
-        static string Name(ITypeSymbol type)
+        static string Name(string type)
         {
-            return type.SpecialType == SpecialType.System_Double ? "DimensionlessRatio" : type.Name;
+            return type is "double" or "Double" ? "DimensionlessRatio" : type;
         }
     }
 
@@ -240,12 +297,37 @@ internal static class QuantityFormulaCoverage
 
     private static string EscapeCell(string value)
     {
-        return value.Replace("|", "\\|").Replace('\r', ' ').Replace('\n', ' ');
+        return value.Replace("|", "\\|", StringComparison.Ordinal).Replace('\r', ' ').Replace('\n', ' ');
     }
 
-    private static string? ReadString(AttributeData attribute, string name)
+    private sealed record OperatorDeclaration(
+        string Left, string Right, string Result, string Token, FormulaComment Comment);
+
+    private sealed record FormulaComment(string? Id, string? Equation, string? Applicability, string[] Sources)
     {
-        return attribute.NamedArguments.FirstOrDefault(argument => argument.Key == name).Value.Value as string;
+        internal static FormulaComment Read(SyntaxNode declaration)
+        {
+            var lines = declaration.GetLeadingTrivia()
+                .Where(trivia => trivia.IsKind(SyntaxKind.SingleLineCommentTrivia))
+                .Select(trivia => trivia.ToString()[2..].Trim())
+                .ToArray();
+            var id = Values("Formula ").SingleOrDefault();
+            var equation = Values("Equation ").SingleOrDefault();
+            var applicability = Values("Applies ").SingleOrDefault();
+            var sources = Values("Source ").ToArray();
+            if (id is null && (equation is not null || applicability is not null || sources.Length != 0))
+            {
+                throw new InvalidDataException("Formula metadata requires a Formula identifier comment.");
+            }
+
+            return new(id, equation, applicability, sources);
+
+            IEnumerable<string> Values(string prefix)
+            {
+                return lines.Where(line => line.StartsWith(prefix, StringComparison.Ordinal))
+                    .Select(line => line[prefix.Length..].Trim());
+            }
+        }
     }
 
     private sealed class Formula(string id)
@@ -262,19 +344,14 @@ internal static class QuantityFormulaCoverage
 
         internal SortedSet<string> Methods { get; } = new(StringComparer.Ordinal);
 
-        internal void AddDocumentation(AttributeData attribute)
+        internal void AddDocumentation(FormulaComment comment)
         {
-            var equation = ReadString(attribute, "Equation");
-            var conditions = ReadString(attribute, "Applicability");
-            var sourceArgument = attribute.NamedArguments.FirstOrDefault(argument => argument.Key == "Sources").Value;
-            if (equation is null && conditions is null && sourceArgument.Kind != TypedConstantKind.Array)
+            var (id, equation, conditions, sources) = comment;
+            if (equation is null && conditions is null && sources.Length == 0)
             {
                 return;
             }
 
-            var sources = sourceArgument.Kind == TypedConstantKind.Array && !sourceArgument.IsNull
-                ? sourceArgument.Values.Select(value => value.Value as string ?? "").ToArray()
-                : [];
             if (string.IsNullOrWhiteSpace(equation) || string.IsNullOrWhiteSpace(conditions)
                 || sources.Length == 0 || sources.Any(source => !IsSourceLink(source)))
             {
@@ -282,7 +359,7 @@ internal static class QuantityFormulaCoverage
                     $"Formula '{Id}' requires an equation, applicability, and at least one Markdown source link.");
             }
 
-            if (Equation is not null)
+            if (id != Id || Equation is not null)
             {
                 throw new InvalidOperationException($"Formula '{Id}' has more than one documentation declaration.");
             }
@@ -295,8 +372,7 @@ internal static class QuantityFormulaCoverage
         private static bool IsSourceLink(string source)
         {
             var start = source.IndexOf("](", StringComparison.Ordinal);
-            return source.StartsWith("[", StringComparison.Ordinal) && start > 1
-                   && source.EndsWith(")", StringComparison.Ordinal)
+            return start > 1 && source[0] == '[' && source[^1] == ')'
                    && Uri.TryCreate(source.Substring(start + 2, source.Length - start - 3),
                        UriKind.Absolute, out var url)
                    && url.Scheme is "https" or "http";

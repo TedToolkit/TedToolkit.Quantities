@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using TedToolkit.FileSystem;
 using TedToolkit.Quantities.Data;
 
-namespace TedToolkit.Quantities.Generator;
+namespace TedToolkit.Quantities.SI.Double.Build;
 
 /// <summary>
 /// Builds a source generator catalog from already generated QUDT entries.
@@ -71,10 +71,15 @@ internal static class QuantityCatalogBuilder
         }
 
         file.WriteAllText(json);
+    }
 
-        static DataCollection Read(string path)
-        {
-            return JsonConvert.DeserializeObject<DataCollection>(new FilePath(path).ReadAllText());
-        }
+    /// <summary>
+    /// Reads the QUDT catalog used by the generated types.
+    /// </summary>
+    /// <param name="path">The path of the catalog.</param>
+    /// <returns>The catalog data.</returns>
+    internal static DataCollection Read(string path)
+    {
+        return JsonConvert.DeserializeObject<DataCollection>(new FilePath(path).ReadAllText());
     }
 }

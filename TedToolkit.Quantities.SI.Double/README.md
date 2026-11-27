@@ -74,11 +74,11 @@ combine through the formulas below. [C# conversion operators](https://learn.micr
 The package uses `[assembly: Quantities<double>(QuantitySystems.SI)]` to select the QUDT SI catalog.
 The project supplies any additional QUDT kinds and units through the generator's `AdditionalFiles` input.
 
-Add operators with `QuantityOperator` and named calculations with `QuantityFormula`. One declaration
-per physical relation supplies its formula ID, equation, applicability, and source links. Swapped
-operands and solved forms inherit the documentation from their operator family. Use the same ID
-for a named method or a different typed variant of that relation. Source links are reusable
-constants in [FormulaSources.cs](FormulaSources.cs).
+Place a `// Formula domain/name` comment above the operator attribute or named method for each
+physical relation. Add `// Equation ...`, `// Applies ...`, and one `// Source [title](url)` line
+per source at that declaration. Swapped operands and solved forms inherit the formula from their
+operator family. Use a `// Formula domain/name` comment with the same ID to associate a named
+method or a different typed variant with the existing entry.
 
 The `net7.0` build updates the marked formula coverage and reference sections below. GitHub Actions
 checks that the committed README matches the attributes. The same check can run locally:

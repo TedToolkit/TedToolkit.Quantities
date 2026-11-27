@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="CodeAnalysis.props" Sdk="TedToolkit.Build.Sdk"/>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TedToolkit.FileSystem"/>
+    <PackageReference Include="TedToolkit.RoslynHelper"/>
+    <ProjectReference Include="../../TedToolkit.Quantities.Data/TedToolkit.Quantities.Data.csproj"/>
+  </ItemGroup>
+</Project>
