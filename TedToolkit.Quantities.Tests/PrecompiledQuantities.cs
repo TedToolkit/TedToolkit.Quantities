@@ -334,6 +334,14 @@ internal static class PrecompiledQuantities
         Close(0.64, Q.LinearVelocity.FromMetrePerSecond(0.004).DarcyFrictionFactorForLaminarPipe(
             Q.Length.FromMillimetre(100), (Q.KinematicViscosity)4e-6));
         Close(1.5, speed.FroudeNumber(gravity, Q.Length.FromMillimetre(400)));
+        Close(6, Q.LinearVelocity.FromTorricelliHead(gravity, Q.Length.FromMillimetre(1800)).MetrePerSecond);
+        Close(0.48, Q.VolumePerTime.FromOrificeFlow(
+            Q.ForcePerArea.FromPascal(9000), density, Q.Area.FromSquareMetre(0.1), 0.8).Value);
+        Close(2.4, Q.VolumePerTime.FromVenturi(
+            Q.ForcePerArea.FromPascal(6750), density, Q.Area.FromSquareMetre(1), Q.Area.FromSquareMetre(0.5), 0.8).Value);
+        Close(5625, Q.ForcePerArea.FromLocalFlowLoss(density, speed, 2.5).Pascal);
+        Close(1, Q.Frequency.FromHertz(6).StrouhalNumber(Q.Length.FromMillimetre(500), speed));
+        Close(1.5, speed.ThermalPecletNumber(Q.Length.FromMillimetre(100), (Q.ThermalDiffusivity)0.2d));
 
         var surfaceTension = (Q.ForcePerLength)0.075d;
         var capillaryRadius = Q.Length.FromMillimetre(10);
@@ -350,6 +358,17 @@ internal static class PrecompiledQuantities
             viscosity, sphereRadius, Q.LinearVelocity.FromMetrePerSecond(-0.01)).Newton);
         Close(-2e-3 / 9, Q.LinearVelocity.StokesTerminalVelocity(
             (Q.Density)490d, density, viscosity, gravity, sphereRadius).MetrePerSecond);
+        var interfaceTension = (Q.ForcePerLength)0.05d;
+        var lighterFluid = (Q.Density)400d;
+        Close(6, speed.CapillaryNumber(viscosity, interfaceTension));
+        Close(Math.Sqrt(5e-5), Q.Length.CapillaryLength(interfaceTension, density, lighterFluid, gravity).Metre);
+        Close(2, capillaryRadius.BondNumber(interfaceTension, density, lighterFluid, gravity));
+
+        var staticPressure = Q.ForcePerArea.FromPascal(100000);
+        var scaleHeight = Q.Length.IsothermalScaleHeight(staticPressure, density, gravity);
+        Close(20, scaleHeight.Metre);
+        Close(100000 / Math.E, staticPressure.AfterIsothermalElevationChange(Q.Length.FromMetre(20), scaleHeight).Pascal);
+        Close(20, Q.LinearVelocity.FromIdealGasSoundSpeed(staticPressure, density, 2).MetrePerSecond);
     }
 
     private static void VerifyElectromagnetism()
@@ -627,6 +646,11 @@ internal static class PrecompiledQuantities
         var peakWavelength = displacementConstant / hot;
         Close(0.01, peakWavelength.Millimetre);
         Close(300, (displacementConstant / peakWavelength).Kelvin);
+        Close(450, hot.ToIsentropicStagnation(1, gamma).Kelvin);
+        Close(225000, initialPressure.ToIsentropicStagnation(1, gamma).Pascal);
+        Close(750, ((Q.Density)500d).ToIsentropicStagnation(1, gamma).Value);
+        Close(20000, initialPressure.PartialPressureInIdealGas(0.2).Pascal);
+        Close(10000, Q.ForcePerArea.FromPascal(40000).VapourPartialPressureInIdealSolution(0.25).Pascal);
         Close(0.4, Q.Energy.FromJoule(40).HeatEngineEfficiency(Q.Energy.FromJoule(100)));
         Close(1d / 3, hot.CarnotEfficiency(cold));
         Close(2, hot.CarnotRefrigeratorCoefficientOfPerformance(cold));

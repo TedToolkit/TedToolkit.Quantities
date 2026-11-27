@@ -81,6 +81,12 @@ public readonly partial struct Frequency
     {
         return AngularVelocity.FromRadianPerSecond(1d / timeConstant.Second).ToFrequency();
     }
+
+    /// <summary>Calculates the Strouhal number from this oscillation frequency, a characteristic flow length, and a positive reference speed.</summary>
+    public double StrouhalNumber(Length characteristicLength, LinearVelocity referenceSpeed)
+    {
+        return Value * characteristicLength.Value / referenceSpeed.Value;
+    }
 }
 
 public readonly partial struct AngularVelocity
@@ -357,6 +363,27 @@ public readonly partial struct Length
     {
         var decayRate = 0.5d * dampingCoefficient.Value / mass.Value;
         return this * Math.Exp(-decayRate * elapsed.Value);
+    }
+
+    /// <summary>Calculates the capillary length of an interface between two fluids of different density under uniform gravity.</summary>
+    public static Length CapillaryLength(
+        ForcePerLength surfaceTension, Density heavierFluid, Density lighterFluid, LinearAcceleration gravity)
+    {
+        var densityDifference = heavierFluid.Value - lighterFluid.Value;
+        return FromMetre(Math.Sqrt(surfaceTension.Value / (densityDifference * gravity.Value)));
+    }
+
+    /// <summary>Calculates the Bond number for this characteristic length at a fluid interface.</summary>
+    public double BondNumber(ForcePerLength surfaceTension, Density heavierFluid, Density lighterFluid, LinearAcceleration gravity)
+    {
+        var scaleRatio = this / CapillaryLength(surfaceTension, heavierFluid, lighterFluid, gravity);
+        return scaleRatio * scaleRatio;
+    }
+
+    /// <summary>Calculates the constant scale height of a hydrostatic, isothermal ideal gas under uniform gravity.</summary>
+    public static Length IsothermalScaleHeight(ForcePerArea absolutePressure, Density density, LinearAcceleration gravity)
+    {
+        return FromMetre(absolutePressure.Value / (density.Value * gravity.Value));
     }
 }
 
@@ -758,6 +785,38 @@ public readonly partial struct ForcePerLength
 
 public readonly partial struct ForcePerArea
 {
+    /// <summary>Calculates this static absolute pressure after isentropic deceleration of a calorically perfect gas to rest.</summary>
+    public ForcePerArea ToIsentropicStagnation(double machNumber, double heatCapacityRatio)
+    {
+        var ratio = ThermodynamicTemperature.StagnationTemperatureRatio(machNumber, heatCapacityRatio);
+        return this * Math.Pow(ratio, heatCapacityRatio / (heatCapacityRatio - 1d));
+    }
+
+    /// <summary>Calculates hydrostatic absolute pressure after a signed height change in an isothermal ideal gas.</summary>
+    /// <remarks>Positive height change is upward. Use constant scale height and a positive reference pressure.</remarks>
+    public ForcePerArea AfterIsothermalElevationChange(Length heightChange, Length scaleHeight)
+    {
+        return this * Math.Exp(-(heightChange / scaleHeight));
+    }
+
+    /// <summary>Calculates a constituent's partial pressure from this total pressure of an ideal gas mixture.</summary>
+    public ForcePerArea PartialPressureInIdealGas(double moleFraction)
+    {
+        return this * moleFraction;
+    }
+
+    /// <summary>Calculates a constituent's vapour partial pressure from this pure-component saturation pressure in an ideal solution.</summary>
+    public ForcePerArea VapourPartialPressureInIdealSolution(double liquidMoleFraction)
+    {
+        return this * liquidMoleFraction;
+    }
+
+    /// <summary>Calculates mechanical head loss as pressure across a fitting in steady incompressible flow.</summary>
+    public static ForcePerArea FromLocalFlowLoss(Density density, LinearVelocity referenceSpeed, double lossCoefficient)
+    {
+        return FromDynamicPressure(density, referenceSpeed) * lossCoefficient;
+    }
+
     /// <summary>Calculates the signed pressure change for a small volumetric strain with constant bulk modulus.</summary>
     public static ForcePerArea PressureChangeFromBulkModulus(ForcePerArea bulkModulus, Volume originalVolume, Volume finalVolume)
     {
@@ -874,6 +933,29 @@ public readonly partial struct ForcePerArea
 
 public readonly partial struct VolumePerTime
 {
+    /// <summary>Calculates incompressible discharge through an orifice with negligible approach velocity.</summary>
+    /// <param name="pressureDrop">The nonnegative driving pressure difference, with elevation head accounted for.</param>
+    /// <param name="density">The positive fluid density.</param>
+    /// <param name="orificeArea">The area of the opening.</param>
+    /// <param name="dischargeCoefficient">The discharge coefficient defined for this orifice and flow condition.</param>
+    public static VolumePerTime FromOrificeFlow(
+        ForcePerArea pressureDrop, Density density, Area orificeArea, double dischargeCoefficient)
+    {
+        var idealSpeed = LinearVelocity.FromMetrePerSecond(Math.Sqrt(2d * pressureDrop.Value / density.Value));
+        return (orificeArea * idealSpeed) * dischargeCoefficient;
+    }
+
+    /// <summary>Calculates incompressible discharge from a Venturi meter with steady flow and a known discharge coefficient.</summary>
+    /// <remarks>Use elevation-corrected differential pressure, positive density, and a throat area smaller than the upstream area.</remarks>
+    public static VolumePerTime FromVenturi(
+        ForcePerArea pressureDrop, Density density, Area upstreamArea, Area throatArea, double dischargeCoefficient)
+    {
+        var areaRatio = throatArea.Value / upstreamArea.Value;
+        var throatSpeed = LinearVelocity.FromMetrePerSecond(
+            Math.Sqrt(2d * pressureDrop.Value / (density.Value * (1d - areaRatio * areaRatio))));
+        return (throatArea * throatSpeed) * dischargeCoefficient;
+    }
+
     /// <summary>Calculates Hagen–Poiseuille flow through a straight, rigid, horizontal circular pipe.</summary>
     /// <remarks>Applies to steady, fully developed, laminar flow of an incompressible Newtonian fluid with no wall slip.</remarks>
     /// <param name="pressureDrop">The inlet pressure minus the outlet pressure.</param>
@@ -1048,6 +1130,31 @@ public readonly partial struct LinearVelocity
         return FromMetrePerSecond(1d / Math.Sqrt(permittivity.Value * permeability.Value));
     }
 
+    /// <summary>Calculates ideal discharge speed from a small opening below the free surface of a large vessel.</summary>
+    /// <remarks>Use positive head and uniform gravity, with equal surface and outlet pressures and negligible losses.</remarks>
+    public static LinearVelocity FromTorricelliHead(LinearAcceleration gravity, Length head)
+    {
+        return FromMetrePerSecond(Math.Sqrt(2d * gravity.Value * head.Value));
+    }
+
+    /// <summary>Calculates sound speed from absolute static pressure, density, and heat capacity ratio for a calorically perfect ideal gas.</summary>
+    public static LinearVelocity FromIdealGasSoundSpeed(ForcePerArea pressure, Density density, double heatCapacityRatio)
+    {
+        return FromFluidBulkModulus(pressure * heatCapacityRatio, density);
+    }
+
+    /// <summary>Calculates the capillary number from this flow speed, dynamic viscosity, and positive surface tension.</summary>
+    public double CapillaryNumber(DynamicViscosity viscosity, ForcePerLength surfaceTension)
+    {
+        return viscosity.Value * Math.Abs(Value) / surfaceTension.Value;
+    }
+
+    /// <summary>Calculates the thermal Péclet number from this flow speed, characteristic length, and positive thermal diffusivity.</summary>
+    public double ThermalPecletNumber(Length characteristicLength, ThermalDiffusivity diffusivity)
+    {
+        return Math.Abs(Value) * characteristicLength.Value / diffusivity.Value;
+    }
+
     /// <summary>Calculates the Reynolds number for a flow using kinematic viscosity.</summary>
     /// <param name="characteristicLength">The representative length for the flow geometry.</param>
     /// <param name="kinematicViscosity">The fluid's kinematic viscosity at the flow conditions.</param>
@@ -1089,6 +1196,16 @@ public readonly partial struct LinearAcceleration
         StandardGravitationalParameter gravitationalParameter, Length distance)
     {
         return (LinearAcceleration)(gravitationalParameter.Value / (distance.Value * distance.Value));
+    }
+}
+
+public readonly partial struct Density
+{
+    /// <summary>Calculates this static density after isentropic deceleration of a calorically perfect gas to rest.</summary>
+    public Density ToIsentropicStagnation(double machNumber, double heatCapacityRatio)
+    {
+        var ratio = ThermodynamicTemperature.StagnationTemperatureRatio(machNumber, heatCapacityRatio);
+        return this * Math.Pow(ratio, 1d / (heatCapacityRatio - 1d));
     }
 }
 
@@ -1412,6 +1529,17 @@ public readonly partial struct Inductance
 
 public readonly partial struct ThermodynamicTemperature
 {
+    /// <summary>Calculates this static temperature after isentropic deceleration of a calorically perfect gas to rest.</summary>
+    public ThermodynamicTemperature ToIsentropicStagnation(double machNumber, double heatCapacityRatio)
+    {
+        return FromKelvin(Kelvin * StagnationTemperatureRatio(machNumber, heatCapacityRatio));
+    }
+
+    internal static double StagnationTemperatureRatio(double machNumber, double heatCapacityRatio)
+    {
+        return 1d + 0.5d * (heatCapacityRatio - 1d) * machNumber * machNumber;
+    }
+
     /// <summary>Calculates the absolute temperature after a reversible adiabatic volume change of a calorically perfect ideal gas.</summary>
     public ThermodynamicTemperature AfterIsentropicVolumeChange(Volume initialVolume, Volume finalVolume, double heatCapacityRatio)
     {

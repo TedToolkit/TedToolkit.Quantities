@@ -77,7 +77,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **288 physical formulas**. Swapped products, solved forms, and typed variants
+The inventory lists **305 physical formulas**. Swapped products, solved forms, and typed variants
 share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
 
@@ -209,6 +209,18 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| v = √(2gh) | `LinearVelocity` | Ideal outflow from a small opening at depth h below the free surface of a large vessel. The two pressures are the same and losses are negligible. Supported methods include `LinearVelocity.FromTorricelliHead`. | [OpenStax Torricelli's theorem][openstax-torricelli] |
+| Qᵥ = CᴅA√(2Δp/ρ) | `VolumePerTime` | Steady incompressible orifice flow with negligible approach speed. Use the opening area, elevation-corrected driving pressure and the discharge coefficient for that geometry. Supported methods include `VolumePerTime.FromOrificeFlow`. | [USBR orifice flow][usbr-orifice-flow] |
+| Qᵥ = CᴅA₂√(2Δp/[ρ(1 − (A₂/A₁)²)]) | `VolumePerTime` | Steady incompressible Venturi flow. Use upstream area A₁, smaller throat area A₂, measured differential pressure corrected for elevation, and the discharge coefficient for the meter. Supported methods include `VolumePerTime.FromVenturi`. | [USBR differential head flowmeters][usbr-differential-flowmeters] |
+| Δp_loss = Kρv²/2 | `ForcePerArea` | Mechanical head loss expressed as pressure for a fitting in steady incompressible flow. Use the fitting's loss coefficient and its reference mean speed. Supported methods include `ForcePerArea.FromLocalFlowLoss`. | [DOE fundamentals handbook, fluid flow][doe-local-flow-losses] |
+| Ca = μv/σ | `double` | Use dynamic viscosity, speed magnitude and positive surface tension from the same interface flow. Supported methods include `LinearVelocity.CapillaryNumber`. | [MIT capillary and Bond numbers][mit-bond-capillary] |
+| Bo = Δρgℓ²/σ | `double` | Use the heavier minus lighter fluid density, gravity and the characteristic interface length ℓ. Supported methods include `Length.BondNumber`. | [MIT capillary and Bond numbers][mit-bond-capillary] |
+| ℓ꜀ = √(σ/(Δρg)) | `Length` | Capillary length of a fluid interface. Use positive surface tension, positive gravity and the heavier minus lighter fluid density. Supported methods include `Length.CapillaryLength`. | [MIT capillarity and gravity][mit-capillary-length] · [MIT capillary and Bond numbers][mit-bond-capillary] |
+| St = fℓ/v | `double` | Use the oscillation frequency and characteristic length and positive reference speed of the same unsteady flow. Supported methods include `Frequency.StrouhalNumber`. | [Embry–Riddle unsteady flows][embry-riddle-strouhal] |
+| Pe = vℓ/α | `double` | Thermal Péclet number. Use flow speed, characteristic length and thermal diffusivity at the flow conditions. Supported methods include `LinearVelocity.ThermalPecletNumber`. | [MIT heat and mass transfer dimensionless numbers][mit-transport-numbers] |
+| c = √(γp/ρ) | `LinearVelocity` | Local sound speed of a calorically perfect ideal gas. Use static absolute pressure, density and heat-capacity ratio from the same state. Supported methods include `LinearVelocity.FromIdealGasSoundSpeed`. | [NASA speed of sound derivation][nasa-ideal-gas-sound-speed] |
+| H = p/(ρg) | `Length` | Constant scale height of a hydrostatic isothermal ideal gas of uniform composition under constant gravity. Use absolute pressure and density at the same height. Supported methods include `Length.IsothermalScaleHeight`. | [NASA isothermal atmospheres][nasa-atmosphere] |
+| p = p₀ exp(−Δh/H) | `ForcePerArea` | Absolute pressure after a change in height Δh in an isothermal, hydrostatic, uniform-composition ideal gas with constant scale height H. Positive Δh is upward. Supported methods include `ForcePerArea.AfterIsothermalElevationChange`. | [NASA isothermal atmospheres][nasa-atmosphere] |
 | Δp = fᴅ(ℓ / Dₕ)ρv² / 2 | `ForcePerArea` | Friction loss in fully developed, constant-density flow through a straight duct of uniform section. Use the Darcy factor, the mean speed and the hydraulic diameter. Supported methods include `ForcePerArea.FromDarcyWeisbach`. | [USBR friction head loss][usbr-friction] · [NMSU pipe flow manual][nmsu-pipe-networks] |
 | fᴅ = 64 / Reᴅ | `double` | Fully developed laminar flow of a Newtonian fluid in a circular pipe. Use Reynolds number based on pipe diameter and positive mean speed. Also follows by substituting the Poiseuille flow into Darcy–Weisbach. Supported methods include `LinearVelocity.DarcyFrictionFactorForLaminarPipe`. | [NMSU pipe flow manual][nmsu-pipe-networks] · [OpenStax viscosity and laminar flow][openstax-viscosity] |
 | Dₕ = 4A / Pwet | `Length` | Use the flow cross section and its positive wetted perimeter. The result is four times the hydraulic radius. Supported methods include `Length.HydraulicDiameter`. | [USBR friction head loss][usbr-friction] · [NMSU pipe flow manual][nmsu-pipe-networks] |
@@ -316,6 +328,9 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| T₀ = T[1 + (γ − 1)Ma²/2] | `ThermodynamicTemperature` | Stagnation temperature for isentropic deceleration to rest of a calorically perfect ideal gas. Use local static absolute temperature and Mach number. Supported methods include `ThermodynamicTemperature.ToIsentropicStagnation`. | [NASA stagnation quantities][nasa-stagnation] |
+| p₀ = p(T₀/T)^(γ/(γ − 1)) | `ForcePerArea` | Stagnation pressure for the same isentropic model, using static absolute pressure and γ greater than one. Supported methods include `ForcePerArea.ToIsentropicStagnation`. | [NASA stagnation quantities][nasa-stagnation] |
+| ρ₀ = ρ(T₀/T)^(1/(γ − 1)) | `Density` | Stagnation density for the same isentropic model, using the static density and γ greater than one. Supported methods include `Density.ToIsentropicStagnation`. | [NASA stagnation quantities][nasa-stagnation] |
 | W = p₁V₁ ln(V₂/V₁) | `Energy` | Reversible isothermal change of a fixed amount of ideal gas. Use initial absolute pressure and positive volumes. Work done by the gas is positive on expansion. Supported methods include `Energy.FromIsothermalWork`. | [OpenStax isothermal work][openstax-isothermal-work] |
 | W = (p₁V₁ − p₂V₂)/(γ − 1) | `Energy` | Reversible adiabatic change of a calorically perfect ideal gas. Use absolute pressure, positive volumes and heat capacity ratio γ greater than one. The final pressure follows the isentropic relation. Supported methods include `Energy.FromIsentropicWork`. | [OpenStax adiabatic work][openstax-adiabatic-work] |
 | λmax T = b | `Length`, `LengthTemperature`, `ThermodynamicTemperature` | Blackbody spectral radiance per unit wavelength at positive absolute temperature. Use the wavelength form of the Wien displacement constant b. | [OpenStax blackbody radiation][openstax-wien] |
@@ -392,6 +407,8 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| pᵢ = xᵢptotal | `ForcePerArea` | Dalton's law for a constituent of an ideal gas mixture. Use its gas-phase mole fraction and the total absolute pressure. Supported methods include `ForcePerArea.PartialPressureInIdealGas`. | [OpenStax partial pressures][openstax-dalton] |
+| pᵢ = xᵢpᵢ* | `ForcePerArea` | Raoult's law for a constituent of an ideal liquid solution in vapour equilibrium. Use its liquid mole fraction and the pure-component saturation pressure at the same temperature. Supported methods include `ForcePerArea.VapourPartialPressureInIdealSolution`. | [OpenStax Raoult's law][openstax-raoult] |
 | N = nNₐ | `AmountOfSubstance`, `InverseAmountOfSubstance`, `double` | Use amount of substance for the specified entities and the Avogadro constant in reciprocal moles. The count is a dimension-one scalar. | [BIPM definition of the mole][bipm-mole] |
 | A = nNₐ ln 2 / t½ | `Activity` | Single radionuclide with a positive half-life. Use its own amount and the Avogadro constant. Supported methods include `Activity.FromAmountAndHalfLife`. | [BIPM definition of the mole][bipm-mole] · [OpenStax radioactive decay][openstax-radioactive-decay] |
 | H = DQ | `DoseEquivalent` | Operational dose equivalent at a specified point. Use the absorbed dose and the mean radiation quality factor for that same point. Supported methods include `DoseEquivalent.FromAbsorbedDose`. | [IAEA operational dose quantities][iaea-dose-equivalent] |
@@ -586,6 +603,18 @@ Update the corresponding row when changing a formula's coverage.
 - [OpenStax photoelectric effect][openstax-photoelectric]
 - [OpenStax Doppler effect for light][openstax-light-doppler]
 - [NASA JPL spectral redshift][nasa-spectral-redshift]
+- [OpenStax Torricelli's theorem][openstax-torricelli]
+- [USBR orifice flow][usbr-orifice-flow]
+- [USBR differential head flowmeters][usbr-differential-flowmeters]
+- [DOE fundamentals handbook, fluid flow][doe-local-flow-losses]
+- [MIT capillary and Bond numbers][mit-bond-capillary]
+- [MIT capillarity and gravity][mit-capillary-length]
+- [Embry–Riddle unsteady flows][embry-riddle-strouhal]
+- [NASA stagnation quantities][nasa-stagnation]
+- [NASA isothermal atmospheres][nasa-atmosphere]
+- [NASA speed of sound derivation][nasa-ideal-gas-sound-speed]
+- [OpenStax partial pressures][openstax-dalton]
+- [OpenStax Raoult's law][openstax-raoult]
 
 [bipm-si-brochure]: https://www.bipm.org/en/publications/si-brochure
 [bipm-katal-resolution]: https://www.bipm.org/en/-/resolution-cgpm-21-12
@@ -737,3 +766,15 @@ Update the corresponding row when changing a formula's coverage.
 [openstax-photoelectric]: https://openstax.org/books/university-physics-volume-3/pages/6-2-photoelectric-effect
 [openstax-light-doppler]: https://openstax.org/books/university-physics-volume-3/pages/5-7-doppler-effect-for-light
 [nasa-spectral-redshift]: https://www.jpl.nasa.gov/edu/resources/lesson-plan/math-of-the-expanding-universe/
+[openstax-torricelli]: https://openstax.org/books/college-physics-2e/pages/12-3-the-most-general-applications-of-bernoullis-equation
+[usbr-orifice-flow]: https://www.usbr.gov/tsc/techreferences/mands/wmm/chap09_08.html
+[usbr-differential-flowmeters]: https://www.usbr.gov/tsc/techreferences/mands/wmm/chap14_03.html
+[doe-local-flow-losses]: https://www.energy.gov/sites/default/files/2026-04/DOE-HDBK-1012-92_VOL3.pdf
+[mit-bond-capillary]: https://web.mit.edu/2.25/www/225_sect_11.html
+[mit-capillary-length]: https://web.mit.edu/nnf/education/wettability/gravity.html
+[embry-riddle-strouhal]: https://eaglepubs.erau.edu/introductiontoaerospaceflightvehicles/chapter/unsteady-flows/
+[nasa-stagnation]: https://www.grc.nasa.gov/www/winddocs/windus3.0/cfpost/appc.html
+[nasa-atmosphere]: https://psg.gsfc.nasa.gov/helpatm.php
+[nasa-ideal-gas-sound-speed]: https://www.grc.nasa.gov/www/k-12/VirtualAero/BottleRocket/airplane/snddrv508.html
+[openstax-dalton]: https://openstax.org/books/chemistry-2e/pages/9-3-stoichiometry-of-gaseous-substances-mixtures-and-reactions
+[openstax-raoult]: https://openstax.org/books/chemistry-atoms-first-2e/pages/11-4-colligative-properties
