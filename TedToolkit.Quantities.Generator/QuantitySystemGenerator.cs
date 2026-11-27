@@ -1,10 +1,11 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="QuantitySystemGenerator.cs" company="TedToolkit">
 // Copyright (c) TedToolkit. All rights reserved.
 // Licensed under the LGPL-3.0 license. See COPYING, COPYING.LESSER file in the project root for full license information.
 // </copyright>
 // -----------------------------------------------------------------------
 
+using TedToolkit.FileSystem;
 using TedToolkit.RoslynHelper;
 using TedToolkit.RoslynHelper.Syntaxes;
 
@@ -24,7 +25,7 @@ internal abstract class QuantitySystemGenerator
     /// </summary>
     /// <param name="folder">folder.</param>
     /// <param name="systems">systems.</param>
-    public static void GenerateQuantitySystem(string folder, IEnumerable<(string Name, string Description)> systems)
+    public static void GenerateQuantitySystem(in DirectoryPath folder, IEnumerable<(string Name, string Description)> systems)
     {
         var classDeclaration = Class("QuantitySystems").Public.Static;
 
@@ -40,6 +41,6 @@ internal abstract class QuantitySystemGenerator
                 .AddMember(classDeclaration))
             .ToCode();
 
-        System.IO.File.WriteAllText(Path.Combine(folder, "QuantitySystems.g.cs"), code);
+        (folder / "QuantitySystems".AsFileName("g.cs")).WriteAllText(code);
     }
 }

@@ -9,28 +9,21 @@ using Newtonsoft.Json;
 
 using PeterO.Numbers;
 
-using Sourcy.DotNet;
+using TedToolkit.FileSystem;
 
 using TedToolkit.Quantities.Generator;
 
 using VDS.RDF;
 using VDS.RDF.Parsing;
 
-var solutionFolder = Solutions.TedToolkit_Quantities.Directory;
-
-if (solutionFolder is null)
-{
-    return;
-}
-
-var quantityFolder = solutionFolder.CreateSubdirectory("TedToolkit.Quantities");
-var unitFolder = solutionFolder.CreateSubdirectory("TedToolkit.Quantities.Analyzer").CreateSubdirectory("QUDT");
-var qudtFolder = solutionFolder.CreateSubdirectory("externals").CreateSubdirectory("QUDT");
-var path = Path.Combine(qudtFolder.FullName, "QUDT-all-in-one-OWL.ttl");
+var repository = DirectoryPath.CurrentDirectory;
+var quantityFolder = repository / "TedToolkit.Quantities";
+var unitFolder = (repository / "TedToolkit.Quantities.Analyzer" / "QUDT").Create();
+var source = repository / "externals" / "QUDT" / "QUDT-all-in-one-OWL".AsFileName("ttl");
 
 using var g = new Graph();
 var parser = new TurtleParser();
-parser.Load(g, path);
+parser.Load(g, source.FullName);
 
 var names = new List<(string Name, string Description)>() { ("ALL", "All quantities."), };
 foreach (var uriNode in g.GetTriplesWithPredicateObject(
@@ -46,12 +39,12 @@ foreach (var uriNode in g.GetTriplesWithPredicateObject(
         .FirstOrDefault()?.Value ?? "";
     names.Add((name, desc));
     var data = new QudtAnalyzer(g, uriNode).Analyze();
-    await File.WriteAllTextAsync(Path.Combine(unitFolder.FullName, name + ".json"),
+    await (unitFolder / name.AsFileName("json")).WriteAllTextAsync(
         JsonConvert.SerializeObject(data)).ConfigureAwait(false);
 }
 
 var allData = new QudtAnalyzer(g, null).Analyze();
-await File.WriteAllTextAsync(Path.Combine(unitFolder.FullName, "ALL.json"), JsonConvert.SerializeObject(allData))
+await (unitFolder / "ALL".AsFileName("json")).WriteAllTextAsync(JsonConvert.SerializeObject(allData))
     .ConfigureAwait(false);
 
-QuantitySystemGenerator.GenerateQuantitySystem(quantityFolder.FullName, names);
+QuantitySystemGenerator.GenerateQuantitySystem(quantityFolder, names);
