@@ -49,49 +49,6 @@ public readonly partial struct AuxillaryMagneticField
     public static explicit operator Magnetization(AuxillaryMagneticField value) => (Magnetization)value.Value;
 }
 
-public readonly partial struct Depth
-{
-    public static explicit operator Diameter(Depth value) => (Diameter)value.Value;
-    public static explicit operator Distance(Depth value) => (Distance)value.Value;
-    public static explicit operator Height(Depth value) => (Height)value.Value;
-    public static implicit operator Length(Depth value) => (Length)value.Value;
-    public static explicit operator PathLength(Depth value) => (PathLength)value.Value;
-    public static explicit operator Radius(Depth value) => (Radius)value.Value;
-    public static explicit operator Wavelength(Depth value) => (Wavelength)value.Value;
-    public static explicit operator Width(Depth value) => (Width)value.Value;
-}
-
-public readonly partial struct Diameter
-{
-    public static explicit operator Depth(Diameter value) => (Depth)value.Value;
-    public static explicit operator Distance(Diameter value) => (Distance)value.Value;
-    public static explicit operator Height(Diameter value) => (Height)value.Value;
-    public static implicit operator Length(Diameter value) => (Length)value.Value;
-    public static explicit operator PathLength(Diameter value) => (PathLength)value.Value;
-    public static explicit operator Radius(Diameter value) => (Radius)value.Value;
-    public static explicit operator Wavelength(Diameter value) => (Wavelength)value.Value;
-    public static explicit operator Width(Diameter value) => (Width)value.Value;
-}
-
-public readonly partial struct DimensionlessRatio
-{
-    public static explicit operator PlaneAngle(DimensionlessRatio value) => (PlaneAngle)value.Value;
-    public static explicit operator ReynoldsNumber(DimensionlessRatio value) => (ReynoldsNumber)value.Value;
-    public static explicit operator SolidAngle(DimensionlessRatio value) => (SolidAngle)value.Value;
-}
-
-public readonly partial struct Distance
-{
-    public static explicit operator Depth(Distance value) => (Depth)value.Value;
-    public static explicit operator Diameter(Distance value) => (Diameter)value.Value;
-    public static explicit operator Height(Distance value) => (Height)value.Value;
-    public static implicit operator Length(Distance value) => (Length)value.Value;
-    public static explicit operator PathLength(Distance value) => (PathLength)value.Value;
-    public static explicit operator Radius(Distance value) => (Radius)value.Value;
-    public static explicit operator Wavelength(Distance value) => (Wavelength)value.Value;
-    public static explicit operator Width(Distance value) => (Width)value.Value;
-}
-
 public readonly partial struct DoseEquivalent
 {
     public static explicit operator AbsorbedDose(DoseEquivalent value) => (AbsorbedDose)value.Value;
@@ -156,7 +113,6 @@ public readonly partial struct Energy
 public readonly partial struct EnergyDensity
 {
     public static explicit operator ForcePerArea(EnergyDensity value) => (ForcePerArea)value.Value;
-    public static explicit operator Pressure(EnergyDensity value) => (Pressure)value.Value;
     public static explicit operator Stress(EnergyDensity value) => (Stress)value.Value;
 }
 
@@ -183,7 +139,6 @@ public readonly partial struct Force
 public readonly partial struct ForcePerArea
 {
     public static explicit operator EnergyDensity(ForcePerArea value) => (EnergyDensity)value.Value;
-    public static explicit operator Pressure(ForcePerArea value) => (Pressure)value.Value;
     public static explicit operator Stress(ForcePerArea value) => (Stress)value.Value;
 }
 
@@ -220,27 +175,10 @@ public readonly partial struct HeatFlowRatePerArea
     public static explicit operator PowerPerAreaAngle(HeatFlowRatePerArea value) => (PowerPerAreaAngle)value.Value;
 }
 
-public readonly partial struct Height
-{
-    public static explicit operator Depth(Height value) => (Depth)value.Value;
-    public static explicit operator Diameter(Height value) => (Diameter)value.Value;
-    public static explicit operator Distance(Height value) => (Distance)value.Value;
-    public static implicit operator Length(Height value) => (Length)value.Value;
-    public static explicit operator PathLength(Height value) => (PathLength)value.Value;
-    public static explicit operator Radius(Height value) => (Radius)value.Value;
-    public static explicit operator Wavelength(Height value) => (Wavelength)value.Value;
-    public static explicit operator Width(Height value) => (Width)value.Value;
-}
-
 public readonly partial struct Illuminance
 {
     public static explicit operator Luminance(Illuminance value) => (Luminance)value.Value;
     public static implicit operator LuminousFluxPerArea(Illuminance value) => (LuminousFluxPerArea)value.Value;
-}
-
-public readonly partial struct Impulse
-{
-    public static explicit operator LinearMomentum(Impulse value) => (LinearMomentum)value.Value;
 }
 
 public readonly partial struct InverseMagneticFlux
@@ -254,18 +192,6 @@ public readonly partial struct KinematicViscosity
     public static explicit operator ThermalDiffusivity(KinematicViscosity value) => (ThermalDiffusivity)value.Value;
 }
 
-public readonly partial struct Length
-{
-    public static explicit operator Depth(Length value) => (Depth)value.Value;
-    public static explicit operator Diameter(Length value) => (Diameter)value.Value;
-    public static explicit operator Distance(Length value) => (Distance)value.Value;
-    public static explicit operator Height(Length value) => (Height)value.Value;
-    public static explicit operator PathLength(Length value) => (PathLength)value.Value;
-    public static explicit operator Radius(Length value) => (Radius)value.Value;
-    public static explicit operator Wavelength(Length value) => (Wavelength)value.Value;
-    public static explicit operator Width(Length value) => (Width)value.Value;
-}
-
 public readonly partial struct LinearAcceleration
 {
     public static explicit operator ThrustToMassRatio(LinearAcceleration value) => (ThrustToMassRatio)value.Value;
@@ -275,11 +201,6 @@ public readonly partial struct LinearElectricCurrent
 {
     public static explicit operator AuxillaryMagneticField(LinearElectricCurrent value) => (AuxillaryMagneticField)value.Value;
     public static explicit operator Magnetization(LinearElectricCurrent value) => (Magnetization)value.Value;
-}
-
-public readonly partial struct LinearMomentum
-{
-    public static explicit operator Impulse(LinearMomentum value) => (Impulse)value.Value;
 }
 
 public readonly partial struct LinearVelocity
@@ -321,22 +242,8 @@ public readonly partial struct MagnetomotiveForce
     public static explicit operator ElectricCurrentPerAngle(MagnetomotiveForce value) => (ElectricCurrentPerAngle)value.Value;
 }
 
-public readonly partial struct PathLength
-{
-    public static explicit operator Depth(PathLength value) => (Depth)value.Value;
-    public static explicit operator Diameter(PathLength value) => (Diameter)value.Value;
-    public static explicit operator Distance(PathLength value) => (Distance)value.Value;
-    public static explicit operator Height(PathLength value) => (Height)value.Value;
-    public static implicit operator Length(PathLength value) => (Length)value.Value;
-    public static explicit operator Radius(PathLength value) => (Radius)value.Value;
-    public static explicit operator Wavelength(PathLength value) => (Wavelength)value.Value;
-    public static explicit operator Width(PathLength value) => (Width)value.Value;
-}
-
 public readonly partial struct PlaneAngle
 {
-    public static explicit operator DimensionlessRatio(PlaneAngle value) => (DimensionlessRatio)value.Value;
-    public static explicit operator ReynoldsNumber(PlaneAngle value) => (ReynoldsNumber)value.Value;
     public static explicit operator SolidAngle(PlaneAngle value) => (SolidAngle)value.Value;
 }
 
@@ -374,43 +281,15 @@ public readonly partial struct PowerPerAreaAngle
     public static explicit operator PowerPerArea(PowerPerAreaAngle value) => (PowerPerArea)value.Value;
 }
 
-public readonly partial struct Pressure
-{
-    public static explicit operator EnergyDensity(Pressure value) => (EnergyDensity)value.Value;
-    public static implicit operator ForcePerArea(Pressure value) => (ForcePerArea)value.Value;
-    public static explicit operator Stress(Pressure value) => (Stress)value.Value;
-}
-
 public readonly partial struct RadiantIntensity
 {
     public static explicit operator HeatFlowRate(RadiantIntensity value) => (HeatFlowRate)value.Value;
     public static explicit operator Power(RadiantIntensity value) => (Power)value.Value;
 }
 
-public readonly partial struct Radius
-{
-    public static explicit operator Depth(Radius value) => (Depth)value.Value;
-    public static explicit operator Diameter(Radius value) => (Diameter)value.Value;
-    public static explicit operator Distance(Radius value) => (Distance)value.Value;
-    public static explicit operator Height(Radius value) => (Height)value.Value;
-    public static implicit operator Length(Radius value) => (Length)value.Value;
-    public static explicit operator PathLength(Radius value) => (PathLength)value.Value;
-    public static explicit operator Wavelength(Radius value) => (Wavelength)value.Value;
-    public static explicit operator Width(Radius value) => (Width)value.Value;
-}
-
-public readonly partial struct ReynoldsNumber
-{
-    public static implicit operator DimensionlessRatio(ReynoldsNumber value) => (DimensionlessRatio)value.Value;
-    public static explicit operator PlaneAngle(ReynoldsNumber value) => (PlaneAngle)value.Value;
-    public static explicit operator SolidAngle(ReynoldsNumber value) => (SolidAngle)value.Value;
-}
-
 public readonly partial struct SolidAngle
 {
-    public static explicit operator DimensionlessRatio(SolidAngle value) => (DimensionlessRatio)value.Value;
     public static explicit operator PlaneAngle(SolidAngle value) => (PlaneAngle)value.Value;
-    public static explicit operator ReynoldsNumber(SolidAngle value) => (ReynoldsNumber)value.Value;
 }
 
 public readonly partial struct SpecificEnergy
@@ -428,23 +307,12 @@ public readonly partial struct Stress
 {
     public static explicit operator EnergyDensity(Stress value) => (EnergyDensity)value.Value;
     public static implicit operator ForcePerArea(Stress value) => (ForcePerArea)value.Value;
-    public static explicit operator Pressure(Stress value) => (Pressure)value.Value;
-}
-
-public readonly partial struct TemperatureDifference
-{
-    public static explicit operator ThermodynamicTemperature(TemperatureDifference value) => (ThermodynamicTemperature)value.Value;
 }
 
 public readonly partial struct ThermalDiffusivity
 {
     public static explicit operator AreaPerTime(ThermalDiffusivity value) => (AreaPerTime)value.Value;
     public static explicit operator KinematicViscosity(ThermalDiffusivity value) => (KinematicViscosity)value.Value;
-}
-
-public readonly partial struct ThermodynamicTemperature
-{
-    public static explicit operator TemperatureDifference(ThermodynamicTemperature value) => (TemperatureDifference)value.Value;
 }
 
 public readonly partial struct ThrustToMassRatio
@@ -455,28 +323,4 @@ public readonly partial struct ThrustToMassRatio
 public readonly partial struct Torque
 {
     public static explicit operator Energy(Torque value) => (Energy)value.Value;
-}
-
-public readonly partial struct Wavelength
-{
-    public static explicit operator Depth(Wavelength value) => (Depth)value.Value;
-    public static explicit operator Diameter(Wavelength value) => (Diameter)value.Value;
-    public static explicit operator Distance(Wavelength value) => (Distance)value.Value;
-    public static explicit operator Height(Wavelength value) => (Height)value.Value;
-    public static implicit operator Length(Wavelength value) => (Length)value.Value;
-    public static explicit operator PathLength(Wavelength value) => (PathLength)value.Value;
-    public static explicit operator Radius(Wavelength value) => (Radius)value.Value;
-    public static explicit operator Width(Wavelength value) => (Width)value.Value;
-}
-
-public readonly partial struct Width
-{
-    public static explicit operator Depth(Width value) => (Depth)value.Value;
-    public static explicit operator Diameter(Width value) => (Diameter)value.Value;
-    public static explicit operator Distance(Width value) => (Distance)value.Value;
-    public static explicit operator Height(Width value) => (Height)value.Value;
-    public static implicit operator Length(Width value) => (Length)value.Value;
-    public static explicit operator PathLength(Width value) => (PathLength)value.Value;
-    public static explicit operator Radius(Width value) => (Radius)value.Value;
-    public static explicit operator Wavelength(Width value) => (Wavelength)value.Value;
 }

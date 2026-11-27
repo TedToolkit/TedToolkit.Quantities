@@ -21,17 +21,18 @@ internal static class PrecompiledQuantities
         Close(6, area.SquareMetre);
         Close(24, volume.CubicMetre);
         Close(4, (volume / area).Metre);
-        Close(2, (distance / Q.Length.FromMillimetre(300)).Value);
+        Close(2, distance / Q.Length.FromMillimetre(300));
 
         var amount = Q.AmountOfSubstance.FromMole(2.5);
         Close(2500, amount.Millimole);
 
         var startTemperature = Q.ThermodynamicTemperature.FromKelvin(280);
         var endTemperature = Q.ThermodynamicTemperature.FromKelvin(380);
-        Q.TemperatureDifference interval = endTemperature - startTemperature;
+        double interval = endTemperature.DifferenceInKelvins(startTemperature);
         Close(280, startTemperature.Value);
-        Close(100, interval.Kelvin);
-        Close(380, (startTemperature + interval).Kelvin);
+        Close(100, interval);
+        Close(-100, startTemperature.DifferenceInKelvins(endTemperature));
+        Close(380, startTemperature.AddKelvins(interval).Kelvin);
 
         Q.SquareEnergy squaredEnergy = Q.Energy.FromJoule(3) * Q.Energy.FromJoule(4);
         Close(12, squaredEnergy.Value);
@@ -53,8 +54,8 @@ internal static class PrecompiledQuantities
 
     private static void VerifyQuantityConversions()
     {
-        var pressure = Q.Pressure.FromPascal(4);
-        Q.ForcePerArea forcePerArea = pressure;
+        var stress = (Q.Stress)4d;
+        Q.ForcePerArea forcePerArea = stress;
         var heatFlow = (Q.HeatFlowRate)5d;
         Q.Power power = heatFlow;
         var gravity = (Q.GravitationalAttraction)12d;
@@ -71,7 +72,6 @@ internal static class PrecompiledQuantities
         Close(5, torque.Value);
         Close(5, ((Q.Energy)torque).Joule);
         Close(4, ((Q.Activity)Q.Frequency.FromHertz(4)).Value);
-        Close(2, ((Q.DimensionlessRatio)Q.PlaneAngle.FromRadian(2)).Value);
 
         if (HasConversion(typeof(Q.Force), typeof(Q.GravitationalAttraction), "op_Implicit")
             || HasConversion(typeof(Q.Energy), typeof(Q.Torque), "op_Implicit")
@@ -101,19 +101,18 @@ internal static class PrecompiledQuantities
         var angle = Q.PlaneAngle.FromArc(Q.Length.FromMillimetre(1000), radius);
         Close(0.5, angle.Radian);
         Close(1000, angle.ToArcLength(radius).Millimetre);
-        var diameter = Q.Diameter.FromMillimetre(200);
-        var circleRadius = Q.Radius.FromDiameter(diameter);
+        var diameter = Q.Length.FromMillimetre(200);
+        var circleRadius = Q.Length.RadiusFromDiameter(diameter);
         Close(100, circleRadius.Millimetre);
-        Close(200, ((Q.Radius)diameter).Millimetre);
-        Close(200, Q.Diameter.FromRadius(circleRadius).Millimetre);
-        Close(0.2 * Math.PI, circleRadius.ToCircumference().Metre);
+        Close(200, Q.Length.DiameterFromRadius(circleRadius).Millimetre);
+        Close(0.2 * Math.PI, Q.Length.CircumferenceFromRadius(circleRadius).Metre);
         Close(0.01 * Math.PI, Q.Area.FromCircle(circleRadius).SquareMetre);
 
-        var wavelength = Q.Wavelength.FromMillimetre(500);
-        Q.LinearVelocity waveSpeed = wavelength * frequency;
+        var wavelength = Q.Length.FromMillimetre(500);
+        Q.LinearVelocity waveSpeed = Q.LinearVelocity.FromWavelength(wavelength, frequency);
         Close(2, waveSpeed.MetrePerSecond);
-        Close(4, (waveSpeed / wavelength).Hertz);
-        Close(500, (waveSpeed / frequency).Millimetre);
+        Close(4, Q.Frequency.FromWaveSpeed(waveSpeed, wavelength).Hertz);
+        Close(500, Q.Length.WavelengthFromSpeed(waveSpeed, frequency).Millimetre);
 
         var angularAcceleration = (Q.AngularAcceleration)3d;
         Q.Torque torque = (Q.MomentOfInertia)2d * angularAcceleration;
@@ -132,8 +131,8 @@ internal static class PrecompiledQuantities
         Close(-10, Q.Energy.FromMechanicalWork(resistingForce, radius).Joule);
         Close(10, Q.Torque.FromPerpendicularLeverArm(-resistingForce, radius).Value);
         var impulseDuration = Q.Time.FromMillisecond(200);
-        Q.Impulse impulse = Q.Impulse.FromAverageForce(resistingForce, impulseDuration);
-        Close(-1, ((Q.LinearMomentum)impulse).Value);
+        Q.LinearMomentum impulse = resistingForce * impulseDuration;
+        Close(-1, impulse.Value);
         Close(-5, (impulse / impulseDuration).Newton);
 
         var density = Q.Mass.FromKilogram(2) / Q.Volume.FromLitre(4);
@@ -144,22 +143,22 @@ internal static class PrecompiledQuantities
         Close(0.002, ((Q.KinematicViscosity)4e-6 * density).Value);
 
         Q.ForcePerArea forcePerArea = Q.Force.FromNewton(20) / Q.Area.FromSquareMetre(0.5);
-        var pressure = Q.Pressure.FromNormalForce(Q.Force.FromNewton(20), Q.Area.FromSquareMetre(0.5));
+        var pressure = Q.ForcePerArea.FromNormalForce(Q.Force.FromNewton(20), Q.Area.FromSquareMetre(0.5));
         Q.Power hydraulicPower = pressure * volumeFlow;
         Close(40, forcePerArea.Pascal);
         Close(0.06, (forcePerArea * volumeFlow).Watt);
         Close(40, pressure.Pascal);
         Close(0.06, hydraulicPower.Watt);
-        Close(40, Q.Pressure.FromHydraulicPower(hydraulicPower, volumeFlow).Pascal);
+        Close(40, Q.ForcePerArea.FromHydraulicPower(hydraulicPower, volumeFlow).Pascal);
         Close(0.12, Q.Energy.FromConstantPressureWork(pressure, Q.Volume.FromLitre(3)).Joule);
-        Close(10000, Q.Pressure.FromHydrostaticHead(density, (Q.LinearAcceleration)10d, radius).Pascal);
+        Close(10000, Q.ForcePerArea.FromHydrostaticHead(density, (Q.LinearAcceleration)10d, radius).Pascal);
         Close(density.Value, (1d / (1d / density)).Value);
-        Close(2250, Q.Pressure.FromDynamicPressure(density, speed).Pascal);
+        Close(1, density * (1d / density));
+        Close(2250, Q.ForcePerArea.FromDynamicPressure(density, speed).Pascal);
         var kinematicViscosity = (Q.KinematicViscosity)4e-6;
-        var reynolds = Q.ReynoldsNumber.FromFlow(speed, radius, kinematicViscosity);
-        Q.DimensionlessRatio ratio = reynolds;
-        Close(1500000, ratio.Value);
-        Close(reynolds.Value, Q.ReynoldsNumber.FromFlow(speed, radius, density, kinematicViscosity * density).Value);
+        var reynolds = speed.ReynoldsNumber(radius, kinematicViscosity);
+        Close(1500000, reynolds);
+        Close(reynolds, speed.ReynoldsNumber(radius, density, kinematicViscosity * density));
     }
 
     private static void VerifyElectromagnetism()
@@ -172,15 +171,8 @@ internal static class PrecompiledQuantities
         Close(160, power.Watt);
         Close(10, (voltage / current).Ohm);
         Close(4, (power / voltage).Ampere);
-        Q.Conductance conductance = current / voltage;
-        Close(100, conductance.Millisiemens);
-        Close(4, (conductance * voltage).Ampere);
-        Close(10, (1d / conductance).Ohm);
-
-        Q.Resistivity resistivity = 1d / (Q.ElectricConductivity)2d;
-        Close(0.5, resistivity.Value);
         Close(1, Q.Resistance.FromUniformConductor(
-            resistivity, Q.Length.FromMetre(4), Q.Area.FromSquareMetre(2)).Ohm);
+            (Q.ElectricConductivity)2d, Q.Length.FromMetre(4), Q.Area.FromSquareMetre(2)).Ohm);
 
         var path = Q.Length.FromMetre(2);
         var field = Q.ElectricFieldStrength.FromPotentialChange(voltage, path);
@@ -208,32 +200,35 @@ internal static class PrecompiledQuantities
     {
         var room = Q.ThermodynamicTemperature.FromKelvin(290);
         var heated = Q.ThermodynamicTemperature.FromKelvin(310);
-        Q.TemperatureDifference temperatureRise = heated - room;
+        double temperatureRise = heated.DifferenceInKelvins(room);
         Q.HeatCapacity capacity = (Q.SpecificHeatCapacity)1000d * Q.Mass.FromKilogram(2);
-        Q.Energy heating = capacity * temperatureRise;
+        Q.Energy heating = capacity.EnergyForTemperatureChange(temperatureRise);
         Close(40, heating.Kilojoule);
-        Close(2000, (heating / temperatureRise).Value);
+        Close(2000, Q.HeatCapacity.FromEnergyAndTemperatureChange(heating, temperatureRise).Value);
+        Close(20, ((Q.TemperaturePerTime)2d).ChangeInKelvins(Q.Time.FromSecond(10)));
 
         var coefficient = (Q.CoefficientOfHeatTransfer)0.5d;
-        Q.HeatFlowRatePerArea heatFlux = coefficient * temperatureRise;
-        Q.HeatFlowRate heatFlow = heatFlux * Q.Area.FromSquareMetre(10);
-        Q.ThermalResistance resistance = temperatureRise / heatFlow;
+        var surface = Q.Area.FromSquareMetre(10);
+        Q.HeatFlowRatePerArea heatFlux = coefficient.HeatFluxForTemperatureChange(temperatureRise);
+        Q.HeatFlowRate heatFlow = heatFlux * surface;
+        Q.ThermalResistance resistance = Q.ThermalResistance.FromTemperatureDrop(temperatureRise, heatFlow);
         Close(100, heatFlow.Value);
         Close(0.2, resistance.Value);
-        Close(2, (resistance * Q.Area.FromSquareMetre(10)).Value);
-        Close(20, (resistance * heatFlow).Kelvin);
-        Q.ThermalConductance conductance = 1d / resistance;
-        Close(5, conductance.Value);
-        Close(100, (conductance * temperatureRise).Value);
-        Close(5, (coefficient * Q.Area.FromSquareMetre(10)).Value);
-        Close(2, ((Q.LinearThermalExpansion)1e-4 * temperatureRise).Millimetre);
+        var surfaceInsulance = resistance * surface;
+        Close(2, surfaceInsulance.Value);
+        Close(20, surfaceInsulance.TemperatureDropInKelvins(heatFlux));
+        Close(20, resistance.TemperatureDropInKelvins(heatFlow));
+        Close(100, resistance.HeatFlowForTemperatureChange(temperatureRise).Value);
+        Close(0.2, Q.ThermalResistance.FromHeatTransferCoefficient(coefficient, surface).Value);
+        Close(2, ((Q.LinearThermalExpansion)1e-4).LengthChange(temperatureRise).Millimetre);
+        Close(0.002, ((Q.AreaThermalExpansion)1e-4).AreaChange(temperatureRise).Value);
+        Close(0.004, ((Q.VolumeThermalExpansion)2e-4).VolumeChange(temperatureRise).Value);
 
         var thickness = Q.Length.FromMillimetre(100);
         var conductivity = (Q.ThermalConductivity)0.5d;
-        Q.TemperatureGradient gradient = temperatureRise / thickness;
-        Close(200, gradient.Value);
-        Close(-100, Q.HeatFlowRatePerArea.FromConduction(conductivity, gradient).Value);
-        Close(100, Q.HeatFlowRatePerArea.FromConduction(conductivity, -gradient).Value);
+        Close(200, heated.GradientInKelvinsPerMetre(room, thickness));
+        Close(-100, Q.HeatFlowRatePerArea.FromConduction(conductivity, room, heated, thickness).Value);
+        Close(100, Q.HeatFlowRatePerArea.FromConduction(conductivity, heated, room, thickness).Value);
         Q.ThermalInsulance insulance = thickness / conductivity;
         Close(0.2, insulance.Value);
         Close(0.2, ((1d / conductivity) * thickness).Value);

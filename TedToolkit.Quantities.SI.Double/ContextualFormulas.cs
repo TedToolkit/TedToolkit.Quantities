@@ -23,6 +23,12 @@ public readonly partial struct Frequency
     {
         return Time.FromSecond(1d / Hertz);
     }
+
+    /// <summary>Calculates frequency from the speed and nonzero wavelength of the same wave.</summary>
+    public static Frequency FromWaveSpeed(LinearVelocity waveSpeed, Length wavelength)
+    {
+        return (Frequency)(waveSpeed.Value / wavelength.Value);
+    }
 }
 
 public readonly partial struct AngularVelocity
@@ -51,7 +57,7 @@ public readonly partial struct PlaneAngle
     /// <returns>The central angle.</returns>
     public static PlaneAngle FromArc(Length arcLength, Length radius)
     {
-        return FromRadian((arcLength / radius).Value);
+        return FromRadian(arcLength / radius);
     }
 
     /// <summary>Calculates the length of the circular arc subtended by this central angle.</summary>
@@ -63,32 +69,36 @@ public readonly partial struct PlaneAngle
     }
 }
 
-public readonly partial struct Radius
+public readonly partial struct Length
 {
     /// <summary>Calculates a circle's radius from its diameter.</summary>
     /// <param name="diameter">The diameter of the same circle.</param>
     /// <returns>The radius, equal to half the diameter.</returns>
-    public static Radius FromDiameter(Diameter diameter)
+    public static Length RadiusFromDiameter(Length diameter)
     {
-        return (Radius)(diameter.Value / 2d);
+        return diameter / 2d;
     }
 
-    /// <summary>Calculates the circumference of a circle with this radius.</summary>
+    /// <summary>Calculates the circumference of a circle given its positive radius.</summary>
+    /// <param name="radius">The radius of the circle.</param>
     /// <returns>The length around the circle.</returns>
-    public Length ToCircumference()
+    public static Length CircumferenceFromRadius(Length radius)
     {
-        return (Length)(2d * Math.PI * Value);
+        return radius * (2d * Math.PI);
     }
-}
 
-public readonly partial struct Diameter
-{
     /// <summary>Calculates a circle's diameter from its radius.</summary>
     /// <param name="radius">The radius of the same circle.</param>
     /// <returns>The diameter, equal to twice the radius.</returns>
-    public static Diameter FromRadius(Radius radius)
+    public static Length DiameterFromRadius(Length radius)
     {
-        return (Diameter)(2d * radius.Value);
+        return 2d * radius;
+    }
+
+    /// <summary>Calculates wavelength from the speed and nonzero frequency of the same wave.</summary>
+    public static Length WavelengthFromSpeed(LinearVelocity waveSpeed, Frequency frequency)
+    {
+        return (Length)(waveSpeed.Value / frequency.Value);
     }
 }
 
@@ -97,21 +107,9 @@ public readonly partial struct Area
     /// <summary>Calculates the area enclosed by a circle.</summary>
     /// <param name="radius">The positive radius of the circle.</param>
     /// <returns>The circle's area.</returns>
-    public static Area FromCircle(Radius radius)
+    public static Area FromCircle(Length radius)
     {
         return (Area)(Math.PI * radius.Value * radius.Value);
-    }
-}
-
-public readonly partial struct Impulse
-{
-    /// <summary>Calculates the impulse component from an average force and its duration.</summary>
-    /// <param name="averageForce">The signed force component averaged over the interval.</param>
-    /// <param name="duration">The duration of that same interval.</param>
-    /// <returns>The impulse component along the same axis.</returns>
-    public static Impulse FromAverageForce(Force averageForce, Time duration)
-    {
-        return (Impulse)(averageForce * duration);
     }
 }
 
@@ -148,7 +146,7 @@ public readonly partial struct Energy
     /// <param name="externalPressure">The pressure opposing expansion.</param>
     /// <param name="volumeChange">The final volume minus the initial volume.</param>
     /// <returns>The work done by the system, positive for expansion at positive pressure.</returns>
-    public static Energy FromConstantPressureWork(Pressure externalPressure, Volume volumeChange)
+    public static Energy FromConstantPressureWork(ForcePerArea externalPressure, Volume volumeChange)
     {
         return (Energy)(externalPressure.Value * volumeChange.Value);
     }
@@ -175,24 +173,24 @@ public readonly partial struct Torque
     }
 }
 
-public readonly partial struct Pressure
+public readonly partial struct ForcePerArea
 {
     /// <summary>Calculates the dynamic pressure of a moving fluid.</summary>
     /// <param name="density">The fluid density at the point of interest.</param>
     /// <param name="speed">The fluid speed at the same point.</param>
     /// <returns>The pressure-valued kinetic term ½ρv².</returns>
-    public static Pressure FromDynamicPressure(Density density, LinearVelocity speed)
+    public static ForcePerArea FromDynamicPressure(Density density, LinearVelocity speed)
     {
-        return (Pressure)(0.5d * density.Value * speed.Value * speed.Value);
+        return (ForcePerArea)(0.5d * density.Value * speed.Value * speed.Value);
     }
 
     /// <summary>Calculates pressure from a force normal to a surface.</summary>
     /// <param name="normalForce">The normal component of the force, positive when compressive.</param>
     /// <param name="area">The surface area over which the force is applied.</param>
     /// <returns>The average pressure over the area.</returns>
-    public static Pressure FromNormalForce(Force normalForce, Area area)
+    public static ForcePerArea FromNormalForce(Force normalForce, Area area)
     {
-        return (Pressure)(normalForce / area).Value;
+        return normalForce / area;
     }
 
     /// <summary>Calculates the pressure increase below a reference level in a static fluid of uniform density.</summary>
@@ -200,44 +198,46 @@ public readonly partial struct Pressure
     /// <param name="gravity">The gravitational acceleration magnitude, assumed constant over the depth.</param>
     /// <param name="depth">The vertical distance below the reference level.</param>
     /// <returns>The hydrostatic pressure increase relative to the reference level.</returns>
-    public static Pressure FromHydrostaticHead(Density density, LinearAcceleration gravity, Length depth)
+    public static ForcePerArea FromHydrostaticHead(Density density, LinearAcceleration gravity, Length depth)
     {
-        return (Pressure)(density.Value * gravity.Value * depth.Value);
+        return (ForcePerArea)(density.Value * gravity.Value * depth.Value);
     }
 
     /// <summary>Calculates the pressure difference corresponding to power transferred to a fluid flow.</summary>
     /// <param name="hydraulicPower">The power transferred through the pressure difference.</param>
     /// <param name="flow">The corresponding volumetric flow rate.</param>
     /// <returns>The pressure difference for the given power and flow.</returns>
-    public static Pressure FromHydraulicPower(Power hydraulicPower, VolumePerTime flow)
+    public static ForcePerArea FromHydraulicPower(Power hydraulicPower, VolumePerTime flow)
     {
-        return (Pressure)(hydraulicPower / flow).Value;
+        return hydraulicPower / flow;
     }
 }
 
-public readonly partial struct ReynoldsNumber
+public readonly partial struct LinearVelocity
 {
+    /// <summary>Calculates wave speed from the wavelength and frequency of the same wave.</summary>
+    public static LinearVelocity FromWavelength(Length wavelength, Frequency frequency)
+    {
+        return (LinearVelocity)(wavelength.Value * frequency.Value);
+    }
+
     /// <summary>Calculates the Reynolds number for a flow using kinematic viscosity.</summary>
-    /// <param name="speed">The characteristic speed of the flow.</param>
     /// <param name="characteristicLength">The representative length for the flow geometry.</param>
     /// <param name="kinematicViscosity">The fluid's kinematic viscosity at the flow conditions.</param>
     /// <returns>The Reynolds number for those conditions and that length scale.</returns>
-    public static ReynoldsNumber FromFlow(
-        LinearVelocity speed, Length characteristicLength, KinematicViscosity kinematicViscosity)
+    public double ReynoldsNumber(Length characteristicLength, KinematicViscosity kinematicViscosity)
     {
-        return (ReynoldsNumber)(speed.Value * characteristicLength.Value / kinematicViscosity.Value);
+        return Value * characteristicLength.Value / kinematicViscosity.Value;
     }
 
     /// <summary>Calculates the Reynolds number for a flow using density and dynamic viscosity.</summary>
-    /// <param name="speed">The characteristic speed of the flow.</param>
     /// <param name="characteristicLength">The representative length for the flow geometry.</param>
     /// <param name="density">The fluid density at the flow conditions.</param>
     /// <param name="dynamicViscosity">The fluid's dynamic viscosity at those same conditions.</param>
     /// <returns>The Reynolds number for those conditions and that length scale.</returns>
-    public static ReynoldsNumber FromFlow(
-        LinearVelocity speed, Length characteristicLength, Density density, DynamicViscosity dynamicViscosity)
+    public double ReynoldsNumber(Length characteristicLength, Density density, DynamicViscosity dynamicViscosity)
     {
-        return FromFlow(speed, characteristicLength, dynamicViscosity / density);
+        return ReynoldsNumber(characteristicLength, dynamicViscosity / density);
     }
 }
 
@@ -268,13 +268,13 @@ public readonly partial struct ElectromotiveForce
 public readonly partial struct Resistance
 {
     /// <summary>Calculates the resistance along a uniform conductor.</summary>
-    /// <param name="resistivity">The resistivity of the conductor material.</param>
+    /// <param name="conductivity">The positive electrical conductivity of the conductor material.</param>
     /// <param name="length">The conductor length in the direction of current flow.</param>
     /// <param name="crossSection">The uniform cross-sectional area perpendicular to the current.</param>
     /// <returns>The electrical resistance along the conductor.</returns>
-    public static Resistance FromUniformConductor(Resistivity resistivity, Length length, Area crossSection)
+    public static Resistance FromUniformConductor(ElectricConductivity conductivity, Length length, Area crossSection)
     {
-        return (Resistance)(resistivity.Value * length.Value / crossSection.Value);
+        return (Resistance)(length.Value / (conductivity.Value * crossSection.Value));
     }
 }
 
@@ -291,16 +291,136 @@ public readonly partial struct Capacitance
     }
 }
 
+public readonly partial struct ThermodynamicTemperature
+{
+    /// <summary>Returns this absolute temperature minus the reference temperature, in kelvins.</summary>
+    public double DifferenceInKelvins(ThermodynamicTemperature reference)
+    {
+        return Kelvin - reference.Kelvin;
+    }
+
+    /// <summary>Returns the absolute temperature after adding the signed difference in kelvins.</summary>
+    public ThermodynamicTemperature AddKelvins(double deltaKelvins)
+    {
+        return FromKelvin(Kelvin + deltaKelvins);
+    }
+
+    /// <summary>Calculates the average gradient from the start temperature to this point at a positive distance.</summary>
+    /// <returns>The signed gradient in kelvins per metre.</returns>
+    public double GradientInKelvinsPerMetre(ThermodynamicTemperature start, Length distance)
+    {
+        return DifferenceInKelvins(start) / distance.Metre;
+    }
+}
+
+public readonly partial struct HeatCapacity
+{
+    /// <summary>Calculates sensible heat for a signed temperature change in kelvins at constant or average heat capacity.</summary>
+    public Energy EnergyForTemperatureChange(double deltaKelvins)
+    {
+        return (Energy)(Value * deltaKelvins);
+    }
+
+    /// <summary>Calculates the average heat capacity from sensible heat and a nonzero temperature change in kelvins.</summary>
+    public static HeatCapacity FromEnergyAndTemperatureChange(Energy energy, double deltaKelvins)
+    {
+        return (HeatCapacity)(energy.Value / deltaKelvins);
+    }
+}
+
+public readonly partial struct CoefficientOfHeatTransfer
+{
+    /// <summary>Calculates heat flux from the signed driving temperature difference in kelvins.</summary>
+    public HeatFlowRatePerArea HeatFluxForTemperatureChange(double deltaKelvins)
+    {
+        return (HeatFlowRatePerArea)(Value * deltaKelvins);
+    }
+}
+
+public readonly partial struct ThermalResistance
+{
+    /// <summary>Calculates the signed heat-flow rate from the driving temperature difference in kelvins.</summary>
+    public HeatFlowRate HeatFlowForTemperatureChange(double deltaKelvins)
+    {
+        return (HeatFlowRate)(deltaKelvins / Value);
+    }
+
+    /// <summary>Calculates the signed temperature drop in kelvins for the heat flow along this path.</summary>
+    public double TemperatureDropInKelvins(HeatFlowRate heatFlow)
+    {
+        return Value * heatFlow.Value;
+    }
+
+    /// <summary>Calculates thermal resistance from the temperature drop in kelvins and corresponding nonzero heat flow.</summary>
+    public static ThermalResistance FromTemperatureDrop(double deltaKelvins, HeatFlowRate heatFlow)
+    {
+        return (ThermalResistance)(deltaKelvins / heatFlow.Value);
+    }
+
+    /// <summary>Calculates thermal resistance from the positive transfer coefficient and area of the same surface.</summary>
+    public static ThermalResistance FromHeatTransferCoefficient(CoefficientOfHeatTransfer coefficient, Area area)
+    {
+        return (ThermalResistance)(1d / (coefficient.Value * area.Value));
+    }
+}
+
+public readonly partial struct ThermalInsulance
+{
+    /// <summary>Calculates the signed temperature drop in kelvins for the corresponding normal heat flux.</summary>
+    public double TemperatureDropInKelvins(HeatFlowRatePerArea heatFlux)
+    {
+        return Value * heatFlux.Value;
+    }
+}
+
+public readonly partial struct TemperaturePerTime
+{
+    /// <summary>Calculates the change in kelvins from a constant or average rate over the elapsed interval.</summary>
+    public double ChangeInKelvins(Time elapsed)
+    {
+        return Value * elapsed.Value;
+    }
+}
+
+public readonly partial struct LinearThermalExpansion
+{
+    /// <summary>Calculates the change in length from the whole object's expansion per kelvin and the signed temperature change.</summary>
+    public Length LengthChange(double deltaKelvins)
+    {
+        return (Length)(Value * deltaKelvins);
+    }
+}
+
+public readonly partial struct AreaThermalExpansion
+{
+    /// <summary>Calculates the change in area from the whole object's expansion per kelvin and the signed temperature change.</summary>
+    public Area AreaChange(double deltaKelvins)
+    {
+        return (Area)(Value * deltaKelvins);
+    }
+}
+
+public readonly partial struct VolumeThermalExpansion
+{
+    /// <summary>Calculates the change in volume from the whole object's expansion per kelvin and the signed temperature change.</summary>
+    public Volume VolumeChange(double deltaKelvins)
+    {
+        return (Volume)(Value * deltaKelvins);
+    }
+}
+
 public readonly partial struct HeatFlowRatePerArea
 {
     /// <summary>Calculates the conductive heat-flux component along an axis using Fourier's law.</summary>
     /// <param name="conductivity">The scalar thermal conductivity of the material.</param>
-    /// <param name="temperatureGradient">The signed temperature gradient along the axis.</param>
+    /// <param name="start">The absolute temperature at the start of the interval.</param>
+    /// <param name="end">The absolute temperature at the end of the interval.</param>
+    /// <param name="distance">The positive distance from start to end along the axis.</param>
     /// <returns>The signed heat flux along that axis, directed down the temperature gradient.</returns>
     public static HeatFlowRatePerArea FromConduction(
-        ThermalConductivity conductivity, TemperatureGradient temperatureGradient)
+        ThermalConductivity conductivity, ThermodynamicTemperature start, ThermodynamicTemperature end, Length distance)
     {
-        return (HeatFlowRatePerArea)(-conductivity.Value * temperatureGradient.Value);
+        return (HeatFlowRatePerArea)(-conductivity.Value * end.GradientInKelvinsPerMetre(start, distance));
     }
 }
 

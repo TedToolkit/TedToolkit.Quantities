@@ -8,12 +8,12 @@
 namespace TedToolkit.Quantities;
 
 [QuantityOperator<Length, Length, Area>(Operator.MULTIPLY)]
-[QuantityOperator<Length, Length, DimensionlessRatio>(Operator.DIVIDE)]
+[QuantityOperator<Length, Length, double>(Operator.DIVIDE)]
 [QuantityOperator<Length, Time, LinearVelocity>(Operator.DIVIDE)]
 [QuantityOperator<Length, LinearVelocity, Time>(Operator.DIVIDE)]
 [QuantityOperator<double, Length, InverseLength>(Operator.DIVIDE)]
-[QuantityOperator<Length, InverseLength, DimensionlessRatio>(Operator.MULTIPLY)]
-[QuantityOperator<InverseLength, Length, DimensionlessRatio>(Operator.MULTIPLY)]
+[QuantityOperator<Length, InverseLength, double>(Operator.MULTIPLY)]
+[QuantityOperator<InverseLength, Length, double>(Operator.MULTIPLY)]
 public readonly partial struct Length;
 
 [QuantityOperator<Area, Length, Volume>(Operator.MULTIPLY)]
@@ -68,17 +68,10 @@ public readonly partial struct ElectricCurrent;
 [QuantityOperator<ElectricCharge, ElectricCurrent, Time>(Operator.DIVIDE)]
 public readonly partial struct ElectricCharge;
 
-[QuantityOperator<ThermodynamicTemperature, ThermodynamicTemperature, TemperatureDifference>(Operator.SUBTRACT)]
-[QuantityOperator<ThermodynamicTemperature, TemperatureDifference, ThermodynamicTemperature>(Operator.ADD)]
-[QuantityOperator<TemperatureDifference, ThermodynamicTemperature, ThermodynamicTemperature>(Operator.ADD)]
-[QuantityOperator<ThermodynamicTemperature, TemperatureDifference, ThermodynamicTemperature>(Operator.SUBTRACT)]
-public readonly partial struct ThermodynamicTemperature;
-
-public readonly partial struct DimensionlessRatio;
 public readonly partial struct InverseLength;
 public readonly partial struct LinearMomentum;
 public readonly partial struct SquareEnergy;
-public readonly partial struct TemperatureDifference;
+
 public readonly partial struct Time;
 public readonly partial struct VolumePerTime;
 
@@ -401,16 +394,12 @@ public readonly partial struct Permeability;
 // Heat and temperature.
 
 // Use a constant heat capacity or its average over the temperature interval.
-[QuantityOperator<HeatCapacity, TemperatureDifference, Energy>(Operator.MULTIPLY)]
-[QuantityOperator<TemperatureDifference, HeatCapacity, Energy>(Operator.MULTIPLY)]
 [QuantityOperator<HeatCapacity, SpecificHeatCapacity, Mass>(Operator.DIVIDE)]
 [QuantityOperator<HeatCapacity, Mass, SpecificHeatCapacity>(Operator.DIVIDE)]
 [QuantityOperator<HeatCapacity, VolumetricHeatCapacity, Volume>(Operator.DIVIDE)]
 [QuantityOperator<HeatCapacity, Volume, VolumetricHeatCapacity>(Operator.DIVIDE)]
 public readonly partial struct HeatCapacity;
 
-[QuantityOperator<Energy, HeatCapacity, TemperatureDifference>(Operator.DIVIDE)]
-[QuantityOperator<Energy, TemperatureDifference, HeatCapacity>(Operator.DIVIDE)]
 [QuantityOperator<Energy, HeatFlowRate, Time>(Operator.DIVIDE)]
 public readonly partial struct Energy;
 
@@ -442,58 +431,15 @@ public readonly partial struct HeatFlowRate;
 
 [QuantityOperator<HeatFlowRatePerArea, Area, HeatFlowRate>(Operator.MULTIPLY)]
 [QuantityOperator<Area, HeatFlowRatePerArea, HeatFlowRate>(Operator.MULTIPLY)]
-[QuantityOperator<HeatFlowRatePerArea, CoefficientOfHeatTransfer, TemperatureDifference>(Operator.DIVIDE)]
-[QuantityOperator<HeatFlowRatePerArea, TemperatureDifference, CoefficientOfHeatTransfer>(Operator.DIVIDE)]
 public readonly partial struct HeatFlowRatePerArea;
 
-[QuantityOperator<CoefficientOfHeatTransfer, TemperatureDifference, HeatFlowRatePerArea>(Operator.MULTIPLY)]
-[QuantityOperator<TemperatureDifference, CoefficientOfHeatTransfer, HeatFlowRatePerArea>(Operator.MULTIPLY)]
-public readonly partial struct CoefficientOfHeatTransfer;
-
-[QuantityOperator<ThermalResistance, HeatFlowRate, TemperatureDifference>(Operator.MULTIPLY)]
-[QuantityOperator<HeatFlowRate, ThermalResistance, TemperatureDifference>(Operator.MULTIPLY)]
 [QuantityOperator<ThermalResistance, Area, ThermalInsulance>(Operator.MULTIPLY)]
 [QuantityOperator<Area, ThermalResistance, ThermalInsulance>(Operator.MULTIPLY)]
 public readonly partial struct ThermalResistance;
 
-[QuantityOperator<TemperatureDifference, ThermalResistance, HeatFlowRate>(Operator.DIVIDE)]
-[QuantityOperator<TemperatureDifference, HeatFlowRate, ThermalResistance>(Operator.DIVIDE)]
-[QuantityOperator<TemperatureDifference, ThermalInsulance, HeatFlowRatePerArea>(Operator.DIVIDE)]
-[QuantityOperator<TemperatureDifference, HeatFlowRatePerArea, ThermalInsulance>(Operator.DIVIDE)]
-[QuantityOperator<TemperatureDifference, TemperaturePerTime, Time>(Operator.DIVIDE)]
-[QuantityOperator<TemperatureDifference, Time, TemperaturePerTime>(Operator.DIVIDE)]
-public readonly partial struct TemperatureDifference;
-
 [QuantityOperator<ThermalInsulance, ThermalResistance, Area>(Operator.DIVIDE)]
 [QuantityOperator<ThermalInsulance, Area, ThermalResistance>(Operator.DIVIDE)]
-[QuantityOperator<ThermalInsulance, HeatFlowRatePerArea, TemperatureDifference>(Operator.MULTIPLY)]
-[QuantityOperator<HeatFlowRatePerArea, ThermalInsulance, TemperatureDifference>(Operator.MULTIPLY)]
 public readonly partial struct ThermalInsulance;
-
-[QuantityOperator<TemperaturePerTime, Time, TemperatureDifference>(Operator.MULTIPLY)]
-[QuantityOperator<Time, TemperaturePerTime, TemperatureDifference>(Operator.MULTIPLY)]
-public readonly partial struct TemperaturePerTime;
-
-[QuantityOperator<LinearThermalExpansion, TemperatureDifference, Length>(Operator.MULTIPLY)]
-[QuantityOperator<TemperatureDifference, LinearThermalExpansion, Length>(Operator.MULTIPLY)]
-public readonly partial struct LinearThermalExpansion;
-
-[QuantityOperator<Length, LinearThermalExpansion, TemperatureDifference>(Operator.DIVIDE)]
-public readonly partial struct Length;
-
-[QuantityOperator<AreaThermalExpansion, TemperatureDifference, Area>(Operator.MULTIPLY)]
-[QuantityOperator<TemperatureDifference, AreaThermalExpansion, Area>(Operator.MULTIPLY)]
-public readonly partial struct AreaThermalExpansion;
-
-[QuantityOperator<Area, AreaThermalExpansion, TemperatureDifference>(Operator.DIVIDE)]
-public readonly partial struct Area;
-
-[QuantityOperator<VolumeThermalExpansion, TemperatureDifference, Volume>(Operator.MULTIPLY)]
-[QuantityOperator<TemperatureDifference, VolumeThermalExpansion, Volume>(Operator.MULTIPLY)]
-public readonly partial struct VolumeThermalExpansion;
-
-[QuantityOperator<Volume, VolumeThermalExpansion, TemperatureDifference>(Operator.DIVIDE)]
-public readonly partial struct Volume;
 
 // Photometry and radiometry.
 
@@ -608,57 +554,26 @@ public readonly partial struct AbsorbedDose;
 [QuantityOperator<Time, CatalyticActivity, AmountOfSubstance>(Operator.MULTIPLY)]
 public readonly partial struct CatalyticActivity;
 
-// Pressure, power, and reciprocal density.
+// Mechanical power and reciprocal density.
 
 // Supply the force component along the direction represented by the velocity.
 [QuantityOperator<Force, LinearVelocity, Power>(Operator.MULTIPLY)]
 [QuantityOperator<LinearVelocity, Force, Power>(Operator.MULTIPLY)]
-[QuantityOperator<Force, Pressure, Area>(Operator.DIVIDE)]
 public readonly partial struct Force;
 
 [QuantityOperator<Power, Force, LinearVelocity>(Operator.DIVIDE)]
 [QuantityOperator<Power, LinearVelocity, Force>(Operator.DIVIDE)]
-[QuantityOperator<Power, Pressure, VolumePerTime>(Operator.DIVIDE)]
 public readonly partial struct Power;
 
-[QuantityOperator<Pressure, Area, Force>(Operator.MULTIPLY)]
-[QuantityOperator<Area, Pressure, Force>(Operator.MULTIPLY)]
-// For hydraulic power, the pressure operand is the signed difference across the flow path.
-[QuantityOperator<Pressure, VolumePerTime, Power>(Operator.MULTIPLY)]
-[QuantityOperator<VolumePerTime, Pressure, Power>(Operator.MULTIPLY)]
-public readonly partial struct Pressure;
-
 [QuantityOperator<double, Density, SpecificVolume>(Operator.DIVIDE)]
-[QuantityOperator<Density, SpecificVolume, DimensionlessRatio>(Operator.MULTIPLY)]
-[QuantityOperator<SpecificVolume, Density, DimensionlessRatio>(Operator.MULTIPLY)]
+[QuantityOperator<Density, SpecificVolume, double>(Operator.MULTIPLY)]
+[QuantityOperator<SpecificVolume, Density, double>(Operator.MULTIPLY)]
 public readonly partial struct Density;
 
 [QuantityOperator<double, SpecificVolume, Density>(Operator.DIVIDE)]
 public readonly partial struct SpecificVolume;
 
-// Conductance, resistivity, and the mass-to-charge ratio.
-
-[QuantityOperator<Conductance, ElectricPotential, ElectricCurrent>(Operator.MULTIPLY)]
-[QuantityOperator<ElectricPotential, Conductance, ElectricCurrent>(Operator.MULTIPLY)]
-[QuantityOperator<double, Conductance, Resistance>(Operator.DIVIDE)]
-public readonly partial struct Conductance;
-
-[QuantityOperator<ElectricCurrent, Conductance, ElectricPotential>(Operator.DIVIDE)]
-[QuantityOperator<ElectricCurrent, ElectricPotential, Conductance>(Operator.DIVIDE)]
-public readonly partial struct ElectricCurrent;
-
-[QuantityOperator<double, Resistance, Conductance>(Operator.DIVIDE)]
-[QuantityOperator<Resistance, Conductance, DimensionlessRatio>(Operator.MULTIPLY)]
-[QuantityOperator<Conductance, Resistance, DimensionlessRatio>(Operator.MULTIPLY)]
-public readonly partial struct Resistance;
-
-[QuantityOperator<double, ElectricConductivity, Resistivity>(Operator.DIVIDE)]
-[QuantityOperator<ElectricConductivity, Resistivity, DimensionlessRatio>(Operator.MULTIPLY)]
-[QuantityOperator<Resistivity, ElectricConductivity, DimensionlessRatio>(Operator.MULTIPLY)]
-public readonly partial struct ElectricConductivity;
-
-[QuantityOperator<double, Resistivity, ElectricConductivity>(Operator.DIVIDE)]
-public readonly partial struct Resistivity;
+// Mass-to-charge ratio.
 
 [QuantityOperator<MassPerElectricCharge, ElectricCharge, Mass>(Operator.MULTIPLY)]
 [QuantityOperator<ElectricCharge, MassPerElectricCharge, Mass>(Operator.MULTIPLY)]
@@ -668,23 +583,14 @@ public readonly partial struct MassPerElectricCharge;
 [QuantityOperator<Mass, ElectricCharge, MassPerElectricCharge>(Operator.DIVIDE)]
 public readonly partial struct Mass;
 
-// Temperature gradients and thermal material properties.
-
-[QuantityOperator<TemperatureGradient, Length, TemperatureDifference>(Operator.MULTIPLY)]
-[QuantityOperator<Length, TemperatureGradient, TemperatureDifference>(Operator.MULTIPLY)]
-public readonly partial struct TemperatureGradient;
-
-[QuantityOperator<TemperatureDifference, TemperatureGradient, Length>(Operator.DIVIDE)]
-[QuantityOperator<TemperatureDifference, Length, TemperatureGradient>(Operator.DIVIDE)]
-public readonly partial struct TemperatureDifference;
+// Thermal material properties.
 
 [QuantityOperator<double, ThermalConductivity, ThermalResistivity>(Operator.DIVIDE)]
-[QuantityOperator<ThermalConductivity, ThermalResistivity, DimensionlessRatio>(Operator.MULTIPLY)]
-[QuantityOperator<ThermalResistivity, ThermalConductivity, DimensionlessRatio>(Operator.MULTIPLY)]
+[QuantityOperator<ThermalConductivity, ThermalResistivity, double>(Operator.MULTIPLY)]
+[QuantityOperator<ThermalResistivity, ThermalConductivity, double>(Operator.MULTIPLY)]
 public readonly partial struct ThermalConductivity;
 
 [QuantityOperator<double, ThermalResistivity, ThermalConductivity>(Operator.DIVIDE)]
-// A uniform plane layer's depth times thermal resistivity gives its areal resistance.
 [QuantityOperator<ThermalResistivity, Length, ThermalInsulance>(Operator.MULTIPLY)]
 [QuantityOperator<Length, ThermalResistivity, ThermalInsulance>(Operator.MULTIPLY)]
 public readonly partial struct ThermalResistivity;
@@ -698,39 +604,3 @@ public readonly partial struct ThermalInsulance;
 [QuantityOperator<Length, ThermalInsulance, ThermalConductivity>(Operator.DIVIDE)]
 [QuantityOperator<Length, ThermalConductivity, ThermalInsulance>(Operator.DIVIDE)]
 public readonly partial struct Length;
-
-// Wave propagation uses wavelength and frequency for the same wave.
-[QuantityOperator<Wavelength, Frequency, LinearVelocity>(Operator.MULTIPLY)]
-[QuantityOperator<Frequency, Wavelength, LinearVelocity>(Operator.MULTIPLY)]
-public readonly partial struct Wavelength;
-
-[QuantityOperator<LinearVelocity, Wavelength, Frequency>(Operator.DIVIDE)]
-[QuantityOperator<LinearVelocity, Frequency, Wavelength>(Operator.DIVIDE)]
-public readonly partial struct LinearVelocity;
-
-[QuantityOperator<Impulse, Time, Force>(Operator.DIVIDE)]
-[QuantityOperator<Impulse, Force, Time>(Operator.DIVIDE)]
-public readonly partial struct Impulse;
-
-// Conductance is for the whole thermal path. The heat-transfer coefficient is per area.
-[QuantityOperator<ThermalConductance, TemperatureDifference, HeatFlowRate>(Operator.MULTIPLY)]
-[QuantityOperator<TemperatureDifference, ThermalConductance, HeatFlowRate>(Operator.MULTIPLY)]
-[QuantityOperator<double, ThermalConductance, ThermalResistance>(Operator.DIVIDE)]
-public readonly partial struct ThermalConductance;
-
-[QuantityOperator<HeatFlowRate, TemperatureDifference, ThermalConductance>(Operator.DIVIDE)]
-[QuantityOperator<HeatFlowRate, ThermalConductance, TemperatureDifference>(Operator.DIVIDE)]
-public readonly partial struct HeatFlowRate;
-
-[QuantityOperator<CoefficientOfHeatTransfer, Area, ThermalConductance>(Operator.MULTIPLY)]
-[QuantityOperator<Area, CoefficientOfHeatTransfer, ThermalConductance>(Operator.MULTIPLY)]
-public readonly partial struct CoefficientOfHeatTransfer;
-
-[QuantityOperator<ThermalConductance, Area, CoefficientOfHeatTransfer>(Operator.DIVIDE)]
-[QuantityOperator<ThermalConductance, CoefficientOfHeatTransfer, Area>(Operator.DIVIDE)]
-public readonly partial struct ThermalConductance;
-
-[QuantityOperator<double, ThermalResistance, ThermalConductance>(Operator.DIVIDE)]
-[QuantityOperator<ThermalResistance, ThermalConductance, DimensionlessRatio>(Operator.MULTIPLY)]
-[QuantityOperator<ThermalConductance, ThermalResistance, DimensionlessRatio>(Operator.MULTIPLY)]
-public readonly partial struct ThermalResistance;

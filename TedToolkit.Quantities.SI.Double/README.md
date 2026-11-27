@@ -1,9 +1,8 @@
 # TedToolkit.Quantities.SI.Double
 
-Precompiled double-precision quantities and typed formulas using the existing
-`TedToolkit.Quantities` package. [AssemblyInfo.cs](AssemblyInfo.cs) selects all 150 quantity kinds
-in the repository's QUDT SI catalog and additional kinds used by the formulas, such as
-`Pressure` and `ThermalConductance`. The package targets .NET Standard 2.0 and .NET 7.
+Precompiled double-precision quantities and typed formulas from the QUDT SI catalog.
+The package uses the existing `TedToolkit.Quantities` generator with `QuantitySystems.SI` to expose
+all 150 quantity kinds in the repository's SI catalog. It targets .NET Standard 2.0 and .NET 7.
 
 ```sh
 dotnet add package TedToolkit.Quantities.SI.Double
@@ -25,6 +24,8 @@ to construct it. Use named factories and unit accessors such as `FromMillimetre`
 value. Use `Value` for quantities without named units. Equality and ordering follow the base
 library's `Tolerance` rules. Unit availability and conversions follow the QUDT data used by
 the base generator. The SI base unit for `ThermodynamicTemperature` is the kelvin (K).
+Use `DifferenceInKelvins` to get a signed temperature interval as a `double`. Use `AddKelvins`
+to apply that interval to an absolute temperature.
 [BIPM SI Brochure][bipm-si-brochure]
 
 The cross-quantity operators are declared with the existing `QuantityOperator` attribute in
@@ -44,7 +45,7 @@ The SI package defines a conversion for each ordered pair of distinct exposed ty
 matching exponents for the seven SI base dimensions. A cast preserves the coherent SI value
 and selects the quantity kind used to interpret it. For example, `(Torque)energy` preserves the
 number. Calculating torque from a force and lever arm uses `Torque.FromPerpendicularLeverArm`.
-Likewise, `Radius.FromDiameter` calculates half the diameter of a circle and
+Likewise, `Length.RadiusFromDiameter` calculates half the diameter of a circle and
 `AngularVelocity.FromFrequency` computes the angular velocity for one revolution per cycle.
 
 [QuantityConversions.cs](QuantityConversions.cs) defines the implicit and explicit casts in C#.
@@ -52,13 +53,11 @@ The package adds the following implicit conversions from specialized to general 
 
 | Specialized quantity | General quantity |
 | --- | --- |
-| `Width`, `Height`, `Depth`, `Radius`, `Diameter`, `Distance`, `Wavelength`, `PathLength` | `Length` |
 | `GravitationalAttraction` | `Force` |
 | `HeatFlowRate` | `Power` |
 | `HeatFlowRatePerArea` | `PowerPerArea` |
-| `Pressure`, scalar `Stress` | `ForcePerArea` |
+| Scalar `Stress` | `ForcePerArea` |
 | `Illuminance` | `LuminousFluxPerArea` |
-| `ReynoldsNumber` | `DimensionlessRatio` |
 
 ```csharp
 GravitationalAttraction weight = (GravitationalAttraction)12d;
@@ -73,7 +72,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **114 physical formulas**. Swapped products, solved forms, and typed variants
+The inventory lists **113 physical formulas**. Swapped products, solved forms, and typed variants
 share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
 
@@ -82,11 +81,11 @@ Update the corresponding row when changing a formula's coverage.
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
 | A = πr² | `Area` | Area enclosed by a circle with positive radius. Supported methods include `Area.FromCircle`. | [OpenStax area][openstax-area] |
-| C = 2πr | `Length` | Circumference of a circle with positive radius. Supported methods include `Radius.ToCircumference`. | [OpenStax geometry][openstax-geometry] |
-| d = 2r | `Diameter`, `Radius` | The radius and diameter refer to the same circle. Supported methods include `Diameter.FromRadius`, `Radius.FromDiameter`. | [OpenStax geometry][openstax-geometry] |
+| C = 2πr | `Length` | Circumference of a circle with positive radius. Supported methods include `Length.CircumferenceFromRadius`. | [OpenStax geometry][openstax-geometry] |
+| d = 2r | `Length` | The radius and diameter refer to the same circle. Supported methods include `Length.DiameterFromRadius`, `Length.RadiusFromDiameter`. | [OpenStax geometry][openstax-geometry] |
 | s = rθ | `Length`, `PlaneAngle` | Circular arc with a positive radius. A signed central angle gives a signed arc length. Supported methods include `PlaneAngle.FromArc`, `PlaneAngle.ToArcLength`. | [OpenStax rotational variables][openstax-rotational-variables] |
-| κ = 1 / ℓ, r = κℓ | `DimensionlessRatio`, `InverseLength` | The reciprocal requires a nonzero length. The product is one when κ and ℓ are reciprocals. | [NIST SP 811][nist-sp-811] |
-| Length ratio = ℓ₂ / ℓ₁ | `DimensionlessRatio` | Use a nonzero reference length. Both lengths use the same unit basis. | [QUDT quantity definitions][qudt-quantity-definitions] |
+| κ = 1 / ℓ, r = κℓ | `InverseLength`, `double` | The reciprocal requires a nonzero length. The product is one when κ and ℓ are reciprocals. | [NIST SP 811][nist-sp-811] |
+| Length ratio = ℓ₂ / ℓ₁ | `double` | Use a nonzero reference length. Both lengths use the same unit basis. | [QUDT quantity definitions][qudt-quantity-definitions] |
 | V = Aℓ | `Area`, `Length`, `Volume` | Prism or extrusion with uniform cross section perpendicular to its length. | [OpenStax prism volume][openstax-prism-volume] |
 | A = ab | `Area`, `Length` | Rectangular sides are perpendicular. The inverse solves for the other side. | [OpenStax area][openstax-area] |
 | Energy product = E₁E₂ | `SquareEnergy` | Multiply two energy values. Equal operands give E². | [QUDT quantity definitions][qudt-quantity-definitions] |
@@ -107,7 +106,7 @@ Update the corresponding row when changing a formula's coverage.
 | E = P̄Δt | `Energy`, `Power`, `Time` | Constant or average power or heat-flow rate over the interval. | [OpenStax work and energy][openstax-work-and-energy] · [OpenStax heat and conduction][openstax-heat-and-conduction] |
 | Eₐ = E / A | `Area`, `Energy`, `EnergyPerArea` | Average energy per area over the relevant surface. | [QUDT quantity definitions][qudt-quantity-definitions] |
 | F = ma | `Force`, `LinearAcceleration`, `Mass` | Net force along an axis for a constant-mass body. | [OpenStax Newton's laws][openstax-newton-s-laws] |
-| J = Δp = F̄Δt | `Force`, `Impulse`, `LinearMomentum`, `Time` | Use the signed component of the average force over the interval. Supported methods include `Impulse.FromAverageForce`. | [OpenStax impulse and momentum][openstax-impulse-and-momentum] |
+| J = Δp = F̄Δt | `Force`, `LinearMomentum`, `Time` | Use the signed component of the average force over the interval. | [OpenStax impulse and momentum][openstax-impulse-and-momentum] |
 | τ = F⊥r⊥ | `Torque` | Use the force component in the rotation plane and its perpendicular lever arm. Supported methods include `Torque.FromPerpendicularLeverArm`. | [OpenStax fixed-axis rotation][openstax-fixed-axis-rotation] |
 | Δx = v̄Δt | `Length`, `LinearVelocity`, `Time` | Constant or average velocity component along the displacement axis. | [OpenStax kinematics][openstax-kinematics] |
 | m = λₘℓ | `Length`, `Mass`, `MassPerLength` | Uniform or mean linear mass density λₘ over the length. | [QUDT quantity definitions][qudt-quantity-definitions] |
@@ -123,22 +122,22 @@ Update the corresponding row when changing a formula's coverage.
 | τ = Iα | `AngularAcceleration`, `MomentOfInertia`, `Torque` | Net torque and moment of inertia about the same fixed axis. | [OpenStax fixed-axis rotation][openstax-fixed-axis-rotation] |
 | K = ½mv² | `Energy` | Nonrelativistic translation. Supported methods include `Energy.FromTranslationalKineticEnergy`. | [OpenStax work and energy][openstax-work-and-energy] |
 | Δv = āΔt | `LinearAcceleration`, `LinearVelocity`, `Time` | Constant or average acceleration component over the interval. | [OpenStax kinematics][openstax-kinematics] |
-| v = λf | `Frequency`, `LinearVelocity`, `Wavelength` | Wavelength and frequency belong to the same propagating wave. | [OpenStax waves][openstax-waves] |
+| v = λf | `Frequency`, `Length`, `LinearVelocity` | Wavelength and frequency belong to the same propagating wave. Supported methods include `Frequency.FromWaveSpeed`, `Length.WavelengthFromSpeed`, `LinearVelocity.FromWavelength`. | [OpenStax waves][openstax-waves] |
 
 ### Fluids and mass flow
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
 | jₘ = ṁ / A = Δ(m/A) / Δt | `Area`, `MassPerArea`, `MassPerAreaTime`, `MassPerTime`, `Time` | Use the same oriented surface and interval for the areal mass flow rate jₘ. | [NASA mass flow][nasa-mass-flow] · [QUDT quantity definitions][qudt-quantity-definitions] |
-| ρ = m / V, vₛ = V / m = 1 / ρ | `Density`, `DimensionlessRatio`, `Mass`, `SpecificVolume`, `Volume` | Density and specific volume describe the same material at the same state. | [OpenStax fluid mechanics][openstax-fluid-mechanics] · [QUDT quantity definitions][qudt-quantity-definitions] |
-| q = ½ρv² | `Pressure` | Use local density and speed. Supported methods include `Pressure.FromDynamicPressure`. | [NASA dynamic pressure][nasa-dynamic-pressure] |
-| P = ΔpQᵥ | `ForcePerArea`, `Power`, `Pressure`, `VolumePerTime` | Pressure difference and flow refer to the same path. Use pressures referenced to the same datum. Supported methods include `Pressure.FromHydraulicPower`. | [OpenStax fluid mechanics][openstax-fluid-mechanics] · [OpenStax pressure–volume work][openstax-pressure-volume-work] |
-| Δp = ρgh | `Pressure` | Static fluid with uniform density and constant gravity over the vertical depth below the reference level. Supported methods include `Pressure.FromHydrostaticHead`. | [OpenStax fluids, density, and pressure][openstax-fluids-density-and-pressure] |
+| ρ = m / V, vₛ = V / m = 1 / ρ | `Density`, `Mass`, `SpecificVolume`, `Volume`, `double` | Density and specific volume describe the same material at the same state. | [OpenStax fluid mechanics][openstax-fluid-mechanics] · [QUDT quantity definitions][qudt-quantity-definitions] |
+| q = ½ρv² | `ForcePerArea` | Use local density and speed. Supported methods include `ForcePerArea.FromDynamicPressure`. | [NASA dynamic pressure][nasa-dynamic-pressure] |
+| P = ΔpQᵥ | `ForcePerArea`, `Power`, `VolumePerTime` | Pressure difference and flow refer to the same path. Use pressures referenced to the same datum. Supported methods include `ForcePerArea.FromHydraulicPower`. | [OpenStax fluid mechanics][openstax-fluid-mechanics] · [OpenStax pressure–volume work][openstax-pressure-volume-work] |
+| Δp = ρgh | `ForcePerArea` | Static fluid with uniform density and constant gravity over the vertical depth below the reference level. Supported methods include `ForcePerArea.FromHydrostaticHead`. | [OpenStax fluids, density, and pressure][openstax-fluids-density-and-pressure] |
 | ṁ = ρQᵥ | `Density`, `MassPerTime`, `VolumePerTime` | Use consistent density and volumetric flow at the same section. | [NASA mass flow][nasa-mass-flow] |
 | Δm = ṁ̄Δt | `Mass`, `MassPerTime`, `Time` | Constant or time-averaged mass flow rate over the interval. | [NASA mass flow][nasa-mass-flow] |
-| p = Fₙ / A | `Area`, `Force`, `ForcePerArea`, `Pressure` | Use the normal force over the surface. The general division returns `ForcePerArea`. Supported methods include `Pressure.FromNormalForce`. | [OpenStax fluid mechanics][openstax-fluid-mechanics] |
+| p = Fₙ / A | `Area`, `Force`, `ForcePerArea` | Use the normal force over the surface. The result is the average pressure represented by ForcePerArea. Supported methods include `ForcePerArea.FromNormalForce`. | [OpenStax fluid mechanics][openstax-fluid-mechanics] |
 | W = pₑₓₜΔV | `Energy` | Constant external pressure. Expansion gives positive work by the system. Supported methods include `Energy.FromConstantPressureWork`. | [OpenStax pressure–volume work][openstax-pressure-volume-work] |
-| Re = vℓ / ν = ρvℓ / μ | `ReynoldsNumber` | Choose the characteristic length for the flow and viscosity at that state. Supported methods include `ReynoldsNumber.FromFlow`. | [NASA Reynolds number][nasa-reynolds-number] |
+| Re = vℓ / ν = ρvℓ / μ | `double` | Choose the characteristic length for the flow and viscosity at that state. Supported methods include `LinearVelocity.ReynoldsNumber`. | [NASA Reynolds number][nasa-reynolds-number] |
 | μ = ρν | `Density`, `DynamicViscosity`, `KinematicViscosity` | Density, dynamic viscosity, and kinematic viscosity at the same fluid state. | [NASA viscosity and flow][nasa-viscosity-and-flow] |
 | Qᵥ = Avₙ | `Area`, `LinearVelocity`, `VolumePerTime` | Area-averaged normal speed component through the section. | [OpenStax fluid mechanics][openstax-fluid-mechanics] · [NASA mass flow][nasa-mass-flow] |
 | ΔV = Q̄ᵥΔt | `Time`, `Volume`, `VolumePerTime` | Constant or time-averaged volumetric flow rate. | [OpenStax fluid mechanics][openstax-fluid-mechanics] |
@@ -152,7 +151,6 @@ Update the corresponding row when changing a formula's coverage.
 | ΔQ = ĪΔt | `ElectricCharge`, `ElectricCurrent`, `Time` | Use average electrical current through the same cross section and interval. | [OpenStax current and resistance][openstax-current-and-resistance] |
 | Q = (Q / m)m | `ElectricCharge`, `ElectricChargePerMass`, `Mass` | Charge and mass refer to the same particles or sample. | [QUDT quantity definitions][qudt-quantity-definitions] |
 | Q = (Q / n)n | `AmountOfSubstance`, `ElectricCharge`, `ElectricChargePerAmountOfSubstance` | Use charge per mole for the specified entities and process. | [QUDT quantity definitions][qudt-quantity-definitions] · [IUPAC molar quantities][iupac-molar-quantities] |
-| ρₑ = 1 / σ | `DimensionlessRatio`, `ElectricConductivity`, `Resistivity` | Resistivity and conductivity refer to the same ohmic material and state. | [OpenStax resistivity][openstax-resistivity] |
 | I = JₙA | `Area`, `ElectricCurrent`, `ElectricCurrentDensity` | Uniform or area-averaged normal current density through the section. | [OpenStax current and resistance][openstax-current-and-resistance] |
 | p = Qd | `ElectricCharge`, `ElectricDipoleMoment`, `Length` | Equal and opposite charges. Separation is directed from negative charge to positive charge. | [OpenStax electric fields][openstax-electric-fields] |
 | D = εE | `ElectricDisplacement`, `ElectricFieldStrength`, `Permittivity` | Linear isotropic dielectric, using corresponding field components. | [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
@@ -167,13 +165,13 @@ Update the corresponding row when changing a formula's coverage.
 | Φ = (Φ / ℓ)ℓ | `Length`, `MagneticFlux`, `MagneticFluxPerLength` | Uniform or mean magnetic flux per length over the interval. | [QUDT quantity definitions][qudt-quantity-definitions] |
 | m = (m / Q)Q | `ElectricCharge`, `Mass`, `MassPerElectricCharge` | Mass and signed charge refer to the same charged entities. | [QUDT quantity definitions][qudt-quantity-definitions] |
 | J = σE | `ElectricConductivity`, `ElectricCurrentDensity`, `ElectricFieldStrength` | Scalar conductivity in the local ohmic regime. Use corresponding components. | [OpenStax resistivity][openstax-resistivity] |
-| V = IR, I = GV, G = 1 / R | `Conductance`, `DimensionlessRatio`, `ElectricCurrent`, `ElectricPotential`, `Resistance` | Voltage and current refer to the same ohmic element or operating point. | [OpenStax current and resistance][openstax-current-and-resistance] · [NIST SP 811][nist-sp-811] |
+| V = IR | `ElectricCurrent`, `ElectricPotential`, `Resistance` | Voltage and current refer to the same ohmic element or operating point. | [OpenStax current and resistance][openstax-current-and-resistance] · [NIST SP 811][nist-sp-811] |
 | C = εA / d | `Capacitance` | Parallel plates with uniform dielectric, using overlap area and negligible fringing. Supported methods include `Capacitance.FromParallelPlates`. | [OpenStax capacitance][openstax-capacitance] |
 | ΔU = QΔV | `ElectricCharge`, `ElectricPotential`, `Energy` | Change in electrical potential energy for charge moved through a fixed potential difference. | [OpenStax electric potential][openstax-electric-potential] |
 | τ = RC | `Capacitance`, `Resistance`, `Time` | Time constant of the equivalent first-order RC circuit. | [OpenStax RC circuits][openstax-rc-circuits] |
 | τ = L / R | `Inductance`, `Resistance`, `Time` | Time constant of the equivalent first-order RL circuit. | [OpenStax RL circuits][openstax-rl-circuits] |
 | Q = σqA | `Area`, `ElectricCharge`, `ElectricChargePerArea` | Uniform or mean surface charge density σq over the area. | [OpenStax electric fields][openstax-electric-fields] · [QUDT quantity definitions][qudt-quantity-definitions] |
-| R = ρₑℓ / A | `Resistance` | Uniform conductor with constant cross section and material resistivity. Supported methods include `Resistance.FromUniformConductor`. | [OpenStax resistivity][openstax-resistivity] |
+| R = ℓ / (σA) | `Resistance` | Uniform conductor with constant cross section and positive electrical conductivity σ. Supported methods include `Resistance.FromUniformConductor`. | [OpenStax resistivity][openstax-resistivity] |
 | Q = ρqV | `ElectricCharge`, `ElectricChargeVolumeDensity`, `Volume` | Uniform or mean volume charge density ρq over the region. | [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
 
 ### Heat and temperature
@@ -181,21 +179,21 @@ Update the corresponding row when changing a formula's coverage.
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
 | R″ = ARₜ | `Area`, `ThermalInsulance`, `ThermalResistance` | Relate total thermal resistance to area-normalized resistance for the same uniform surface. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT heat-transfer coefficient][qudt-heat-transfer-coefficient] |
-| qₓ″ = −k∂T/∂x | `HeatFlowRatePerArea` | Signed temperature gradient along the axis with scalar conductivity. Supported methods include `HeatFlowRatePerArea.FromConduction`. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT heat flow rate][qudt-heat-flow-rate] |
+| qₓ″ = −k ΔT / Δx | `HeatFlowRatePerArea` | Use scalar conductivity and the signed average gradient between the two temperatures along the axis. Supported methods include `HeatFlowRatePerArea.FromConduction`. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT heat flow rate][qudt-heat-flow-rate] |
 | Pheat = q″A | `Area`, `HeatFlowRate`, `HeatFlowRatePerArea` | Use average normal heat flux over the surface. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT heat-transfer coefficient][qudt-heat-transfer-coefficient] |
-| Gₜ = hA | `Area`, `CoefficientOfHeatTransfer`, `ThermalConductance` | Uniform or area-averaged heat-transfer coefficient for the same thermal path and driving temperature difference. | [QUDT heat-transfer coefficient][qudt-heat-transfer-coefficient] · [QUDT thermal conductance][qudt-thermal-conductance] |
+| Rₜ = 1 / (hA) | `ThermalResistance` | Use a positive uniform or area-averaged heat-transfer coefficient h and the area A of the same surface. Supported methods include `ThermalResistance.FromHeatTransferCoefficient`. | [QUDT heat-transfer coefficient][qudt-heat-transfer-coefficient] · [QUDT thermal conductance][qudt-thermal-conductance] |
 | R″ = ℓ/k = ℓρₜ | `Length`, `ThermalConductivity`, `ThermalInsulance`, `ThermalResistivity` | Uniform plane layer. Use thickness along the heat-flow direction. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT thermal resistivity][qudt-thermal-resistivity] |
-| Q = CΔT | `Energy`, `HeatCapacity`, `TemperatureDifference` | Sensible heat with constant or interval-averaged heat capacity. | [OpenStax heat and conduction][openstax-heat-and-conduction] |
+| Q = CΔT | `Energy`, `HeatCapacity` | Sensible heat with constant or interval-averaged heat capacity. Supported methods include `HeatCapacity.EnergyForTemperatureChange`, `HeatCapacity.FromEnergyAndTemperatureChange`. | [OpenStax heat and conduction][openstax-heat-and-conduction] |
 | C = mc | `HeatCapacity`, `Mass`, `SpecificHeatCapacity` | Use mass-specific heat capacity for the specified thermodynamic process. | [OpenStax heat and conduction][openstax-heat-and-conduction] |
-| q″ = hΔT | `CoefficientOfHeatTransfer`, `HeatFlowRatePerArea`, `TemperatureDifference` | Transfer coefficient h is per unit area. Use the driving temperature difference in the indicated direction. | [QUDT heat-transfer coefficient][qudt-heat-transfer-coefficient] |
-| ΔT = T₂ − T₁, T₂ = T₁ + ΔT | `TemperatureDifference`, `ThermodynamicTemperature` | Use the temperature difference as the increment of an absolute temperature. | [BIPM SI Brochure][bipm-si-brochure] |
-| ΔT = (dT/dt)̄Δt | `TemperatureDifference`, `TemperaturePerTime`, `Time` | Temperature-change rate is constant or averaged over the interval. | [QUDT quantity definitions][qudt-quantity-definitions] |
-| ΔT = q″R″ | `HeatFlowRatePerArea`, `TemperatureDifference`, `ThermalInsulance` | Use areal thermal resistance and the corresponding heat-flux component. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT heat-transfer coefficient][qudt-heat-transfer-coefficient] |
-| ∂T/∂x ≈ ΔT / Δx | `Length`, `TemperatureDifference`, `TemperatureGradient` | Signed temperature difference over a distance along the axis. The quotient gives the interval average. | [OpenStax heat and conduction][openstax-heat-and-conduction] |
+| q″ = hΔT | `HeatFlowRatePerArea` | Transfer coefficient h is per unit area. Use the driving temperature difference in the indicated direction. Supported methods include `CoefficientOfHeatTransfer.HeatFluxForTemperatureChange`. | [QUDT heat-transfer coefficient][qudt-heat-transfer-coefficient] |
+| ΔT = T₂ − T₁, T₂ = T₁ + ΔT | `ThermodynamicTemperature`, `double` | Subtract two absolute temperatures to get a signed difference in kelvins. Add that difference to an absolute temperature to get another absolute temperature. Supported methods include `ThermodynamicTemperature.AddKelvins`, `ThermodynamicTemperature.DifferenceInKelvins`. | [BIPM SI Brochure][bipm-si-brochure] |
+| ΔT = (dT/dt)̄Δt | `double` | Temperature-change rate is constant or averaged over the interval. Supported methods include `TemperaturePerTime.ChangeInKelvins`. | [QUDT quantity definitions][qudt-quantity-definitions] |
+| ΔT = q″R″ | `double` | Use areal thermal resistance and the corresponding heat-flux component. Supported methods include `ThermalInsulance.TemperatureDropInKelvins`. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT heat-transfer coefficient][qudt-heat-transfer-coefficient] |
+| ∂T/∂x ≈ ΔT / Δx | `double` | Signed temperature difference over a distance along the axis. The quotient gives the interval average. Supported methods include `ThermodynamicTemperature.GradientInKelvinsPerMetre`. | [OpenStax heat and conduction][openstax-heat-and-conduction] |
 | α = k / cᵥ | `ThermalConductivity`, `ThermalDiffusivity`, `VolumetricHeatCapacity` | Thermal diffusivity for scalar conductivity and volumetric heat capacity. | [NIST TN 622][nist-tn-622] |
-| ΔL = L′ΔT, ΔA = A′ΔT, ΔV = V′ΔT | `Area`, `Length`, `TemperatureDifference`, `Volume` | Use the object's average dimensional expansion per kelvin over the interval, or the local slope for a small temperature change. The result is the change in size. | [OpenStax thermal expansion][openstax-thermal-expansion] · [QUDT quantity definitions][qudt-quantity-definitions] |
-| Pheat = ΔT / Rₜ = GₜΔT, Gₜ = 1 / Rₜ | `DimensionlessRatio`, `HeatFlowRate`, `TemperatureDifference`, `ThermalConductance`, `ThermalResistance` | Use total resistance or conductance for the same thermal path. A signed temperature drop gives the signed heat-flow rate. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT thermal conductance][qudt-thermal-conductance] |
-| ρₜ = 1 / k | `DimensionlessRatio`, `ThermalConductivity`, `ThermalResistivity` | Thermal resistivity and conductivity describe the same material and direction. | [QUDT thermal resistivity][qudt-thermal-resistivity] |
+| ΔL = L′ΔT, ΔA = A′ΔT, ΔV = V′ΔT | `Area`, `Length`, `Volume` | Use the object's average dimensional expansion per kelvin over the interval, or the local slope for a small temperature change. The result is the change in size. Supported methods include `AreaThermalExpansion.AreaChange`, `LinearThermalExpansion.LengthChange`, `VolumeThermalExpansion.VolumeChange`. | [OpenStax thermal expansion][openstax-thermal-expansion] · [QUDT quantity definitions][qudt-quantity-definitions] |
+| Pheat = ΔT / Rₜ | `HeatFlowRate`, `ThermalResistance`, `double` | Use total thermal resistance and a signed temperature drop in kelvins for the same thermal path. Supported methods include `ThermalResistance.FromTemperatureDrop`, `ThermalResistance.HeatFlowForTemperatureChange`, `ThermalResistance.TemperatureDropInKelvins`. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT thermal conductance][qudt-thermal-conductance] |
+| ρₜ = 1 / k | `ThermalConductivity`, `ThermalResistivity`, `double` | Thermal resistivity and conductivity describe the same material and direction. | [QUDT thermal resistivity][qudt-thermal-resistivity] |
 | cᵥ = ρc | `Density`, `SpecificHeatCapacity`, `VolumetricHeatCapacity` | Density and mass-specific heat capacity describe the same state. | [NIST TN 622][nist-tn-622] |
 | C = Vcᵥ | `HeatCapacity`, `Volume`, `VolumetricHeatCapacity` | Uniform or volume-averaged volumetric heat capacity cᵥ. | [NIST SP 811][nist-sp-811] |
 
