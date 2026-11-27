@@ -117,6 +117,57 @@ public readonly partial struct PlaneAngle
     {
         return FromRadian((initialAngularVelocity.Value + 0.5d * acceleration.Value * elapsed.Value) * elapsed.Value);
     }
+
+    /// <summary>Calculates the transmitted ray angle for refraction between media with positive refractive indices.</summary>
+    /// <param name="incidence">The signed incident angle from the interface normal, between −π/2 and π/2 radians.</param>
+    /// <param name="incidentIndex">The refractive index of the incident medium at this wavelength.</param>
+    /// <param name="transmittedIndex">The refractive index of the transmitted medium at this wavelength.</param>
+    /// <param name="refraction">The signed transmitted angle, or the default angle on failure.</param>
+    /// <returns>True if Snell's law admits a propagating transmitted ray.</returns>
+    public static bool TryFromRefraction(
+        PlaneAngle incidence, double incidentIndex, double transmittedIndex, out PlaneAngle refraction)
+    {
+        var sine = (incidentIndex / transmittedIndex) * Math.Sin(incidence.Radian);
+        if (!(Math.Abs(sine) <= 1d))
+        {
+            refraction = default;
+            return false;
+        }
+
+        refraction = FromRadian(Math.Asin(sine));
+        return true;
+    }
+
+    /// <summary>Calculates the critical incidence angle for light passing from a higher to a lower positive refractive index.</summary>
+    public static PlaneAngle CriticalAngle(double incidentIndex, double transmittedIndex)
+    {
+        return FromRadian(Math.Asin(transmittedIndex / incidentIndex));
+    }
+
+    /// <summary>Calculates the Brewster incidence angle at a lossless interface between nonmagnetic media.</summary>
+    public static PlaneAngle BrewsterAngle(double incidentIndex, double transmittedIndex)
+    {
+        return FromRadian(Math.Atan(transmittedIndex / incidentIndex));
+    }
+
+    /// <summary>Calculates the signed phase difference from optical path difference and positive vacuum wavelength.</summary>
+    public static PlaneAngle FromOpticalPathDifference(Length pathDifference, Length vacuumWavelength)
+    {
+        return FromRevolution(pathDifference / vacuumWavelength);
+    }
+
+    /// <summary>Calculates a single-slit diffraction minimum at positive order in the far field.</summary>
+    /// <remarks>The light is normally incident and the order times wavelength cannot exceed the slit width.</remarks>
+    public static PlaneAngle FromSingleSlitMinimum(Length wavelength, Length slitWidth, int order)
+    {
+        return FromRadian(Math.Asin(order * (wavelength / slitWidth)));
+    }
+
+    /// <summary>Calculates the approximate Rayleigh angular resolution of a circular aperture in the small-angle regime.</summary>
+    public static PlaneAngle FromRayleighCriterion(Length wavelength, Length apertureDiameter)
+    {
+        return FromRadian(1.22d * (wavelength / apertureDiameter));
+    }
 }
 
 public readonly partial struct SolidAngle
@@ -131,6 +182,13 @@ public readonly partial struct SolidAngle
     public Area ToSphericalPatchArea(Length radius)
     {
         return (radius * radius) * Steradian;
+    }
+
+    /// <summary>Calculates the solid angle inside a circular cone whose half-angle lies between zero and π radians.</summary>
+    public static SolidAngle FromCone(PlaneAngle halfAngle)
+    {
+        var sine = Math.Sin(0.5d * halfAngle.Radian);
+        return FromSteradian((4d * Math.PI) * sine * sine);
     }
 }
 
@@ -185,6 +243,51 @@ public readonly partial struct Length
     {
         return (Length)(2d * surfaceTension.Value * Math.Cos(contactAngle.Radian)
                         / (liquidDensity.Value * gravity.Value * tubeRadius.Value));
+    }
+
+    /// <summary>Calculates paraxial focal length from signed object and image distances.</summary>
+    public static Length FocalLengthFromConjugates(Length objectDistance, Length imageDistance)
+    {
+        return FromMetre(1d / (1d / objectDistance.Metre + 1d / imageDistance.Metre));
+    }
+
+    /// <summary>Calculates signed paraxial image distance from focal length and signed object distance for a thin lens.</summary>
+    public static Length ImageDistanceFromThinLens(Length focalLength, Length objectDistance)
+    {
+        return FromMetre(1d / (1d / focalLength.Metre - 1d / objectDistance.Metre));
+    }
+
+    /// <summary>Calculates signed lateral magnification from paraxial object and image distances.</summary>
+    public static double LateralMagnification(Length objectDistance, Length imageDistance)
+    {
+        return -(imageDistance / objectDistance);
+    }
+
+    /// <summary>Calculates paraxial focal length of a thin lens with the same medium on both sides.</summary>
+    /// <remarks>Use signed radii, positive where the centre of curvature is downstream. A planar surface has infinite radius.</remarks>
+    public static Length FocalLengthFromLensMaker(
+        double lensIndex, double surroundingIndex, Length firstRadius, Length secondRadius)
+    {
+        var curvatureDifference = 1d / firstRadius.Metre - 1d / secondRadius.Metre;
+        return FromMetre(1d / ((lensIndex / surroundingIndex - 1d) * curvatureDifference));
+    }
+
+    /// <summary>Calculates wavelength from a nonzero diffraction grating order with normal incidence.</summary>
+    public static Length WavelengthFromDiffractionGrating(Length grooveSpacing, PlaneAngle angle, int order)
+    {
+        return grooveSpacing * (Math.Sin(angle.Radian) / order);
+    }
+
+    /// <summary>Calculates wavelength from a Bragg reflection at positive order and glancing angle measured from the lattice planes.</summary>
+    public static Length WavelengthFromBraggDiffraction(Length latticeSpacing, PlaneAngle glancingAngle, int order)
+    {
+        return latticeSpacing * (2d * Math.Sin(glancingAngle.Radian) / order);
+    }
+
+    /// <summary>Calculates paraxial double-slit fringe spacing with normally incident coherent light.</summary>
+    public static Length FringeSpacingForDoubleSlit(Length wavelength, Length screenDistance, Length slitSeparation)
+    {
+        return screenDistance * (wavelength / slitSeparation);
     }
 }
 
@@ -656,6 +759,18 @@ public readonly partial struct LinearVelocity
     {
         var radiusSquared = (sphereRadius * sphereRadius).Value;
         return FromMetrePerSecond((2d / 9d) * (sphereDensity.Value - fluidDensity.Value) * gravity.Value * radiusSquared / viscosity.Value);
+    }
+
+    /// <summary>Calculates the phase speed of light in a medium from its positive refractive index at the wavelength of interest.</summary>
+    public static LinearVelocity FromRefractiveIndex(LinearVelocity vacuumLightSpeed, double refractiveIndex)
+    {
+        return vacuumLightSpeed / refractiveIndex;
+    }
+
+    /// <summary>Calculates refractive index from the vacuum light speed and this positive phase speed in a medium.</summary>
+    public double RefractiveIndex(LinearVelocity vacuumLightSpeed)
+    {
+        return vacuumLightSpeed.Value / Value;
     }
 
     /// <summary>Calculates the Reynolds number for a flow using kinematic viscosity.</summary>
@@ -1220,6 +1335,15 @@ public readonly partial struct HeatFlowRatePerArea
 
 public readonly partial struct Illuminance
 {
+    /// <summary>Calculates point-source illuminance at a surface whose normal faces the source.</summary>
+    /// <param name="intensity">Luminous intensity in the direction of the surface.</param>
+    /// <param name="distance">Positive distance from the point source to the surface.</param>
+    /// <param name="incidenceAngle">Angle between the surface normal and the direction to the source, from zero to π/2 radians.</param>
+    public static Illuminance FromPointSource(LuminousIntensity intensity, Length distance, PlaneAngle incidenceAngle)
+    {
+        return FromNormalPointSource(intensity, distance) * Math.Cos(incidenceAngle.Radian);
+    }
+
     /// <summary>Calculates illuminance on a surface perpendicular to light from a point source.</summary>
     /// <param name="intensity">The luminous intensity of the source towards the surface.</param>
     /// <param name="distance">The distance from the source to the surface.</param>
@@ -1232,6 +1356,23 @@ public readonly partial struct Illuminance
 
 public readonly partial struct PowerPerArea
 {
+    /// <summary>Calculates irradiance transmitted through an ideal polarizer for linearly polarized incident light.</summary>
+    /// <param name="axisAngle">Angle between the incident polarization and the transmission axis.</param>
+    public PowerPerArea AfterIdealPolarizer(PlaneAngle axisAngle)
+    {
+        var cosine = Math.Cos(axisAngle.Radian);
+        return this * (cosine * cosine);
+    }
+
+    /// <summary>Calculates point-source irradiance at a surface whose normal faces the source.</summary>
+    /// <param name="intensity">Radiant intensity in the direction of the surface.</param>
+    /// <param name="distance">Positive distance from the point source to the surface.</param>
+    /// <param name="incidenceAngle">Angle between the surface normal and the direction to the source, from zero to π/2 radians.</param>
+    public static PowerPerArea FromPointSource(RadiantIntensity intensity, Length distance, PlaneAngle incidenceAngle)
+    {
+        return FromNormalPointSource(intensity, distance) * Math.Cos(incidenceAngle.Radian);
+    }
+
     /// <summary>Calculates intensity at positive distance from an isotropic source in a lossless medium.</summary>
     public static PowerPerArea FromIsotropicSource(Power emittedPower, Length distance)
     {

@@ -77,7 +77,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **220 physical formulas**. Swapped products, solved forms, and typed variants
+The inventory lists **235 physical formulas**. Swapped products, solved forms, and typed variants
 share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
 
@@ -85,6 +85,7 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| Ω = 2π(1 − cos θ) | `SolidAngle` | Circular cone about the observation point. θ is its half-angle from zero to π radians. Supported methods include `SolidAngle.FromCone`. | [NIST radiometric calibration handbook][nist-cone-solid-angle] |
 | A = 4πr² | `Area` | Total surface area of a sphere with positive radius. Supported methods include `Area.FromSphere`. | [OpenStax sphere geometry][openstax-sphere-geometry] |
 | V = 4πr³ / 3 | `Volume` | Volume enclosed by a sphere with positive radius. Supported methods include `Volume.FromSphere`. | [OpenStax sphere geometry][openstax-sphere-geometry] |
 | Ω = A / r² | `Area`, `SolidAngle` | The patch lies on a sphere centred at the point where the solid angle is measured. Use the sphere's positive radius. Supported methods include `SolidAngle.FromSphericalPatch` and `SolidAngle.ToSphericalPatchArea`. | [NIST SI units][nist-si-units] |
@@ -311,6 +312,25 @@ Update the corresponding row when changing a formula's coverage.
 | cᵥ = ρc | `Density`, `SpecificHeatCapacity`, `VolumetricHeatCapacity` | Density and mass-specific heat capacity describe the same state. | [NIST TN 622][nist-tn-622] |
 | C = Vcᵥ | `HeatCapacity`, `Volume`, `VolumetricHeatCapacity` | Uniform or volume-averaged volumetric heat capacity cᵥ. | [NIST SP 811][nist-sp-811] |
 
+### Optics and diffraction
+
+| Formula | Result types | Applicability and named entry points | Source |
+| --- | --- | --- | --- |
+| 1/f = 1/dₒ + 1/dᵢ | `Length` | Paraxial thin lens with signed distances. Under the real-is-positive convention, real object and real image distances are positive. For a virtual image, dᵢ is negative. Supported methods include `Length.FocalLengthFromConjugates` and `Length.ImageDistanceFromThinLens`. | [OpenStax thin lenses][openstax-thin-lenses] |
+| m = −dᵢ / dₒ | `double` | Paraxial thin-lens lateral magnification with the same distance convention. Negative magnification gives an inverted image. Supported methods include `Length.LateralMagnification`. | [OpenStax thin lenses][openstax-thin-lenses] |
+| 1/f = (nℓ/nₘ − 1)(1/R₁ − 1/R₂) | `Length` | Thin lens with the same surrounding medium on both sides. A surface radius is positive if its centre of curvature lies downstream. Use infinite radius for a planar surface. Supported methods include `Length.FocalLengthFromLensMaker`. | [OpenStax thin lenses][openstax-thin-lenses] |
+| n = c / vphase | `LinearVelocity`, `double` | Phase refractive index at a specified wavelength. Use the vacuum light speed c and the positive phase speed in the medium. Supported methods include `LinearVelocity.FromRefractiveIndex` and `LinearVelocity.RefractiveIndex`. | [OpenStax refraction][openstax-refraction] |
+| n₁ sin θ₁ = n₂ sin θ₂ | `PlaneAngle`, `bool` | Positive refractive indices at the same wavelength. Measure signed angles from the interface normal. The method returns false when no propagating transmitted ray exists. Supported methods include `PlaneAngle.TryFromRefraction`. | [OpenStax refraction][openstax-refraction] |
+| θ꜀ = asin(n₂/n₁) | `PlaneAngle` | Critical angle from the normal when the incident medium has the higher positive refractive index. Supported methods include `PlaneAngle.CriticalAngle`. | [OpenStax total internal reflection][openstax-total-internal-reflection] |
+| θᵦ = atan(n₂/n₁) | `PlaneAngle` | Brewster incidence angle from the normal for an interface between lossless, nonmagnetic media. Supported methods include `PlaneAngle.BrewsterAngle`. | [OpenStax polarization][openstax-polarization] |
+| I = I₀ cos² θ | `PowerPerArea` | Malus's law for linearly polarized incident light and an ideal polarizer. θ is the angle from the polarization to the transmission axis. Supported methods include `PowerPerArea.AfterIdealPolarizer`. | [OpenStax polarization][openstax-polarization] |
+| mλ = d sin θ | `Length` | Normal incidence on a diffraction grating or two slits. Use a nonzero signed order m and its corresponding signed diffraction angle. Supported methods include `Length.WavelengthFromDiffractionGrating`. | [OpenStax diffraction equations][openstax-diffraction] |
+| a sin θ = mλ | `PlaneAngle` | Far-field single-slit minima at normal incidence, with positive order m and mλ ≤ a. Supported methods include `PlaneAngle.FromSingleSlitMinimum`. | [OpenStax diffraction equations][openstax-diffraction] |
+| mλ = 2d sin θ | `Length` | Bragg reflection from parallel lattice planes of spacing d. The angle is measured from the planes, and the order m is positive. Supported methods include `Length.WavelengthFromBraggDiffraction`. | [OpenStax diffraction equations][openstax-diffraction] |
+| θmin ≈ 1.22 λ / D | `PlaneAngle` | Small-angle Rayleigh criterion for a circular aperture of positive diameter D and wavelength λ. Supported methods include `PlaneAngle.FromRayleighCriterion`. | [OpenStax diffraction equations][openstax-diffraction] |
+| Δφ = 2πΔLopt / λ₀ | `PlaneAngle` | Coherent monochromatic waves. Use signed optical path difference and positive vacuum wavelength, with no additional phase shifts. Supported methods include `PlaneAngle.FromOpticalPathDifference`. | [OpenStax mathematics of interference][openstax-interference] |
+| Δy ≈ Lλ / d | `Length` | Paraxial double-slit fringe spacing at normal incidence. Use positive screen distance L and slit separation d. Supported methods include `Length.FringeSpacingForDoubleSlit`. | [OpenStax mathematics of interference][openstax-interference] |
+
 ### Photometry and radiometry
 
 | Formula | Result types | Applicability and named entry points | Source |
@@ -320,8 +340,8 @@ Update the corresponding row when changing a formula's coverage.
 | Φᵥ = ηᵥP | `LuminousEfficacy`, `LuminousFlux`, `Power` | Use the power basis for which the luminous efficacy was specified. | [NIST photometric quantities][nist-photometric-quantities] · [QUDT quantity definitions][qudt-quantity-definitions] |
 | Qᵥ = Φ̄ᵥΔt | `LuminousEnergy`, `LuminousFlux`, `Time` | Constant or time-averaged luminous flux over the interval. | [NIST photometric quantities][nist-photometric-quantities] |
 | Φᵥ = IᵥΩ | `LuminousFlux`, `LuminousIntensity`, `SolidAngle` | Use mean luminous intensity over the solid angle. | [NIST photometric quantities][nist-photometric-quantities] · [NIST photometric equations 2–6][nist-photometric-equations-2-6] |
-| Eᵥ = Iᵥ / r² | `Illuminance` | Point source and receiving surface perpendicular to the incident ray. Supported methods include `Illuminance.FromNormalPointSource`. | [NIST photometric equations 2–6][nist-photometric-equations-2-6] |
-| Eₑ = Iₑ / r² | `PowerPerArea` | Point source, positive distance and normal incidence. Use the radiant intensity in the direction of the receiver. From the CIE definitions and dΩ = dA / r² at normal incidence. Supported methods include `PowerPerArea.FromNormalPointSource`. | [CIE irradiance][cie-irradiance] · [CIE radiant intensity][cie-radiant-intensity] · [NIST photometric equations 2–6][nist-photometric-equations-2-6] |
+| Eᵥ = Iᵥ cos θ / r² | `Illuminance` | Use luminous intensity in the direction of the receiver, positive distance r and incidence angle θ from the receiving normal. The receiving face points toward the source. Supported methods include `Illuminance.FromPointSource` and `Illuminance.FromNormalPointSource`. | [CIE photometric distance law][cie-photometric-distance] · [NIST photometric equations 2–6][nist-photometric-equations-2-6] |
+| Eₑ = Iₑ cos θ / r² | `PowerPerArea` | Use radiant intensity in the direction of the receiver and positive distance. For a face pointing toward the source, the projected receiver area satisfies dΩ = cos θ dA / r². Supported methods include `PowerPerArea.FromPointSource` and `PowerPerArea.FromNormalPointSource`. | [CIE irradiance][cie-irradiance] · [CIE radiant intensity][cie-radiant-intensity] · [CIE basic law of radiometry and photometry][cie-basic-radiometry] |
 | Φₑ = IₑΩ | `Power`, `RadiantIntensity`, `SolidAngle` | Use mean radiant intensity over the solid angle. | [NIST photometric quantities][nist-photometric-quantities] |
 
 ### Chemistry and radiation dose
@@ -453,6 +473,15 @@ Update the corresponding row when changing a formula's coverage.
 - [OpenStax thin straight wire][openstax-straight-wire]
 - [OpenStax parallel currents][openstax-parallel-currents]
 - [OpenStax Ampère's law][openstax-ampere]
+- [OpenStax thin lenses][openstax-thin-lenses]
+- [OpenStax refraction][openstax-refraction]
+- [OpenStax total internal reflection][openstax-total-internal-reflection]
+- [OpenStax polarization][openstax-polarization]
+- [OpenStax diffraction equations][openstax-diffraction]
+- [OpenStax mathematics of interference][openstax-interference]
+- [NIST radiometric calibration handbook][nist-cone-solid-angle]
+- [CIE photometric distance law][cie-photometric-distance]
+- [CIE basic law of radiometry and photometry][cie-basic-radiometry]
 
 [bipm-si-brochure]: https://www.bipm.org/en/publications/si-brochure
 [bipm-katal-resolution]: https://www.bipm.org/en/-/resolution-cgpm-21-12
@@ -564,3 +593,12 @@ Update the corresponding row when changing a formula's coverage.
 [openstax-straight-wire]: https://openstax.org/books/university-physics-volume-2/pages/12-2-magnetic-field-due-to-a-thin-straight-wire
 [openstax-parallel-currents]: https://openstax.org/books/university-physics-volume-2/pages/12-3-magnetic-force-between-two-parallel-currents
 [openstax-ampere]: https://openstax.org/books/university-physics-volume-2/pages/12-5-amperes-law
+[openstax-thin-lenses]: https://openstax.org/books/university-physics-volume-3/pages/2-4-thin-lenses
+[openstax-refraction]: https://openstax.org/books/university-physics-volume-3/pages/1-3-refraction
+[openstax-total-internal-reflection]: https://openstax.org/books/university-physics-volume-3/pages/1-4-total-internal-reflection
+[openstax-polarization]: https://openstax.org/books/university-physics-volume-3/pages/1-7-polarization
+[openstax-diffraction]: https://openstax.org/books/university-physics-volume-3/pages/4-key-equations
+[openstax-interference]: https://openstax.org/books/university-physics-volume-3/pages/3-2-mathematics-of-interference
+[nist-cone-solid-angle]: https://nvlpubs.nist.gov/nistpubs/Legacy/hb/nisthandbook152.pdf
+[cie-photometric-distance]: https://cie.co.at/eilvterm/17-25-104
+[cie-basic-radiometry]: https://cie.co.at/eilvterm/17-25-088

@@ -51,6 +51,7 @@ internal static class PrecompiledQuantities
         VerifyCircuitNetworks();
         VerifyHeatTransfer();
         VerifyThermodynamicProcesses();
+        VerifyOptics();
         VerifyLightChemistryAndDose();
         VerifyQuantityConversions();
 
@@ -488,6 +489,53 @@ internal static class PrecompiledQuantities
         Close(6, deposited.Joule);
         Close(2, perMass.Value);
         Close(2, Q.AbsorbedDose.FromDepositedEnergy(deposited, Q.Mass.FromKilogram(3)).Gray);
+    }
+
+    private static void VerifyOptics()
+    {
+        var objectDistance = Q.Length.FromMillimetre(2000);
+        var focalLength = Q.Length.FocalLengthFromConjugates(objectDistance, Q.Length.FromMetre(2));
+        Close(1, focalLength.Metre);
+        var virtualImage = Q.Length.ImageDistanceFromThinLens(-focalLength, Q.Length.FromMetre(1));
+        Close(-0.5, virtualImage.Metre);
+        Close(0.5, Q.Length.LateralMagnification(Q.Length.FromMetre(1), virtualImage));
+        var lensRadius = Q.Length.FromMillimetre(250);
+        Close(0.25, Q.Length.FocalLengthFromLensMaker(1.5, 1, lensRadius, -lensRadius).Metre);
+
+        var vacuumLightSpeed = Q.LinearVelocity.FromMetrePerSecond(3e8);
+        var mediumLightSpeed = Q.LinearVelocity.FromRefractiveIndex(vacuumLightSpeed, 2);
+        Close(1.5e8, mediumLightSpeed.MetrePerSecond);
+        Close(2, mediumLightSpeed.RefractiveIndex(vacuumLightSpeed));
+        var incidence = Q.PlaneAngle.FromRadian(Math.PI / 6);
+        if (!Q.PlaneAngle.TryFromRefraction(-incidence, 1, 2, out var refraction))
+        {
+            throw new InvalidOperationException("Expected a transmitted ray.");
+        }
+
+        Close(-Math.Asin(0.25), refraction.Radian);
+        var steepIncidence = Q.PlaneAngle.FromRadian(Math.PI / 3);
+        if (Q.PlaneAngle.TryFromRefraction(steepIncidence, 2, 1, out _))
+        {
+            throw new InvalidOperationException("Expected total internal reflection.");
+        }
+
+        Close(Math.PI / 6, Q.PlaneAngle.CriticalAngle(2, 1).Radian);
+        Close(Math.Atan(1.5), Q.PlaneAngle.BrewsterAngle(1, 1.5).Radian);
+        Close(5, ((Q.PowerPerArea)20d).AfterIdealPolarizer(steepIncidence).Value);
+        Close(2 * Math.PI, Q.SolidAngle.FromCone(Q.PlaneAngle.FromRadian(Math.PI / 2)).Steradian);
+
+        var wavelength = Q.Length.FromMillimetre(0.001);
+        var slitWidth = Q.Length.FromMillimetre(0.004);
+        Close(0.001, Q.Length.WavelengthFromDiffractionGrating(slitWidth, -incidence, -2).Millimetre);
+        Close(Math.Asin(0.25), Q.PlaneAngle.FromSingleSlitMinimum(wavelength, slitWidth, 1).Radian);
+        Close(2e-7, Q.Length.WavelengthFromBraggDiffraction(Q.Length.FromMetre(4e-10), incidence, 2).Millimetre);
+        Close(1.22e-4, Q.PlaneAngle.FromRayleighCriterion(wavelength, Q.Length.FromMillimetre(10)).Radian);
+        Close(Math.PI / 2, Q.PlaneAngle.FromOpticalPathDifference(wavelength / 4d, wavelength).Radian);
+        Close(1, Q.Length.FringeSpacingForDoubleSlit(wavelength, objectDistance, Q.Length.FromMillimetre(2)).Millimetre);
+
+        Close(2.5, Q.Illuminance.FromPointSource(
+            Q.LuminousIntensity.FromCandela(20), objectDistance, steepIncidence).Lux);
+        Close(2.5, Q.PowerPerArea.FromPointSource((Q.RadiantIntensity)20d, objectDistance, steepIncidence).Value);
     }
 
     private static void VerifyThermodynamicProcesses()
