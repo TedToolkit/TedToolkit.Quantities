@@ -30,7 +30,7 @@ to apply that interval to an absolute temperature.
 
 The QUDT SI catalog contains two dimension-one quantity kinds, `PlaneAngle` and `SolidAngle`,
 with coherent units radian and steradian respectively. General ratios such as `Length / Length`
-and the Reynolds number use `double`. A temperature interval or gradient also uses `double`,
+and the Froude number use `double`. A temperature interval or gradient also uses `double`,
 with its unit stated in the method name, as in `DifferenceInKelvins` and `GradientInKelvinsPerMetre`.
 
 The cross-quantity operators are declared with the existing `QuantityOperator` attribute in
@@ -77,7 +77,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **220 physical formulas**. Each calculation uses up to two input quantities.
+The inventory lists **274 physical formulas**. Each calculation uses up to two input quantities.
 Dimension-one inputs such as ratios use `double` and count as one quantity. Swapped products,
 solved forms, and typed variants share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
@@ -86,6 +86,8 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| V = πr²h/3 | `Volume` | Circular base of positive radius r and perpendicular height h. Supported methods include `Volume.FromCircularCone`. | [OpenStax cylinder and cone geometry][openstax-cone-and-cylinder] |
+| A = 2πr(r + h) | `Area` | Total surface area, including both bases, of a closed right circular cylinder with positive radius and height. Supported methods include `Area.FromClosedCircularCylinder`. | [OpenStax cylinder and cone geometry][openstax-cone-and-cylinder] |
 | g = ℓ/A | `Area`, `InverseLength`, `Length` | Geometric ratio for a uniform member. Use axial length and its perpendicular cross-sectional area. | [OpenStax resistivity][openstax-resistivity] |
 | Ω = 2π(1 − cos θ) | `SolidAngle` | Circular cone about the observation point. θ is its half-angle from zero to π radians. Supported methods include `SolidAngle.FromCone`. | [NIST radiometric calibration handbook][nist-cone-solid-angle] |
 | A = 4πr² | `Area` | Total surface area of a sphere with positive radius. Supported methods include `Area.FromSphere`. | [OpenStax sphere geometry][openstax-sphere-geometry] |
@@ -107,6 +109,13 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| rₛ = 2μ/c² | `Length` | Schwarzschild horizon radius of an uncharged, nonrotating mass. Use its positive standard gravitational parameter. Supported methods include `Length.SchwarzschildRadius`. | [OpenStax gravitation equations][openstax-gravitation] · [NIST CODATA physical constants][nist-codata-constants] |
+| εorbit = −μ/(2a) | `SpecificEnergy` | Total orbital energy per mass in a bound Newtonian two-body orbit, using the positive standard gravitational parameter and semi-major axis. Supported methods include `SpecificEnergy.FromBoundKeplerOrbit`. | [NASA introductory orbital mechanics][nasa-orbital-energy] |
+| k = √(I/m) | `Length` | Radius of gyration about the same axis used for moment of inertia I. Use the positive mass of the same body. Supported methods include `Length.RadiusOfGyration`. | [MIT rigid-body dynamics][mit-radius-of-gyration] |
+| dstop = v₀²/(2a) | `Length` | Straight-line stopping distance with positive constant deceleration magnitude a and nonnegative initial speed. Supported methods include `Length.FromConstantStoppingDeceleration`. | [OpenStax constant acceleration][openstax-constant-acceleration] |
+| vmax = Aω, amax = Aω² | `LinearAcceleration`, `LinearVelocity` | Peak magnitudes in simple harmonic motion. Use nonnegative displacement amplitude A and positive angular frequency ω. Supported methods include `LinearVelocity.PeakSpeedInSimpleHarmonicMotion` and `LinearAcceleration.PeakAccelerationInSimpleHarmonicMotion`. | [OpenStax simple harmonic motion equations][openstax-simple-harmonic-motion] |
+| φ = −μ/r | `SpecificEnergy` | Newtonian potential relative to infinity outside a spherical mass, or at positive distance r from a point mass. Use its standard gravitational parameter μ. Supported methods include `SpecificEnergy.FromNewtonianGravitationalPotential`. | [OpenStax gravitational potential energy][openstax-gravitational-energy] |
+| Δφ = gΔz | `SpecificEnergy` | Potential energy change per unit mass in uniform gravity. Use positive gravity and signed upward elevation change. Supported methods include `SpecificEnergy.FromUniformGravityElevationChange`. | [OpenStax Bernoulli equation][openstax-bernoulli] |
 | L = rp⊥ | `AngularMomentum`, `Length`, `LinearMomentum` | Signed angular momentum about a fixed axis. Use the perpendicular radius from the axis and the signed tangential momentum component. | [OpenStax angular momentum][openstax-angular-momentum] |
 | F = −bv | `Force` | Linear viscous damping. Use nonnegative damping coefficient b in mass per time and signed relative velocity. Supported methods include `Force.FromViscousDamping`. | [OpenStax damped oscillations][openstax-damped-oscillations] |
 | Fₛ,max = μₛN | `Force` | Maximum static friction for a dry contact under the Coulomb model. Use the nonnegative coefficient and compressive normal force. Supported methods include `Force.MaximumStaticFriction`. | [OpenStax friction][openstax-friction] |
@@ -149,9 +158,9 @@ Update the corresponding row when changing a formula's coverage.
 | K = ½Iω² | `Energy` | Rigid body rotating about a fixed axis. Supported methods include `Energy.FromRotationalKineticEnergy`. | [OpenStax fixed-axis rotation][openstax-fixed-axis-rotation] |
 | W = τ̄Δθ | `Energy`, `PlaneAngle`, `Torque` | Constant or angle-averaged torque along the rotation. | [OpenStax fixed-axis rotation][openstax-fixed-axis-rotation] |
 | P = τω | `AngularVelocity`, `Power`, `Torque` | Corresponding torque and angular velocity components about the same axis. | [OpenStax fixed-axis rotation][openstax-fixed-axis-rotation] |
-| e = E / m | `Energy`, `Mass`, `SpecificEnergy` | Energy and mass refer to the same body or sample. | [NIST SP 811][nist-sp-811] |
+| e = E / m | `Energy`, `Mass`, `SpecificEnergy` | Energy and mass refer to the same body or sample. For a phase transition at constant temperature, apply the same relation as Q = mL using specific latent heat L and the transitioning mass. | [NIST SP 811][nist-sp-811] · [OpenStax phase changes][openstax-phase-changes] |
 | τ = Iα | `AngularAcceleration`, `MomentOfInertia`, `Torque` | Net torque and moment of inertia about the same fixed axis. | [OpenStax fixed-axis rotation][openstax-fixed-axis-rotation] |
-| K = ½mv² | `Energy` | Nonrelativistic translation. Supported methods include `Energy.FromTranslationalKineticEnergy`. | [OpenStax work and energy][openstax-work-and-energy] |
+| K = ½mv² = p²/(2m) | `Energy` | Nonrelativistic translation with positive mass. Use speed or momentum magnitude. Supported methods include `Energy.FromTranslationalKineticEnergy` and `Energy.FromMomentumKineticEnergy`. | [OpenStax kinetic energy][openstax-kinetic-energy] · [OpenStax momentum][openstax-impulse-and-momentum] |
 | Δv = āΔt | `LinearAcceleration`, `LinearVelocity`, `Time` | Constant or average acceleration component over the interval. | [OpenStax kinematics][openstax-kinematics] |
 | v = λf | `Frequency`, `Length`, `LinearVelocity` | Wavelength and frequency belong to the same propagating wave. Supported methods include `Frequency.FromWaveSpeed`, `Length.WavelengthFromSpeed`, `LinearVelocity.FromWavelength`. | [OpenStax waves][openstax-waves] |
 
@@ -170,6 +179,11 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| fobs = fₛ√((1 − β)/(1 + β)) | `Frequency` | Longitudinal Doppler shift in vacuum. Use the source-frame frequency and signed relative line-of-sight velocity v with magnitude below c. β = v/c is positive for recession. Supported methods include `Frequency.ObserveLongitudinalDoppler`. | [OpenStax longitudinal Doppler effect][openstax-longitudinal-doppler] |
+| u = (u′ + v)/(1 + u′v/c²) | `LinearVelocity` | Velocity addition for inertial frames and velocities along the same axis. Use signed velocities u′ of the object in the intermediate frame and v of that frame relative to the observer, both with magnitude below c. Supported methods include `LinearVelocity.AddCollinearRelativisticVelocity`. | [OpenStax relativistic velocity transformation][openstax-relativistic-velocity] |
+| Δt = γΔτ | `Time` | Inertial observers. Δτ is proper duration between events at the same point in the moving clock's frame. Supply Lorentz factor γ of at least one. Supported methods include `Time.Dilate`. | [OpenStax special relativity equations][openstax-relativity] |
+| L = L₀/γ | `Length` | Inertial observers. Use proper length L₀ parallel to relative motion and Lorentz factor γ of at least one. Supported methods include `Length.ContractAlongMotion`. | [OpenStax special relativity equations][openstax-relativity] |
+| K = (γ − 1)E₀ | `Energy` | Relativistic kinetic energy for a massive body, given its rest energy and Lorentz factor. Supported methods include `Energy.FromRelativisticKineticEnergy`. | [OpenStax special relativity equations][openstax-relativity] |
 | z = (λobs − λemit)/λemit | `double` | Use observed and emitted wavelengths of the same spectral feature with positive emitted wavelength. Supported methods include `Length.RedshiftFrom`. | [NASA JPL spectral redshift][nasa-spectral-redshift] |
 | γ = 1/√(1 − v²/c²) | `double` | Relative speed magnitude below the positive vacuum speed of light c. Supported methods include `LinearVelocity.LorentzFactor`. | [OpenStax special relativity equations][openstax-relativity] |
 | E₀ = mc² | `Energy` | Rest energy of a body of rest mass m. Supply the positive vacuum speed of light. Supported methods include `Energy.FromRestMass`. | [OpenStax special relativity equations][openstax-relativity] |
@@ -178,6 +192,10 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| k = 2π/λ, ṽ = 1/λ₀ | `InverseLength` | Angular wavenumber k in radians per metre uses the wavelength in the medium. Spectroscopic wavenumber ṽ is the reciprocal of vacuum wavelength. Supported methods include `InverseLength.AngularWavenumberFromWavelength` and `InverseLength.SpectroscopicWavenumberFromWavelength`. | [OpenStax mathematics of waves][openstax-wave-mathematics] · [NIST atomic spectra units][nist-spectroscopic-wavenumber] |
+| f₁ = c/(2L), f₁ = c/(4L) | `Frequency` | Ideal fundamental acoustic mode in a tube open at both ends, or open at one end and closed at the other, respectively. Use positive sound speed and effective length. Supported methods include `Frequency.FromHalfWaveResonance` and `Frequency.FromQuarterWaveResonance`. | [OpenStax standing sound waves][openstax-standing-sound] |
+| Ī = pᵣₘₛuᵣₘₛ | `PowerPerArea` | Progressive plane sound wave with pressure and particle velocity in phase. Use their RMS values. Supported methods include `PowerPerArea.FromProgressiveSoundWave`. | [OpenStax sound intensity][openstax-sound-intensity] |
+| ΔLᵢ = 10 log₁₀(I₂/I₁) | `double` | Sound intensity level difference in decibels from positive acoustic intensities. Supported methods include `PowerPerArea.SoundIntensityLevelDifferenceInDecibels`. | [OpenStax sound intensity][openstax-sound-intensity] |
 | c = √(Fₜ / λₘ) | `LinearVelocity` | Transverse waves of small amplitude on a uniform taut string. Use positive tension and linear mass density. Supported methods include `LinearVelocity.FromStretchedString`. | [OpenStax wave speed on a string][openstax-stretched-string] |
 | c = √(B / ρ) | `LinearVelocity` | Small acoustic perturbations in a fluid. Use its adiabatic bulk modulus and density at the same state. Supported methods include `LinearVelocity.FromFluidBulkModulus`. | [OpenStax speed of sound][openstax-speed-of-sound] |
 | I = P / (4πr²) | `PowerPerArea` | Isotropic source in a lossless medium. Use total emitted power and positive distance. Supported methods include `PowerPerArea.FromIsotropicSource`. | [OpenStax sound intensity][openstax-sound-intensity] |
@@ -188,6 +206,14 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| pabs = pg + pref | `ForcePerArea` | Gauge and absolute pressure for the same pressure reference. Use signed gauge pressure and absolute reference pressure, for example the ambient atmospheric pressure. Supported methods include `ForcePerArea.FromGaugePressure` and `ForcePerArea.GaugePressureRelativeTo`. | [OpenStax fluid mechanics][openstax-fluid-mechanics] |
+| p₀ = p + q | `ForcePerArea` | Stagnation pressure for incompressible flow brought to rest without losses or elevation change. Use static pressure and dynamic pressure from the same point. Supported methods include `ForcePerArea.FromIncompressibleStagnation`. | [OpenStax Bernoulli equation][openstax-bernoulli] |
+| D = A/T | `Length` | Hydraulic depth of an open channel. Use cross-sectional flow area A and positive surface width T at the same section. Supported methods include `Length.HydraulicDepth`. | [San Diego State University open-channel hydraulics][sdsu-froude] |
+| Fr = U/cg | `double` | Open-channel flow. Use mean flow speed magnitude U and the positive shallow-water gravity-wave speed cg relative to that flow. Supported methods include `LinearVelocity.FroudeNumber`. | [San Diego State University open-channel hydraulics][sdsu-froude] |
+| Sc = ν/D | `double` | Same species and fluid state. D is its positive molecular mass diffusivity in square metres per second, represented by `AreaPerTime`. Supported methods include `KinematicViscosity.SchmidtNumber`. | [MIT convective heat and mass transfer, equation 105][mit-schmidt-number] |
+| xrms = √(2Dt) | `Length` | RMS displacement along one axis in unbounded diffusion with nonnegative constant diffusivity D and elapsed time t. D is represented by `AreaPerTime`. Supported methods include `Length.RmsDisplacementInOneDimensionalDiffusion`. | [MIT diffusion and random walks][mit-diffusion-displacement] |
+| Δp = ρΔφhead | `Density`, `ForcePerArea`, `SpecificEnergy` | Pressure change in a static constant-density fluid. Δφhead is the signed decrease in specific gravitational potential when moving from the reference level to the location. Also represents the pressure term p/ρ in Bernoulli's equation. | [OpenStax Bernoulli equation][openstax-bernoulli] |
+| F = ṁ Isp,m | `Force`, `MassPerTime`, `SpecificImpulseByMass` | Use positive propellant mass flow and mass-specific impulse in N·s/kg for the same operating condition. Isp,m includes pressure thrust through equivalent exhaust velocity. | [NASA specific impulse][nasa-specific-impulse] · [QUDT quantity definitions][qudt-quantity-definitions] |
 | ṗavg = Δp/Δt | `ForcePerArea`, `ForcePerAreaTime`, `Time` | Signed pressure change per elapsed time. Use average or constant rate over the interval when recovering the pressure change. | [QUDT quantity definitions][qudt-quantity-definitions] |
 | v = √(2gh) | `LinearVelocity` | Ideal outflow from a small opening at depth h below the free surface of a large vessel. The two pressures are the same and losses are negligible. Supported methods include `LinearVelocity.FromTorricelliHead`. | [OpenStax Torricelli's theorem][openstax-torricelli] |
 | Dₕ = 4A / Pwet | `Length` | Use the flow cross section and its positive wetted perimeter. The result is four times the hydraulic radius. Supported methods include `Length.HydraulicDiameter`. | [USBR friction head loss][usbr-friction] · [NMSU pipe flow manual][nmsu-pipe-networks] |
@@ -211,6 +237,13 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| Hφ = I/(2πr) | `AuxillaryMagneticField` | Azimuthal magnetic field around a long straight wire in an unbounded homogeneous isotropic medium, at positive distance r from the axis. Use the steady signed current I along the axis. Supported methods include `AuxillaryMagneticField.FromLongStraightWire`. | [MIT magnetic fundamentals][mit-straight-wire-field] |
+| Q = f₀/Δf | `double` | Quality factor of a linear series RLC circuit. Use its positive resonance frequency and full half-power bandwidth. Supported methods include `Frequency.SeriesRlcQualityFactor`. | [MIT resonant power conversion][mit-rlc-quality-factor] |
+| Xᵣₘₛ = Xpeak/√2 | `ElectricCurrent`, `ElectricPotential` | Use the peak voltage or peak current magnitude of a zero-offset sinusoid. Supported methods include `ElectricPotential.FromSinusoidalPeak` and `ElectricCurrent.FromSinusoidalPeak`. | [OpenStax AC power][openstax-ac-power] |
+| Vₛ = aVₚ, Iₛ = Iₚ/a | `ElectricCurrent`, `ElectricPotential` | Voltage and current magnitudes in an ideal transformer using its positive turns ratio a = Nₛ/Nₚ. Supported methods include `ElectricPotential.SecondaryVoltageOfIdealTransformer` and `ElectricCurrent.SecondaryCurrentOfIdealTransformer`. | [OpenStax ideal transformers][openstax-transformers] |
+| F/ℓ = IB⊥ | `ForcePerLength` | Uniform magnetic field and straight wire. Use current magnitude and the magnitude of the perpendicular magnetic flux density component. Supported methods include `ForcePerLength.FromCurrentInMagneticField`. | [OpenStax magnetic force on a conductor][openstax-magnetic-force-on-wire] |
+| τ = p⊥E, τ = j⊥H | `Torque` | Torque magnitude in a uniform field. Use the perpendicular dipole component magnitude and the field magnitude. The magnetic form uses the QUDT dipole moment j in Wb·m and the auxiliary field H in vacuum. Supported methods include `Torque.FromElectricDipole` and `Torque.FromMagneticDipole`. | [OpenStax electric dipoles][openstax-electric-dipoles] · [OpenStax magnetic dipoles][openstax-magnetic-dipoles] · [QUDT quantity definitions][qudt-quantity-definitions] |
+| U = −p∥E, U = −j∥H | `Energy` | Orientation-dependent potential energy in a uniform field, zero at perpendicular alignment. Use the signed parallel dipole component and field magnitude. The magnetic form uses the QUDT dipole moment j in Wb·m and the auxiliary field H in vacuum. Supported methods include `Energy.FromElectricDipole` and `Energy.FromMagneticDipole`. | [OpenStax electric dipoles][openstax-electric-dipoles] · [OpenStax magnetic dipoles][openstax-magnetic-dipoles] · [QUDT quantity definitions][qudt-quantity-definitions] |
 | Δf = R/(2πL) | `Frequency` | Full width between the half-power frequencies of a linear series RLC circuit. Use the total positive series resistance R and positive inductance L. Supported methods include `Frequency.FromSeriesRlcBandwidth`. | [MIT series RLC bandwidth][mit-rlc-bandwidth] |
 | R = g/σ | `ElectricConductivity`, `InverseLength`, `Resistance` | Uniform ohmic conductor with positive conductivity. The geometric factor g is length per cross-sectional area. | [OpenStax resistivity][openstax-resistivity] |
 | C = εg | `Capacitance`, `Length`, `Permittivity` | Ideal parallel plates with negligible fringing and a uniform dielectric. The geometric length g is the ratio of overlap area to plate separation. | [OpenStax capacitance of electrode geometries][openstax-capacitor-geometry] |
@@ -230,7 +263,7 @@ Update the corresponding row when changing a formula's coverage.
 | 1/Lparallel = 1/L₁ + 1/L₂ | `Inductance` | Two positive linear inductors in parallel with negligible mutual coupling. Supported methods include `Inductance.InParallelWith`. | [MIT circuit energy storage][mit-inductors] |
 | ℱ = NI | `MagnetomotiveForce` | Winding with N series turns sharing the same signed current and orientation. Supported methods include `MagnetomotiveForce.FromWinding`. | [OpenStax Ampère's law][openstax-ampere] · [QUDT magnetomotive force][qudt-magnetomotive-force] |
 | ℱ = H∥ℓ | `AuxillaryMagneticField`, `Length`, `MagnetomotiveForce` | Constant tangential component of magnetic field strength along the path, or the average tangential component over the path. | [OpenStax Ampère's law][openstax-ampere] · [QUDT magnetomotive force][qudt-magnetomotive-force] |
-| P = I²R = V² / R | `Power` | Joule dissipation in a positive ohmic resistance. Use current through or voltage across the same resistor. Supported methods include `Power.FromResistiveHeating`. | [OpenStax electrical power][openstax-electrical-power] |
+| P = I²R = V² / R | `Power` | Joule dissipation in a positive ohmic resistance. Use instantaneous values for instantaneous power, or RMS current or voltage for average power. Supported methods include `Power.FromResistiveHeating`. | [OpenStax electrical power][openstax-electrical-power] · [OpenStax AC power][openstax-ac-power] |
 | Q = CV | `Capacitance`, `ElectricCharge`, `ElectricPotential` | Linear capacitor with the voltage across its terminals. | [OpenStax capacitance][openstax-capacitance] |
 | U = ½CV² | `Energy` | Energy stored in a linear capacitor. Supported methods include `Energy.FromCapacitor`. | [OpenStax capacitance][openstax-capacitance] |
 | ΔQ = ĪΔt | `ElectricCharge`, `ElectricCurrent`, `Time` | Use average electrical current through the same cross section and interval. | [OpenStax current and resistance][openstax-current-and-resistance] |
@@ -260,10 +293,22 @@ Update the corresponding row when changing a formula's coverage.
 | Q = σqA | `Area`, `ElectricCharge`, `ElectricChargePerArea` | Uniform or mean surface charge density σq over the area. | [OpenStax electric fields][openstax-electric-fields] · [QUDT quantity definitions][qudt-quantity-definitions] |
 | Q = ρqV | `ElectricCharge`, `ElectricChargeVolumeDensity`, `Volume` | Uniform or mean volume charge density ρq over the region. | [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
 
+The QUDT SI catalog exposes `MagneticDipoleMoment` in Wb·m with j = μ₀m.
+The current-loop relation m = IA and the magnetization relation M = m/V use magnetic moment m in A·m², which has no quantity type in this SI catalog.
+[QUDT magnetic quantity definitions][qudt-quantity-definitions]
+
 ### Heat and temperature
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| q″ = −k∇T | `HeatFlowRatePerArea`, `double` | One-dimensional conduction with positive scalar thermal conductivity k. Use signed heat flux and temperature gradient along the same axis. The gradient is measured in kelvins per metre. Supported methods include `ThermalConductivity.HeatFluxForTemperatureGradient` and `ThermalConductivity.TemperatureGradientInKelvinsPerMetre`. | [MIT Fourier law of conduction][mit-fourier-conduction] |
+| Cₚ − Cᵥ = R | `MolarHeatCapacity` | Mayer's relation for constant-pressure and constant-volume molar heat capacities of an ideal gas at the same temperature. Uses the fixed molar gas constant. Supported methods include `MolarHeatCapacity.ToIsobaricForIdealGas` and `MolarHeatCapacity.ToIsochoricForIdealGas`. | [OpenStax ideal-gas heat capacity][openstax-ideal-gas-heat-capacity] |
+| U = ³⁄₂nRT | `Energy` | Classical monatomic ideal gas with internal thermal energy due to translational motion. Use amount n, positive absolute temperature T and the fixed molar gas constant. Supported methods include `Energy.FromMonatomicIdealGas`. | [OpenStax ideal-gas heat capacity][openstax-ideal-gas-heat-capacity] · [NIST CODATA physical constants][nist-codata-constants] |
+| p = cRT | `AmountOfSubstancePerVolume`, `ForcePerArea`, `ThermodynamicTemperature` | Ideal gas in equilibrium. Relate absolute pressure, amount concentration c, and positive absolute temperature T using the fixed molar gas constant R. Supported methods include `ForcePerArea.FromIdealGasConcentration`, `AmountOfSubstancePerVolume.FromIdealGasPressure`, and `ThermodynamicTemperature.FromIdealGasPressure`. | [OpenStax ideal gas law][openstax-ideal-gas] · [NIST CODATA physical constants][nist-codata-constants] |
+| vrms = √(3RT/M) | `LinearVelocity` | Molecular RMS speed of a classical ideal gas in thermal equilibrium. Use positive absolute temperature T and molar mass M. The molar gas constant R is fixed. Supported methods include `LinearVelocity.RmsSpeedOfIdealGas`. | [OpenStax molecular speed][openstax-rms-gas-speed] · [NIST CODATA physical constants][nist-codata-constants] |
+| Le = α/D | `double` | Same species and fluid state. Use thermal diffusivity α and positive molecular mass diffusivity D, represented by `AreaPerTime`. Supported methods include `ThermalDiffusivity.LewisNumber`. | [Portland State University heat and mass transfer, table 6.2][psu-transport-groups] |
+| Mₑ = σT⁴ | `PowerPerArea` | Total radiant exitance of a blackbody. Supply the Stefan–Boltzmann constant as `PowerPerAreaQuarticTemperature` and absolute temperature in kelvins. Supported methods include `PowerPerArea.FromBlackbodyTemperature`. | [OpenStax blackbody radiation][openstax-wien] |
+| ΔU = Q − W | `Energy` | First law for a closed system with no change in macroscopic kinetic or potential energy. Use signed heat entering the system and work it does on its surroundings. Supported methods include `Energy.FromHeatAndWork`. | [OpenStax first law of thermodynamics][openstax-first-law] |
 | λmax T = b | `Length`, `LengthTemperature`, `ThermodynamicTemperature` | Blackbody spectral radiance per unit wavelength at positive absolute temperature. Use the wavelength form of the Wien displacement constant b. | [OpenStax blackbody radiation][openstax-wien] |
 | γ = cₚ / cᵥ | `double` | Use two `SpecificHeatCapacity` inputs with units of J/(kg·K), measured at constant pressure and constant volume for the same gas state. Supported methods include `SpecificHeatCapacity.HeatCapacityRatio`. | [NASA specific heat ratio][nasa-specific-heat-ratio] |
 | η = Wnet / Qhot | `double` | Net work delivered and positive heat absorbed from the hot reservoir over the same engine cycle. Supported methods include `Energy.HeatEngineEfficiency`. | [OpenStax heat engines][openstax-heat-engines] |
@@ -295,6 +340,9 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| sin θₜ = (nᵢ/nₜ) sin θᵢ | `PlaneAngle`, `bool` | Snell's law at a planar interface. Supply the positive refractive-index ratio as one dimension-one quantity and the signed incident angle within ±π/2 from the normal. `PlaneAngle.TryRefractionAngle` returns false when no real transmitted angle exists. | [OpenStax law of refraction][openstax-snell-law] |
+| θ₁ = asin(λ/d) | `PlaneAngle` | For normal incidence use the grating period d for the first principal order, or slit width d for the first single-slit minimum. Use positive wavelength λ in the medium and d at least as large. Supported methods include `PlaneAngle.FromFirstDiffractionOrder` and `PlaneAngle.FromFirstSingleSlitMinimum`. | [OpenStax diffraction gratings][openstax-diffraction-gratings] · [OpenStax single-slit diffraction][openstax-single-slit] |
+| R = ((n₁ − n₂)/(n₁ + n₂))² | `double` | Power reflectance for normal incidence at one uncoated interface between lossless nonmagnetic media with positive real refractive indices. Supported methods include `Power.ReflectanceAtNormalIncidence`. | [MIT ray optics, lecture 4][mit-normal-incidence-reflectance] |
 | NA = n sin θ | `double` | Object-space numerical aperture. Use the refractive index and acceptance half-angle of the objective. Supported methods include `PlaneAngle.NumericalAperture`. | [Columbia optical microscopy][columbia-microscopy] |
 | δ ≈ 0.61λ₀/NA | `Length` | Lateral Rayleigh resolution of a diffraction-limited microscope with circular pupil. Use the positive object-space numerical aperture and vacuum wavelength. Supported methods include `Length.RayleighMicroscopeResolution`. | [Columbia optical microscopy][columbia-microscopy] |
 | 1/f = 1/dₒ + 1/dᵢ | `Length` | Paraxial thin lens with signed distances. Under the real-is-positive convention, real object and real image distances are positive. For a virtual image, dᵢ is negative. Supported methods include `Length.FocalLengthFromConjugates` and `Length.ImageDistanceFromThinLens`. | [OpenStax thin lenses][openstax-thin-lenses] |
@@ -310,12 +358,16 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| Aproj = A cos θ | `Area` | Planar surface with the projection direction at an angle θ of zero to π/2 from the surface normal. Supported methods include `Area.ProjectAlong`. | [CIE radiance definition][cie-radiance] |
+| G = AprojΩ | `Area`, `AreaAngle`, `SolidAngle` | Geometric extent of a ray bundle in the uniform projected-area approximation. Use the projected area and the solid angle subtended by the bundle. | [CIE geometric extent][cie-geometric-extent] |
+| Lₑ = Φₑ/G | `AreaAngle`, `Power`, `PowerPerAreaAngle` | Average radiance over the optical bundle. Divide radiant flux by the geometric extent of the same bundle. `PowerPerAreaAngle` uses W/(m²·sr). | [CIE radiance definition][cie-radiance] |
+| Hₑ = ĒₑΔt | `EnergyPerArea`, `PowerPerArea`, `Time` | Radiant exposure on a surface. Use average incident irradiance and the duration of the same interval. | [CIE radiant exposure][cie-radiant-exposure] |
 | Mᵥ = Φᵥ,emitted/A | `Area`, `LuminousFlux`, `LuminousFluxPerArea` | Average luminous exitance. Use exiting flux and the corresponding emitting surface area. Supported methods include `LuminousFluxPerArea.FromEmittedFlux`. | [CIE luminous exitance][cie-luminous-exitance] |
 | Mᵥ = π sr × Lᵥ | `LuminousFluxPerArea` | Hemispherical luminous exitance of a uniform Lambertian surface with luminance Lᵥ. Supported methods include `Luminance.ToLambertianExitance`. | [CIE Lambertian surface][cie-lambert-surface] |
 | I(θ) = Iₙ cos θ | `LuminousIntensity`, `RadiantIntensity` | Lambertian surface element. Use the intensity in the normal direction and angle from zero to π/2 from that normal. Supported methods include `LuminousIntensity.AtLambertianAngle` and `RadiantIntensity.AtLambertianAngle`. | [CIE Lambert cosine law][cie-lambert-cosine] |
 | Φ = π sr × Iₙ | `LuminousFlux`, `Power` | Total luminous flux or radiant power emitted into one hemisphere by a Lambertian surface. From M = πL and the normal intensity Iₙ = LA for a uniform emitting surface. Supported methods include `LuminousIntensity.ToLambertianFlux` and `RadiantIntensity.ToLambertianFlux`. | [CIE Lambertian surface][cie-lambert-surface] · [NIST photometric quantities][nist-photometric-quantities] |
 | Eᵥ = Φᵥ,incident / A | `Area`, `Illuminance`, `LuminousFlux` | Incident luminous flux averaged over the receiver area. | [NIST photometric quantities][nist-photometric-quantities] · [NIST photometric equations 2–6][nist-photometric-equations-2-6] |
-| Iᵥ = LᵥAproj | `Area`, `Luminance`, `LuminousIntensity` | Use projected emitting area as viewed from the specified direction. | [NIST photometric quantities][nist-photometric-quantities] |
+| Iᵥ = LᵥAproj, Iₑ = LₑAproj | `Area`, `Luminance`, `LuminousIntensity`, `PowerPerAreaAngle`, `RadiantIntensity` | Use luminance or radiance averaged over the projected area, with intensity in the same direction. `PowerPerAreaAngle` represents radiance in W/(m²·sr). | [CIE radiance definition][cie-radiance] · [NIST photometric quantities][nist-photometric-quantities] |
 | Φᵥ = ηᵥP | `LuminousEfficacy`, `LuminousFlux`, `Power` | Use the power basis for which the luminous efficacy was specified. | [NIST photometric quantities][nist-photometric-quantities] · [QUDT quantity definitions][qudt-quantity-definitions] |
 | Qᵥ = Φ̄ᵥΔt | `LuminousEnergy`, `LuminousFlux`, `Time` | Constant or time-averaged luminous flux over the interval. | [NIST photometric quantities][nist-photometric-quantities] |
 | Φᵥ = IᵥΩ | `LuminousFlux`, `LuminousIntensity`, `SolidAngle` | Use mean luminous intensity over the solid angle. | [NIST photometric quantities][nist-photometric-quantities] · [NIST photometric equations 2–6][nist-photometric-equations-2-6] |
@@ -327,6 +379,9 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| N/N₀ = exp(−t/τ) | `double` | Single exponential decay or a first-order transient returning to equilibrium. Use nonnegative elapsed time and positive time constant. Supported methods include `Time.ExponentialDecayFraction`. | [OpenStax radioactive decay][openstax-radioactive-decay] · [OpenStax RC circuits][openstax-rc-transient] |
+| t½ = τ ln 2 | `Time` | Relate the half-life and positive e-folding time constant of a single exponential decay. Supported methods include `Time.HalfLifeFromDecayTimeConstant` and `Time.FromExponentialHalfLife`. | [OpenStax radioactive decay][openstax-radioactive-decay] |
+| I/I₀ = exp(−μx) | `double` | Monoenergetic narrow beam through homogeneous material. Use nonnegative linear attenuation coefficient μ and path length x. Supported methods include `InverseLength.TransmissionThrough`. | [NIST photon attenuation, equation 1][nist-attenuation-law] |
 | Aavg = Ndecay/Δt | `Activity` | Average activity over a positive time interval. Use the number of nuclear transformations in the sample during that interval. Supported methods include `Activity.FromDecayCount`. | [OpenStax radioactive decay][openstax-radioactive-decay] · [BIPM SI Brochure][bipm-si-brochure] |
 | pᵢ = xᵢptotal | `ForcePerArea` | Dalton's law for a constituent of an ideal gas mixture. Use its gas-phase mole fraction and the total absolute pressure. Supported methods include `ForcePerArea.PartialPressureInIdealGas`. | [OpenStax partial pressures][openstax-dalton] |
 | pᵢ = xᵢpᵢ* | `ForcePerArea` | Raoult's law for a constituent of an ideal liquid solution in vapour equilibrium. Use its liquid mole fraction and the pure-component saturation pressure at the same temperature. Supported methods include `ForcePerArea.VapourPartialPressureInIdealSolution`. | [OpenStax Raoult's law][openstax-raoult] |
@@ -351,19 +406,22 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| S = EH | `PowerPerArea` | Instantaneous Poynting flux magnitude for mutually orthogonal electric field and auxiliary magnetic field magnitudes. Supported methods include `PowerPerArea.FromOrthogonalElectromagneticFields`. | [MIT Poynting theorem][mit-fields-and-media] |
+| pᵣ = I/c, pᵣ = 2I/c | `ForcePerArea` | Normally incident radiation in vacuum with positive light speed c, absorbed perfectly or reflected specularly without loss, respectively. Supported methods include `ForcePerArea.FromAbsorbedRadiation` and `ForcePerArea.FromReflectedRadiation`. | [OpenStax electromagnetic radiation pressure][openstax-radiation-pressure] |
 | uₑ = ½εE² | `EnergyDensity` | Electric field contribution to energy density in a linear, isotropic, nondispersive medium. Use instantaneous field magnitude E and positive absolute permittivity ε. Supported methods include `EnergyDensity.FromElectricField`. | [MIT Physics of Waves, equation 12.24][mit-field-energy] |
 | uₘ = B²/(2μ) | `EnergyDensity` | Magnetic field contribution to energy density in a linear, isotropic, nondispersive medium. Use instantaneous magnetic flux density magnitude B and positive absolute permeability μ. Supported methods include `EnergyDensity.FromMagneticField`. | [MIT Physics of Waves, equation 12.24][mit-field-energy] |
 | v = 1/√(εμ) | `LinearVelocity` | Phase speed in a lossless, isotropic, nondispersive linear medium with positive absolute permittivity and permeability. Supported methods include `LinearVelocity.FromElectromagneticMedium`. | [OpenStax electromagnetic wave equations][openstax-em-wave-equations] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
 | E = vB | `ElectricFieldStrength`, `MagneticFluxDensity` | Progressive plane wave in a lossless medium. Use matching electric and magnetic magnitudes and the phase speed. Supported methods include `ElectricFieldStrength.FromPlaneWave` and `MagneticFluxDensity.FromPlaneWave`. | [OpenStax electromagnetic wave energy][openstax-em-wave-energy] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
 
-### Photon interactions
+### Photons and matter waves
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| λ = h/p | `Length` | De Broglie wavelength of a particle of positive momentum magnitude. Uses the SI Planck constant. Supported methods include `Length.FromDeBroglieMomentum`. | [OpenStax de Broglie matter waves][openstax-de-broglie] · [NIST CODATA physical constants][nist-codata-constants] |
 | Eₘλ = Nₐhc | `Length`, `LengthMolarEnergy`, `MolarEnergy` | Energy per mole of photons at a single vacuum wavelength. Supply the molar energy–wavelength product as a `LengthMolarEnergy` when solving for either input. | [OpenStax photon equations][openstax-photon-equations] · [BIPM definition of the mole][bipm-mole] |
 | p = E/c | `Energy`, `LinearMomentum` | Photon in vacuum. Use energy and momentum magnitude and the positive vacuum light speed c. Supported methods include `LinearMomentum.FromPhotonEnergy` and `Energy.FromPhotonMomentum`. | [OpenStax photon equations][openstax-photon-equations] |
 | Eγ = Eupper − Elower | `Energy` | Photon energy emitted in a downward transition between two bound levels under the bound-state model. Supported methods include `Energy.FromEmissionTransition`. | [OpenStax one-electron atom][openstax-bohr] |
-| Eλ = hc | `Energy`, `Length`, `LengthEnergy` | Photon energy and vacuum wavelength. The product hc is a `LengthEnergy` input when solving for either quantity. | [OpenStax photon equations][openstax-photon-equations] |
+| E = hf, Eλ = hc | `Energy`, `Frequency`, `Length`, `LengthEnergy` | Single-photon energy. Use `Energy.FromPhotonFrequency` or `Energy.ToPhotonFrequency` with the fixed SI Planck constant, or supply hc as `LengthEnergy` when solving for photon energy or vacuum wavelength. | [OpenStax photon equations][openstax-photon-equations] · [NIST CODATA physical constants][nist-codata-constants] |
 | Δλ = λ꜀(1 − cos θ) | `Length` | Compton scattering from an initially stationary free electron. Use the electron Compton wavelength and photon scattering angle. Supported methods include `Length.ComptonWavelengthShift`. | [OpenStax Compton scattering][openstax-compton] |
 | Kmax = Eγ − W | `Energy`, `bool` | Single-photon photoemission with material work function W. The method returns false below the emission threshold. Supported methods include `Energy.TryPhotoelectronKineticEnergy`. | [OpenStax photoelectric effect][openstax-photoelectric] |
 
@@ -622,3 +680,45 @@ Update the corresponding row when changing a formula's coverage.
 [openstax-radioactive-decay]: https://openstax.org/books/university-physics-volume-3/pages/10-3-radioactive-decay
 [mit-rlc-bandwidth]: https://web.mit.edu/6.101/www/s2019/handouts/L02_4.pdf
 [mit-field-energy]: https://ocw.mit.edu/courses/8-03sc-physics-iii-vibrations-and-waves-fall-2016/ef731c1b91d77a6db003f6c27e300d25_MIT8_03SCF16_Textbook.pdf
+[openstax-cone-and-cylinder]: https://openstax.org/books/prealgebra-2e/pages/9-6-solve-geometry-applications-volume-and-surface-area
+[openstax-constant-acceleration]: https://openstax.org/books/university-physics-volume-1/pages/3-4-motion-with-constant-acceleration
+[openstax-simple-harmonic-motion]: https://openstax.org/books/university-physics-volume-1/pages/15-key-equations
+[openstax-gravitational-energy]: https://openstax.org/books/university-physics-volume-1/pages/13-3-gravitational-potential-energy-and-total-energy
+[openstax-bernoulli]: https://openstax.org/books/university-physics-volume-1/pages/14-6-bernoullis-equation
+[openstax-standing-sound]: https://openstax.org/books/university-physics-volume-1/pages/17-4-normal-modes-of-a-standing-sound-wave
+[nasa-specific-impulse]: https://www.grc.nasa.gov/www/BGH/specimp.html
+[openstax-first-law]: https://openstax.org/books/physics/pages/12-2-first-law-of-thermodynamics-thermal-energy-and-work
+[openstax-kinetic-energy]: https://openstax.org/books/university-physics-volume-1/pages/7-2-kinetic-energy
+[mit-rlc-quality-factor]: https://ocw.mit.edu/courses/6-622-power-electronics-spring-2023/mit6_622_s23_lec35_hand.pdf
+[openstax-transformers]: https://openstax.org/books/university-physics-volume-2/pages/15-6-transformers
+[openstax-magnetic-force-on-wire]: https://openstax.org/books/university-physics-volume-2/pages/11-4-magnetic-force-on-a-current-carrying-conductor
+[openstax-magnetic-dipoles]: https://openstax.org/books/university-physics-volume-2/pages/11-5-force-and-torque-on-a-current-loop
+[openstax-electric-dipoles]: https://openstax.org/books/university-physics-volume-2/pages/5-7-electric-dipoles
+[openstax-diffraction-gratings]: https://openstax.org/books/university-physics-volume-3/pages/4-4-diffraction-gratings
+[openstax-single-slit]: https://openstax.org/books/university-physics-volume-3/pages/4-1-single-slit-diffraction
+[mit-normal-incidence-reflectance]: https://ocw.mit.edu/courses/3-46-photonic-materials-and-devices-spring-2006/c002c8429ae1f88a78982a53f0f9bb86_3_46l4_rayoptics.pdf
+[openstax-radiation-pressure]: https://openstax.org/books/university-physics-volume-2/pages/16-4-momentum-and-radiation-pressure
+[openstax-rc-transient]: https://openstax.org/books/university-physics-volume-2/pages/10-5-rc-circuits
+[nist-attenuation-law]: https://physics.nist.gov/PhysRefData/XrayMassCoef/chap2.html
+[mit-radius-of-gyration]: https://ocw.mit.edu/courses/16-07-dynamics-fall-2009/befffaf20475c1a379c3ac52e91a78cb_MIT16_07F09_Lec21.pdf
+[sdsu-froude]: https://ponce.sdsu.edu/froude_and_vedernikov_pillars_of_open_channel_hydraulics.html
+[mit-schmidt-number]: https://ocw.mit.edu/courses/3-185-transport-phenomena-in-materials-engineering-fall-2003/a55c74dc21def01fc0054de35574d1e5_3_21.pdf
+[mit-diffusion-displacement]: https://ocw.mit.edu/courses/12-086-modeling-environmental-complexity-fall-2014/32303be6bc9b21df2280be1f41eb5c24_MIT12_086F14_twolevels.pdf
+[openstax-ideal-gas]: https://openstax.org/books/university-physics-volume-2/pages/2-1-molecular-model-of-an-ideal-gas
+[openstax-rms-gas-speed]: https://openstax.org/books/university-physics-volume-2/pages/2-2-pressure-temperature-and-rms-speed
+[nist-codata-constants]: https://physics.nist.gov/cuu/pdf/all.pdf
+[psu-transport-groups]: https://web.cecs.pdx.edu/~derekt/Classes/Governing%20Equations.pdf
+[cie-radiance]: https://cie.co.at/eilvterm/17-21-049
+[cie-geometric-extent]: https://cie.co.at/eilvterm/17-21-047
+[cie-radiant-exposure]: https://cie.co.at/eilvterm/17-21-071
+[openstax-de-broglie]: https://openstax.org/books/university-physics-volume-3/pages/6-5-de-broglies-matter-waves
+[openstax-longitudinal-doppler]: https://openstax.org/books/university-physics-volume-3/pages/5-7-doppler-effect-for-light
+[openstax-relativistic-velocity]: https://openstax.org/books/university-physics-volume-3/pages/5-6-relativistic-velocity-transformation
+[openstax-wave-mathematics]: https://openstax.org/books/university-physics-volume-1/pages/16-2-mathematics-of-waves
+[nist-spectroscopic-wavenumber]: https://physics.nist.gov/PhysRefData/ASD/Html/help.html
+[mit-straight-wire-field]: https://ocw.mit.edu/courses/3-15-electrical-optical-magnetic-materials-and-devices-fall-2006/7009df3d9c177d5865038f9d6a3377f4_ho9_magnetic_fundamentals.pdf
+[openstax-ideal-gas-heat-capacity]: https://openstax.org/books/university-physics-volume-2/pages/3-5-heat-capacities-of-an-ideal-gas
+[openstax-phase-changes]: https://openstax.org/books/university-physics-volume-2/pages/1-5-phase-changes
+[mit-fourier-conduction]: https://ocw.mit.edu/courses/2-43-advanced-thermodynamics-spring-2024/mit2_43_s24_lec21.pdf
+[openstax-snell-law]: https://openstax.org/books/college-physics/pages/25-3-the-law-of-refraction
+[nasa-orbital-energy]: https://ntrs.nasa.gov/api/citations/20205004141/downloads/Introduction%20to%20Orbitalaft%20Engineers%20CHARTS%20REV%20A.pdf?attachment=true

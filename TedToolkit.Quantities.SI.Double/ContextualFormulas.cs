@@ -54,6 +54,32 @@ public readonly partial struct Frequency
     {
         return AngularVelocity.FromRadianPerSecond(resistance.Ohm / inductance.Henry).ToFrequency();
     }
+
+    /// <summary>Calculates the fundamental frequency of an ideal tube open at both ends using positive sound speed and effective length.</summary>
+    public static Frequency FromHalfWaveResonance(LinearVelocity waveSpeed, Length resonatorLength)
+    {
+        return FromWaveSpeed(waveSpeed, 2d * resonatorLength);
+    }
+
+    /// <summary>Calculates the fundamental frequency of an ideal tube open at one end and closed at the other using positive sound speed and effective length.</summary>
+    public static Frequency FromQuarterWaveResonance(LinearVelocity waveSpeed, Length resonatorLength)
+    {
+        return FromWaveSpeed(waveSpeed, 4d * resonatorLength);
+    }
+
+    /// <summary>Calculates the quality factor of a linear series RLC circuit from this resonance frequency and its positive half-power bandwidth.</summary>
+    public double SeriesRlcQualityFactor(Frequency halfPowerBandwidth)
+    {
+        return Hertz / halfPowerBandwidth.Hertz;
+    }
+
+    /// <summary>Calculates the observed frequency for motion along the line of sight in vacuum.</summary>
+    /// <param name="recessionVelocity">Signed relative velocity, positive for recession and negative for approach, with magnitude below the vacuum light speed.</param>
+    public Frequency ObserveLongitudinalDoppler(LinearVelocity recessionVelocity)
+    {
+        var beta = recessionVelocity.Value / PhysicalConstants.VacuumLightSpeed;
+        return FromHertz(Hertz * Math.Sqrt((1d - beta) / (1d + beta)));
+    }
 }
 
 public readonly partial struct AngularVelocity
@@ -127,6 +153,35 @@ public readonly partial struct PlaneAngle
     public double NumericalAperture(double refractiveIndex)
     {
         return refractiveIndex * Math.Sin(Radian);
+    }
+
+    /// <summary>Calculates the principal first-order diffraction angle for normal incidence from positive wavelength and grating period supporting that order.</summary>
+    public static PlaneAngle FromFirstDiffractionOrder(Length wavelength, Length gratingPeriod)
+    {
+        return FromRadian(Math.Asin(wavelength / gratingPeriod));
+    }
+
+    /// <summary>Calculates the first single-slit diffraction minimum angle for normal incidence from positive wavelength and a slit width at least as large.</summary>
+    public static PlaneAngle FromFirstSingleSlitMinimum(Length wavelength, Length slitWidth)
+    {
+        return FromRadian(Math.Asin(wavelength / slitWidth));
+    }
+
+    /// <summary>Calculates the transmitted angle for a ray incident at this angle on a planar optical interface.</summary>
+    /// <param name="incidentToTransmittedIndexRatio">The positive ratio of the incident and transmitted refractive indices.</param>
+    /// <param name="transmittedAngle">The signed transmitted angle measured from the normal when a real angle exists.</param>
+    /// <returns>True for a real transmitted angle and false for total internal reflection.</returns>
+    public bool TryRefractionAngle(double incidentToTransmittedIndexRatio, out PlaneAngle transmittedAngle)
+    {
+        var sine = incidentToTransmittedIndexRatio * Math.Sin(Radian);
+        if (Math.Abs(sine) <= 1d)
+        {
+            transmittedAngle = FromRadian(Math.Asin(sine));
+            return true;
+        }
+
+        transmittedAngle = default;
+        return false;
     }
 }
 
@@ -238,6 +293,48 @@ public readonly partial struct Length
     {
         return (Value - emittedWavelength.Value) / emittedWavelength.Value;
     }
+
+    /// <summary>Calculates stopping distance along a straight line from nonnegative initial speed and positive constant deceleration magnitude.</summary>
+    public static Length FromConstantStoppingDeceleration(LinearVelocity initialSpeed, LinearAcceleration deceleration)
+    {
+        return (Length)(initialSpeed.Value * initialSpeed.Value / (2d * deceleration.Value));
+    }
+
+    /// <summary>Calculates the observed length from this proper length parallel to relative motion and a Lorentz factor of at least one.</summary>
+    public Length ContractAlongMotion(double lorentzFactor)
+    {
+        return this / lorentzFactor;
+    }
+
+    /// <summary>Calculates the radius of gyration of a body about the axis used for its nonnegative moment of inertia, given its positive mass.</summary>
+    public static Length RadiusOfGyration(MomentOfInertia momentOfInertia, Mass mass)
+    {
+        return FromMetre(Math.Sqrt(momentOfInertia.Value / mass.Value));
+    }
+
+    /// <summary>Calculates RMS displacement for one-dimensional unbounded diffusion with nonnegative constant diffusivity and elapsed time.</summary>
+    public static Length RmsDisplacementInOneDimensionalDiffusion(AreaPerTime diffusivity, Time elapsed)
+    {
+        return FromMetre(Math.Sqrt(2d * diffusivity.Value * elapsed.Second));
+    }
+
+    /// <summary>Calculates the de Broglie wavelength from positive momentum magnitude using the SI Planck constant.</summary>
+    public static Length FromDeBroglieMomentum(LinearMomentum momentum)
+    {
+        return FromMetre(PhysicalConstants.PlanckConstant / momentum.Value);
+    }
+
+    /// <summary>Calculates hydraulic depth in an open channel from the cross-sectional flow area and positive width at the water surface.</summary>
+    public static Length HydraulicDepth(Area flowArea, Length topWidth)
+    {
+        return flowArea / topWidth;
+    }
+
+    /// <summary>Calculates the Schwarzschild horizon radius for a nonrotating, uncharged mass from its positive standard gravitational parameter.</summary>
+    public static Length SchwarzschildRadius(StandardGravitationalParameter gravitationalParameter)
+    {
+        return FromMetre(2d * (gravitationalParameter.Value / PhysicalConstants.VacuumLightSpeed) / PhysicalConstants.VacuumLightSpeed);
+    }
 }
 
 public readonly partial struct Area
@@ -254,6 +351,18 @@ public readonly partial struct Area
     public static Area FromSphere(Length radius)
     {
         return 4d * FromCircle(radius);
+    }
+
+    /// <summary>Calculates the total surface area of a closed right circular cylinder with positive radius and height.</summary>
+    public static Area FromClosedCircularCylinder(Length radius, Length height)
+    {
+        return 2d * Area.FromCircle(radius) + Length.CircumferenceFromRadius(radius) * height;
+    }
+
+    /// <summary>Calculates the projected area of this plane surface along a direction between zero and ninety degrees from the surface normal.</summary>
+    public Area ProjectAlong(PlaneAngle angleFromNormal)
+    {
+        return this * Math.Cos(angleFromNormal.Radian);
     }
 }
 
@@ -275,6 +384,12 @@ public readonly partial struct Volume
     public static Volume FromSphere(Length radius)
     {
         return Area.FromSphere(radius) * (radius / 3d);
+    }
+
+    /// <summary>Calculates the volume of a cone with a circular base of positive radius and positive perpendicular height.</summary>
+    public static Volume FromCircularCone(Length radius, Length height)
+    {
+        return Area.FromCircle(radius) * height / 3d;
     }
 }
 
@@ -429,6 +544,56 @@ public readonly partial struct Energy
         kineticEnergy = (Energy)difference;
         return true;
     }
+
+    /// <summary>Calculates nonrelativistic translational kinetic energy from momentum magnitude and positive mass.</summary>
+    public static Energy FromMomentumKineticEnergy(LinearMomentum momentum, Mass mass)
+    {
+        return (Energy)(0.5d * momentum.Value * (momentum.Value / mass.Value));
+    }
+
+    /// <summary>Calculates the change in internal energy of a closed system with no change in macroscopic kinetic or potential energy.</summary>
+    /// <param name="heatAdded">Signed heat transferred into the system.</param>
+    /// <param name="workDoneBySystem">Signed work done by the system on its surroundings.</param>
+    public static Energy FromHeatAndWork(Energy heatAdded, Energy workDoneBySystem)
+    {
+        return FromJoule(heatAdded.Joule - workDoneBySystem.Joule);
+    }
+
+    /// <summary>Calculates orientation-dependent potential energy from the signed parallel dipole component and a uniform electric field magnitude.</summary>
+    public static Energy FromElectricDipole(ElectricDipoleMoment parallelDipoleMoment, ElectricFieldStrength field)
+    {
+        return (Energy)(-parallelDipoleMoment.Value * field.Value);
+    }
+
+    /// <summary>Calculates orientation-dependent potential energy from the signed parallel dipole component and a uniform magnetic field magnitude in vacuum.</summary>
+    public static Energy FromMagneticDipole(MagneticDipoleMoment parallelDipoleMoment, AuxillaryMagneticField field)
+    {
+        return (Energy)(-parallelDipoleMoment.Value * field.Value);
+    }
+
+    /// <summary>Calculates a massive body's relativistic kinetic energy from its rest energy and Lorentz factor of at least one.</summary>
+    public static Energy FromRelativisticKineticEnergy(Energy restEnergy, double lorentzFactor)
+    {
+        return FromJoule(restEnergy.Joule * (lorentzFactor - 1d));
+    }
+
+    /// <summary>Calculates the energy of one photon from its positive frequency using the SI Planck constant.</summary>
+    public static Energy FromPhotonFrequency(Frequency frequency)
+    {
+        return FromJoule(PhysicalConstants.PlanckConstant * frequency.Hertz);
+    }
+
+    /// <summary>Calculates the frequency of one photon from its positive energy using the SI Planck constant.</summary>
+    public Frequency ToPhotonFrequency()
+    {
+        return Frequency.FromHertz(Joule / PhysicalConstants.PlanckConstant);
+    }
+
+    /// <summary>Calculates the internal energy in the classical monatomic ideal-gas model from the amount and positive absolute temperature.</summary>
+    public static Energy FromMonatomicIdealGas(AmountOfSubstance amount, ThermodynamicTemperature temperature)
+    {
+        return FromJoule(1.5d * amount.Mole * PhysicalConstants.MolarGasConstant * temperature.Kelvin);
+    }
 }
 
 public readonly partial struct LinearMomentum
@@ -476,6 +641,18 @@ public readonly partial struct Torque
     public static Torque FromPerpendicularLeverArm(Force force, Length perpendicularLeverArm)
     {
         return (Torque)(force.Value * perpendicularLeverArm.Value);
+    }
+
+    /// <summary>Calculates the torque magnitude on an electric dipole from its perpendicular moment and a uniform electric field magnitude.</summary>
+    public static Torque FromElectricDipole(ElectricDipoleMoment perpendicularDipoleMoment, ElectricFieldStrength field)
+    {
+        return (Torque)(perpendicularDipoleMoment.Value * field.Value);
+    }
+
+    /// <summary>Calculates the torque magnitude on a magnetic dipole from its perpendicular moment and a uniform magnetic field magnitude in vacuum.</summary>
+    public static Torque FromMagneticDipole(MagneticDipoleMoment perpendicularDipoleMoment, AuxillaryMagneticField field)
+    {
+        return (Torque)(perpendicularDipoleMoment.Value * field.Value);
     }
 }
 
@@ -536,6 +713,42 @@ public readonly partial struct ForcePerArea
     public static ForcePerArea FromSphericalSurfaceTension(ForcePerLength surfaceTension, Length radius)
     {
         return (ForcePerArea)(2d * surfaceTension.Value / radius.Value);
+    }
+
+    /// <summary>Calculates radiation pressure on a perfect absorber from normally incident irradiance and positive vacuum light speed.</summary>
+    public static ForcePerArea FromAbsorbedRadiation(PowerPerArea irradiance, LinearVelocity vacuumLightSpeed)
+    {
+        return (ForcePerArea)(irradiance.Value / vacuumLightSpeed.Value);
+    }
+
+    /// <summary>Calculates radiation pressure from normally incident irradiance reflected specularly and without loss in vacuum.</summary>
+    public static ForcePerArea FromReflectedRadiation(PowerPerArea irradiance, LinearVelocity vacuumLightSpeed)
+    {
+        return 2d * FromAbsorbedRadiation(irradiance, vacuumLightSpeed);
+    }
+
+    /// <summary>Calculates the absolute pressure of an ideal gas at the specified amount concentration and positive absolute temperature.</summary>
+    public static ForcePerArea FromIdealGasConcentration(AmountOfSubstancePerVolume concentration, ThermodynamicTemperature temperature)
+    {
+        return FromPascal(concentration.Value * PhysicalConstants.MolarGasConstant * temperature.Kelvin);
+    }
+
+    /// <summary>Calculates absolute pressure from signed gauge pressure and the absolute pressure used as its reference.</summary>
+    public static ForcePerArea FromGaugePressure(ForcePerArea gaugePressure, ForcePerArea referencePressure)
+    {
+        return FromPascal(gaugePressure.Pascal + referencePressure.Pascal);
+    }
+
+    /// <summary>Calculates signed gauge pressure relative to the specified absolute reference pressure.</summary>
+    public ForcePerArea GaugePressureRelativeTo(ForcePerArea referencePressure)
+    {
+        return FromPascal(Pascal - referencePressure.Pascal);
+    }
+
+    /// <summary>Calculates stagnation pressure from static and dynamic pressure for incompressible flow brought to rest without losses or a change in elevation.</summary>
+    public static ForcePerArea FromIncompressibleStagnation(ForcePerArea staticPressure, ForcePerArea dynamicPressure)
+    {
+        return FromPascal(staticPressure.Pascal + dynamicPressure.Pascal);
     }
 }
 
@@ -643,6 +856,33 @@ public readonly partial struct LinearVelocity
     {
         return FromMetrePerSecond(Math.Sqrt(2d * gravity.Value * head.Value));
     }
+
+    /// <summary>Calculates peak speed in simple harmonic motion from nonnegative amplitude and positive angular frequency.</summary>
+    public static LinearVelocity PeakSpeedInSimpleHarmonicMotion(Length amplitude, AngularVelocity angularFrequency)
+    {
+        return amplitude * angularFrequency;
+    }
+
+    /// <summary>Calculates the open-channel Froude number from this mean flow speed magnitude and its positive gravity-wave speed relative to the flow.</summary>
+    public double FroudeNumber(LinearVelocity relativeGravityWaveSpeed)
+    {
+        return Value / relativeGravityWaveSpeed.Value;
+    }
+
+    /// <summary>Calculates the molecular RMS speed at the positive absolute temperature and molar mass of a classical ideal gas in thermal equilibrium.</summary>
+    public static LinearVelocity RmsSpeedOfIdealGas(ThermodynamicTemperature temperature, MolarMass molarMass)
+    {
+        return FromMetrePerSecond(Math.Sqrt(3d * PhysicalConstants.MolarGasConstant * temperature.Kelvin / molarMass.Value));
+    }
+
+    /// <summary>Transforms this signed velocity between collinear inertial frames using the signed velocity of the intermediate frame.</summary>
+    /// <remarks>Both speeds have magnitudes below the vacuum light speed. All velocities are measured along the same positive direction.</remarks>
+    public LinearVelocity AddCollinearRelativisticVelocity(LinearVelocity frameVelocity)
+    {
+        var beta = Value / PhysicalConstants.VacuumLightSpeed;
+        var frameBeta = frameVelocity.Value / PhysicalConstants.VacuumLightSpeed;
+        return FromMetrePerSecond((Value + frameVelocity.Value) / (1d + beta * frameBeta));
+    }
 }
 
 public readonly partial struct LinearAcceleration
@@ -666,6 +906,12 @@ public readonly partial struct LinearAcceleration
         StandardGravitationalParameter gravitationalParameter, Length distance)
     {
         return (LinearAcceleration)(gravitationalParameter.Value / (distance.Value * distance.Value));
+    }
+
+    /// <summary>Calculates peak acceleration in simple harmonic motion from nonnegative amplitude and positive angular frequency.</summary>
+    public static LinearAcceleration PeakAccelerationInSimpleHarmonicMotion(Length amplitude, AngularVelocity angularFrequency)
+    {
+        return (LinearAcceleration)(amplitude.Value * angularFrequency.RadianPerSecond * angularFrequency.RadianPerSecond);
     }
 }
 
@@ -696,6 +942,30 @@ public readonly partial struct Time
     public static Time FromSimplePendulum(Length length, LinearAcceleration gravity)
     {
         return FromSecond((2d * Math.PI) * Math.Sqrt(length.Value / gravity.Value));
+    }
+
+    /// <summary>Calculates the inertial observer's elapsed time from this proper duration and a Lorentz factor of at least one.</summary>
+    public Time Dilate(double lorentzFactor)
+    {
+        return this * lorentzFactor;
+    }
+
+    /// <summary>Calculates the fraction of a signal remaining after this nonnegative elapsed time with a positive exponential decay time constant.</summary>
+    public double ExponentialDecayFraction(Time timeConstant)
+    {
+        return Math.Exp(-Second / timeConstant.Second);
+    }
+
+    /// <summary>Calculates the half-life corresponding to this positive exponential decay time constant.</summary>
+    public Time HalfLifeFromDecayTimeConstant()
+    {
+        return this * Math.Log(2d);
+    }
+
+    /// <summary>Calculates the exponential decay time constant from a positive half-life.</summary>
+    public static Time FromExponentialHalfLife(Time halfLife)
+    {
+        return halfLife / Math.Log(2d);
     }
 }
 
@@ -738,6 +1008,15 @@ public readonly partial struct Power
     public static Power FromResistiveHeating(ElectricPotential voltage, Resistance resistance)
     {
         return voltage * (voltage / resistance);
+    }
+
+    /// <summary>Calculates the fraction of normally incident optical power reflected at an interface between lossless nonmagnetic media.</summary>
+    /// <param name="incidentIndex">The positive refractive index of the incident medium.</param>
+    /// <param name="transmittedIndex">The positive refractive index of the transmitted medium.</param>
+    public static double ReflectanceAtNormalIncidence(double incidentIndex, double transmittedIndex)
+    {
+        var amplitude = (incidentIndex - transmittedIndex) / (incidentIndex + transmittedIndex);
+        return amplitude * amplitude;
     }
 }
 
@@ -858,6 +1137,12 @@ public readonly partial struct ThermodynamicTemperature
     public ThermodynamicTemperature AddKelvins(double deltaKelvins)
     {
         return FromKelvin(Kelvin + deltaKelvins);
+    }
+
+    /// <summary>Calculates the absolute temperature of an ideal gas from its positive absolute pressure and amount concentration.</summary>
+    public static ThermodynamicTemperature FromIdealGasPressure(ForcePerArea absolutePressure, AmountOfSubstancePerVolume concentration)
+    {
+        return FromKelvin(absolutePressure.Pascal / (concentration.Value * PhysicalConstants.MolarGasConstant));
     }
 }
 
@@ -1103,6 +1388,30 @@ public readonly partial struct PowerPerArea
     {
         return (PowerPerArea)(intensity.Value / (distance * distance).Value);
     }
+
+    /// <summary>Calculates total blackbody radiant exitance from absolute temperature and the Stefan–Boltzmann constant.</summary>
+    public static PowerPerArea FromBlackbodyTemperature(ThermodynamicTemperature temperature, PowerPerAreaQuarticTemperature stefanBoltzmannConstant)
+    {
+        return (PowerPerArea)(stefanBoltzmannConstant.Value * Math.Pow(temperature.Kelvin, 4d));
+    }
+
+    /// <summary>Calculates average intensity of a progressive plane sound wave from its in-phase RMS pressure and particle velocity.</summary>
+    public static PowerPerArea FromProgressiveSoundWave(ForcePerArea rmsSoundPressure, LinearVelocity rmsParticleVelocity)
+    {
+        return (PowerPerArea)(rmsSoundPressure.Value * rmsParticleVelocity.Value);
+    }
+
+    /// <summary>Calculates the sound intensity level difference in decibels for two positive acoustic intensities using the second as reference.</summary>
+    public static double SoundIntensityLevelDifferenceInDecibels(PowerPerArea intensity, PowerPerArea referenceIntensity)
+    {
+        return 10d * (Math.Log10(intensity.Value) - Math.Log10(referenceIntensity.Value));
+    }
+
+    /// <summary>Calculates the instantaneous Poynting flux magnitude from orthogonal electric and auxiliary magnetic field magnitudes.</summary>
+    public static PowerPerArea FromOrthogonalElectromagneticFields(ElectricFieldStrength electricField, AuxillaryMagneticField magneticField)
+    {
+        return (PowerPerArea)(electricField.Value * magneticField.Value);
+    }
 }
 
 public readonly partial struct AbsorbedDose
@@ -1160,5 +1469,162 @@ public readonly partial struct AmountOfSubstance
     public double AmountFraction(AmountOfSubstance totalAmount)
     {
         return Value / totalAmount.Value;
+    }
+}
+
+public readonly partial struct SpecificEnergy
+{
+    /// <summary>Calculates gravitational potential relative to infinity at positive distance from a point mass or outside a spherical mass.</summary>
+    public static SpecificEnergy FromNewtonianGravitationalPotential(StandardGravitationalParameter gravitationalParameter, Length radius)
+    {
+        return (SpecificEnergy)(-gravitationalParameter.Value / radius.Value);
+    }
+
+    /// <summary>Calculates the change in gravitational potential energy per mass in a uniform field from positive gravity and signed upward elevation change.</summary>
+    public static SpecificEnergy FromUniformGravityElevationChange(LinearAcceleration gravity, Length elevationChange)
+    {
+        return (SpecificEnergy)(gravity.Value * elevationChange.Value);
+    }
+
+    /// <summary>Calculates the total Newtonian orbital energy per mass in a bound Kepler orbit from positive gravitational parameter and semi-major axis.</summary>
+    public static SpecificEnergy FromBoundKeplerOrbit(StandardGravitationalParameter gravitationalParameter, Length semiMajorAxis)
+    {
+        return 0.5d * FromNewtonianGravitationalPotential(gravitationalParameter, semiMajorAxis);
+    }
+}
+
+public readonly partial struct ElectricPotential
+{
+    /// <summary>Calculates the RMS voltage of a zero-offset sinusoid from its peak magnitude.</summary>
+    public static ElectricPotential FromSinusoidalPeak(ElectricPotential peakVoltage)
+    {
+        return FromVolt(Math.Abs(peakVoltage.Volt) / Math.Sqrt(2d));
+    }
+
+    /// <summary>Calculates the secondary voltage magnitude of an ideal transformer from this primary voltage magnitude and a positive secondary-to-primary turns ratio.</summary>
+    public ElectricPotential SecondaryVoltageOfIdealTransformer(double secondaryToPrimaryTurnsRatio)
+    {
+        return FromVolt(Volt * secondaryToPrimaryTurnsRatio);
+    }
+}
+
+public readonly partial struct ElectricCurrent
+{
+    /// <summary>Calculates the RMS current of a zero-offset sinusoid from its peak magnitude.</summary>
+    public static ElectricCurrent FromSinusoidalPeak(ElectricCurrent peakCurrent)
+    {
+        return FromAmpere(Math.Abs(peakCurrent.Ampere) / Math.Sqrt(2d));
+    }
+
+    /// <summary>Calculates the secondary current magnitude of an ideal transformer from this primary current magnitude and a positive secondary-to-primary turns ratio.</summary>
+    public ElectricCurrent SecondaryCurrentOfIdealTransformer(double secondaryToPrimaryTurnsRatio)
+    {
+        return FromAmpere(Ampere / secondaryToPrimaryTurnsRatio);
+    }
+}
+
+public readonly partial struct ForcePerLength
+{
+    /// <summary>Calculates the magnetic force magnitude per unit length on a straight wire from nonnegative current and its perpendicular magnetic flux density magnitude.</summary>
+    public static ForcePerLength FromCurrentInMagneticField(ElectricCurrent current, MagneticFluxDensity perpendicularField)
+    {
+        return (ForcePerLength)(current.Value * perpendicularField.Value);
+    }
+}
+
+public readonly partial struct InverseLength
+{
+    /// <summary>Calculates the surviving intensity fraction of a monoenergetic narrow beam through homogeneous material of nonnegative thickness using this nonnegative linear attenuation coefficient.</summary>
+    public double TransmissionThrough(Length thickness)
+    {
+        return Math.Exp(-Value * thickness.Value);
+    }
+
+    /// <summary>Calculates angular wavenumber in radians per metre from a positive wavelength.</summary>
+    public static InverseLength AngularWavenumberFromWavelength(Length wavelength)
+    {
+        return (InverseLength)(PlaneAngle.FromRevolution(1d).Radian / wavelength.Value);
+    }
+
+    /// <summary>Calculates spectroscopic wavenumber as the reciprocal of a positive vacuum wavelength.</summary>
+    public static InverseLength SpectroscopicWavenumberFromWavelength(Length vacuumWavelength)
+    {
+        return (InverseLength)(1d / vacuumWavelength.Value);
+    }
+}
+
+public readonly partial struct ThermalDiffusivity
+{
+    /// <summary>Calculates the Lewis number from this thermal diffusivity and the positive molecular diffusivity of the same species and fluid state.</summary>
+    public double LewisNumber(AreaPerTime molecularDiffusivity)
+    {
+        return Value / molecularDiffusivity.Value;
+    }
+}
+
+public readonly partial struct KinematicViscosity
+{
+    /// <summary>Calculates the Schmidt number from this kinematic viscosity and the positive molecular diffusivity for the same fluid state.</summary>
+    public double SchmidtNumber(AreaPerTime molecularDiffusivity)
+    {
+        return Value / molecularDiffusivity.Value;
+    }
+}
+
+internal static class PhysicalConstants
+{
+    // Coherent SI values from the 2022 CODATA table.
+    internal const double VacuumLightSpeed = 299_792_458d;
+    internal const double PlanckConstant = 6.626_070_15e-34;
+    internal const double MolarGasConstant = 8.314_462_618_153_24;
+}
+
+public readonly partial struct AuxillaryMagneticField
+{
+    /// <summary>Calculates the azimuthal magnetic field around a long straight wire carrying steady current in a homogeneous isotropic medium.</summary>
+    /// <param name="current">Signed current along the wire.</param>
+    /// <param name="radialDistance">Positive perpendicular distance from the wire axis.</param>
+    public static AuxillaryMagneticField FromLongStraightWire(ElectricCurrent current, Length radialDistance)
+    {
+        return (AuxillaryMagneticField)(current.Value / (PlaneAngle.FromRevolution(1d).Radian * radialDistance.Value));
+    }
+}
+
+public readonly partial struct AmountOfSubstancePerVolume
+{
+    /// <summary>Calculates the amount concentration of an ideal gas from its positive absolute pressure and temperature.</summary>
+    public static AmountOfSubstancePerVolume FromIdealGasPressure(ForcePerArea absolutePressure, ThermodynamicTemperature temperature)
+    {
+        return (AmountOfSubstancePerVolume)(absolutePressure.Pascal / (PhysicalConstants.MolarGasConstant * temperature.Kelvin));
+    }
+}
+
+public readonly partial struct ThermalConductivity
+{
+    /// <summary>Calculates one-dimensional conductive heat flux along the axis of the signed temperature gradient in kelvins per metre.</summary>
+    public HeatFlowRatePerArea HeatFluxForTemperatureGradient(double kelvinsPerMetre)
+    {
+        return (HeatFlowRatePerArea)(-Value * kelvinsPerMetre);
+    }
+
+    /// <summary>Calculates the signed temperature gradient in kelvins per metre from heat flux along the same axis and this positive conductivity.</summary>
+    public double TemperatureGradientInKelvinsPerMetre(HeatFlowRatePerArea heatFlux)
+    {
+        return -heatFlux.Value / Value;
+    }
+}
+
+public readonly partial struct MolarHeatCapacity
+{
+    /// <summary>Calculates the constant-pressure molar heat capacity of an ideal gas from this constant-volume capacity at the same temperature.</summary>
+    public MolarHeatCapacity ToIsobaricForIdealGas()
+    {
+        return (MolarHeatCapacity)(Value + PhysicalConstants.MolarGasConstant);
+    }
+
+    /// <summary>Calculates the constant-volume molar heat capacity of an ideal gas from this constant-pressure capacity at the same temperature.</summary>
+    public MolarHeatCapacity ToIsochoricForIdealGas()
+    {
+        return (MolarHeatCapacity)(Value - PhysicalConstants.MolarGasConstant);
     }
 }

@@ -104,6 +104,17 @@ internal static class PrecompiledQuantities
 
     private static void VerifyMechanicsAndFlow()
     {
+        Close(2, Q.Length.SchwarzschildRadius((Q.StandardGravitationalParameter)(299_792_458d * 299_792_458d)).Metre);
+        Close(-2.5, Q.SpecificEnergy.FromBoundKeplerOrbit((Q.StandardGravitationalParameter)20d, Q.Length.FromMetre(4)).Value);
+
+        Close(3, Q.Length.RadiusOfGyration((Q.MomentOfInertia)36d, Q.Mass.FromKilogram(4)).Metre);
+
+        Close(7.5, Q.Energy.FromMomentumKineticEnergy((Q.LinearMomentum)Math.Sqrt(60d), Q.Mass.FromKilogram(4)).Joule);
+        Close(5, Q.Length.FromConstantStoppingDeceleration(Q.LinearVelocity.FromMetrePerSecond(10), (Q.LinearAcceleration)10d).Metre);
+        Close(-5, Q.SpecificEnergy.FromNewtonianGravitationalPotential((Q.StandardGravitationalParameter)20d, Q.Length.FromMetre(4)).Value);
+        Close(3 * Math.PI, Q.Volume.FromCircularCone(Q.Length.FromMetre(1), Q.Length.FromMetre(9)).CubicMetre);
+        Close(24 * Math.PI, Q.Area.FromClosedCircularCylinder(Q.Length.FromMetre(2), Q.Length.FromMetre(4)).SquareMetre);
+
         var frequency = Q.Frequency.FromPeriod(Q.Time.FromMillisecond(250));
         Close(4, frequency.Hertz);
         Close(0.25, frequency.ToPeriod().Second);
@@ -219,6 +230,16 @@ internal static class PrecompiledQuantities
 
     private static void VerifyWaves()
     {
+        Close(Math.PI, Q.InverseLength.AngularWavenumberFromWavelength(Q.Length.FromMetre(2)).Value);
+        Close(0.5, Q.InverseLength.SpectroscopicWavenumberFromWavelength(Q.Length.FromMetre(2)).Value);
+
+        Close(6, Q.LinearVelocity.PeakSpeedInSimpleHarmonicMotion(Q.Length.FromMetre(2), Q.AngularVelocity.FromRadianPerSecond(3)).Value);
+        Close(18, Q.LinearAcceleration.PeakAccelerationInSimpleHarmonicMotion(Q.Length.FromMetre(2), Q.AngularVelocity.FromRadianPerSecond(3)).Value);
+        Close(85, Q.Frequency.FromHalfWaveResonance(Q.LinearVelocity.FromMetrePerSecond(340), Q.Length.FromMetre(2)).Hertz);
+        Close(42.5, Q.Frequency.FromQuarterWaveResonance(Q.LinearVelocity.FromMetrePerSecond(340), Q.Length.FromMetre(2)).Hertz);
+        Close(6, Q.PowerPerArea.FromProgressiveSoundWave(Q.ForcePerArea.FromPascal(2), Q.LinearVelocity.FromMetrePerSecond(3)).Value);
+        Close(-20, Q.PowerPerArea.SoundIntensityLevelDifferenceInDecibels((Q.PowerPerArea)0.02d, (Q.PowerPerArea)2d));
+
         Close(40, Q.LinearVelocity.FromStretchedString(Q.Force.FromNewton(800), (Q.MassPerLength)0.5d).MetrePerSecond);
         Close(1500, Q.LinearVelocity.FromFluidBulkModulus(
             Q.ForcePerArea.FromPascal(2.25e9), (Q.Density)1000d).MetrePerSecond);
@@ -263,6 +284,16 @@ internal static class PrecompiledQuantities
 
     private static void VerifyRelativity()
     {
+        var physicalLightSpeed = Q.LinearVelocity.FromMetrePerSecond(299_792_458d);
+        var fifthOfLightSpeed = physicalLightSpeed * 0.2d;
+        Close(Math.Sqrt(2d / 3d), Q.Frequency.FromHertz(1).ObserveLongitudinalDoppler(fifthOfLightSpeed).Hertz);
+        Close(Math.Sqrt(1.5d), Q.Frequency.FromHertz(1).ObserveLongitudinalDoppler(-fifthOfLightSpeed).Hertz);
+        Close(5d / 13d, fifthOfLightSpeed.AddCollinearRelativisticVelocity(fifthOfLightSpeed).Value / physicalLightSpeed.Value);
+
+        Close(10, Q.Time.FromSecond(8).Dilate(1.25).Second);
+        Close(8, Q.Length.FromMetre(10).ContractAlongMotion(1.25).Metre);
+        Close(10, Q.Energy.FromRelativisticKineticEnergy(Q.Energy.FromJoule(40), 1.25).Joule);
+
         var mass = Q.Mass.FromKilogram(2);
         var lightSpeed = Q.LinearVelocity.FromMetrePerSecond(10);
         var velocity = Q.LinearVelocity.FromMetrePerSecond(6);
@@ -273,6 +304,26 @@ internal static class PrecompiledQuantities
 
     private static void VerifyFluidTransport()
     {
+        var gaugeReferencePressure = Q.ForcePerArea.FromPascal(100000);
+        var absolutePressure = Q.ForcePerArea.FromGaugePressure(Q.ForcePerArea.FromPascal(-200), gaugeReferencePressure);
+        Close(99800, absolutePressure.Pascal);
+        Close(-200, absolutePressure.GaugePressureRelativeTo(gaugeReferencePressure).Pascal);
+        Close(100300, Q.ForcePerArea.FromIncompressibleStagnation(gaugeReferencePressure, Q.ForcePerArea.FromPascal(300)).Pascal);
+
+        Close(2, Q.Length.HydraulicDepth(Q.Area.FromSquareMetre(10), Q.Length.FromMetre(5)).Metre);
+
+        Close(2, Q.LinearVelocity.FromMetrePerSecond(6).FroudeNumber(Q.LinearVelocity.FromMetrePerSecond(3)));
+        Close(4, ((Q.KinematicViscosity)8e-6).SchmidtNumber((Q.AreaPerTime)2e-6));
+        Close(4, Q.Length.RmsDisplacementInOneDimensionalDiffusion((Q.AreaPerTime)2d, Q.Time.FromSecond(4)).Metre);
+
+        var potentialIncrease = Q.SpecificEnergy.FromUniformGravityElevationChange((Q.LinearAcceleration)10d, Q.Length.FromMetre(3));
+        Q.ForcePerArea headPressure = (Q.Density)1000d * potentialIncrease;
+        Close(30000, headPressure.Pascal);
+        Close(30, (headPressure / (Q.Density)1000d).Value);
+        Q.Force thrust = (Q.MassPerTime)2d * (Q.SpecificImpulseByMass)3000d;
+        Close(6000, thrust.Newton);
+        Close(3000, (thrust / (Q.MassPerTime)2d).Value);
+
         var gravity = (Q.LinearAcceleration)10d;
         var diameter = Q.Length.HydraulicDiameter(Q.Area.FromSquareMetre(0.5), Q.Length.FromMetre(2));
         Close(1, diameter.Metre);
@@ -284,6 +335,16 @@ internal static class PrecompiledQuantities
 
     private static void VerifyElectromagnetism()
     {
+        Close(-1d / Math.PI, Q.AuxillaryMagneticField.FromLongStraightWire(Q.ElectricCurrent.FromAmpere(-4), Q.Length.FromMetre(2)).Value);
+
+        var magneticDipole = Q.MagneticDipoleMoment.FromWeberMetre(6);
+        var auxiliaryField = (Q.AuxillaryMagneticField)2d;
+        Close(1.5, Q.ForcePerLength.FromCurrentInMagneticField(Q.ElectricCurrent.FromAmpere(3), Q.MagneticFluxDensity.FromTesla(0.5)).Value);
+        Close(18, Q.Torque.FromElectricDipole((Q.ElectricDipoleMoment)6d, (Q.ElectricFieldStrength)3d).Value);
+        Close(-18, Q.Energy.FromElectricDipole((Q.ElectricDipoleMoment)6d, (Q.ElectricFieldStrength)3d).Joule);
+        Close(12, Q.Torque.FromMagneticDipole(magneticDipole, auxiliaryField).Value);
+        Close(-12, Q.Energy.FromMagneticDipole(magneticDipole, auxiliaryField).Joule);
+
         var resistance = Q.Resistance.FromOhm(10);
         var current = Q.ElectricCurrent.FromAmpere(4);
         Q.ElectricPotential voltage = resistance * current;
@@ -329,6 +390,12 @@ internal static class PrecompiledQuantities
 
     private static void VerifyCircuitNetworks()
     {
+        Close(5, Q.Frequency.FromHertz(20).SeriesRlcQualityFactor(Q.Frequency.FromHertz(4)));
+        Close(2, Q.ElectricPotential.FromSinusoidalPeak(Q.ElectricPotential.FromVolt(Math.Sqrt(8d))).Volt);
+        Close(3, Q.ElectricCurrent.FromSinusoidalPeak(Q.ElectricCurrent.FromAmpere(3 * Math.Sqrt(2d))).Ampere);
+        Close(24, Q.ElectricPotential.FromVolt(12).SecondaryVoltageOfIdealTransformer(2).Volt);
+        Close(3, Q.ElectricCurrent.FromAmpere(6).SecondaryCurrentOfIdealTransformer(2).Ampere);
+
         var resistance = Q.Resistance.FromOhm(10);
         var otherResistance = Q.Resistance.FromOhm(15);
         Close(25, resistance.InSeriesWith(otherResistance).Ohm);
@@ -348,6 +415,14 @@ internal static class PrecompiledQuantities
 
     private static void VerifyHeatTransfer()
     {
+        var conductingMaterial = (Q.ThermalConductivity)4d;
+        var conductionFlux = conductingMaterial.HeatFluxForTemperatureGradient(-3);
+        Close(12, conductionFlux.Value);
+        Close(-3, conductingMaterial.TemperatureGradientInKelvinsPerMetre(conductionFlux));
+
+        Close(48, Q.PowerPerArea.FromBlackbodyTemperature(Q.ThermodynamicTemperature.FromKelvin(2), (Q.PowerPerAreaQuarticTemperature)3d).Value);
+        Close(7, Q.Energy.FromHeatAndWork(Q.Energy.FromJoule(10), Q.Energy.FromJoule(3)).Joule);
+
         var room = Q.ThermodynamicTemperature.FromKelvin(290);
         var heated = Q.ThermodynamicTemperature.FromKelvin(310);
         double temperatureRise = heated.DifferenceInKelvins(room);
@@ -383,6 +458,17 @@ internal static class PrecompiledQuantities
 
     private static void VerifyLightChemistryAndDose()
     {
+        var projectedArea = Q.Area.FromSquareMetre(4).ProjectAlong(Q.PlaneAngle.FromRadian(Math.PI / 3));
+        Q.AreaAngle geometricExtent = projectedArea * Q.SolidAngle.FromSteradian(1.5);
+        Q.PowerPerAreaAngle meanRadiance = Q.Power.FromWatt(6) / geometricExtent;
+        Q.RadiantIntensity normalRadianceIntensity = meanRadiance * projectedArea;
+        Q.EnergyPerArea radiantExposure = (Q.PowerPerArea)7d * Q.Time.FromSecond(3);
+        Close(2, projectedArea.SquareMetre);
+        Close(3, geometricExtent.Value);
+        Close(2, meanRadiance.Value);
+        Close(4, normalRadianceIntensity.Value);
+        Close(21, radiantExposure.Value);
+
         Q.LuminousFlux light = Q.LuminousIntensity.FromCandela(20) * Q.SolidAngle.FromSteradian(3);
         Q.Illuminance illuminance = light / Q.Area.FromSquareMetre(2);
         Close(60, light.Lumen);
@@ -418,6 +504,21 @@ internal static class PrecompiledQuantities
 
     private static void VerifyOptics()
     {
+        var incidenceAngle = Q.PlaneAngle.FromRadian(Math.PI / 6);
+        if (!incidenceAngle.TryRefractionAngle(0.5, out var transmittedAngle))
+        {
+            throw new InvalidOperationException("Expected refraction into the higher-index medium.");
+        }
+        Close(Math.Asin(0.25), transmittedAngle.Radian);
+        if (Q.PlaneAngle.FromRadian(Math.PI / 3).TryRefractionAngle(1.5, out _))
+        {
+            throw new InvalidOperationException("Expected total internal reflection.");
+        }
+
+        Close(Math.PI / 6, Q.PlaneAngle.FromFirstDiffractionOrder(Q.Length.FromMillimetre(1), Q.Length.FromMillimetre(2)).Radian);
+        Close(Math.PI / 6, Q.PlaneAngle.FromFirstSingleSlitMinimum(Q.Length.FromMillimetre(1), Q.Length.FromMillimetre(2)).Radian);
+        Close(0.04, Q.Power.ReflectanceAtNormalIncidence(1, 1.5));
+
         var objectDistance = Q.Length.FromMillimetre(2000);
         var focalLength = Q.Length.FocalLengthFromConjugates(objectDistance, Q.Length.FromMetre(2));
         Close(1, focalLength.Metre);
@@ -451,6 +552,23 @@ internal static class PrecompiledQuantities
 
     private static void VerifyThermodynamicProcesses()
     {
+        var isochoricMolarCapacity = (Q.MolarHeatCapacity)12d;
+        var isobaricMolarCapacity = isochoricMolarCapacity.ToIsobaricForIdealGas();
+        Close(20.31446261815324, isobaricMolarCapacity.Value);
+        Close(12, isobaricMolarCapacity.ToIsochoricForIdealGas().Value);
+
+        var idealGasTemperature = Q.ThermodynamicTemperature.FromKelvin(300);
+        var idealGasConcentration = (Q.AmountOfSubstancePerVolume)4d;
+        var idealGasPressure = Q.ForcePerArea.FromIdealGasConcentration(idealGasConcentration, idealGasTemperature);
+        Close(300, Q.ThermodynamicTemperature.FromIdealGasPressure(idealGasPressure, idealGasConcentration).Kelvin);
+        Close(4, Q.AmountOfSubstancePerVolume.FromIdealGasPressure(idealGasPressure, idealGasTemperature).Value);
+        Close(7483.0163563379, Q.Energy.FromMonatomicIdealGas(Q.AmountOfSubstance.FromMole(2), idealGasTemperature).Joule);
+
+        var gasTemperature = Q.ThermodynamicTemperature.FromKelvin(300);
+        Close(4988.6775708919, Q.ForcePerArea.FromIdealGasConcentration((Q.AmountOfSubstancePerVolume)2d, gasTemperature).Pascal);
+        Close(516.9628460102, Q.LinearVelocity.RmsSpeedOfIdealGas(gasTemperature, (Q.MolarMass)0.028d).MetrePerSecond);
+        Close(2, ((Q.ThermalDiffusivity)4e-6).LewisNumber((Q.AreaPerTime)2e-6));
+
         var hot = Q.ThermodynamicTemperature.FromKelvin(300);
         var cold = Q.ThermodynamicTemperature.FromKelvin(200);
         var gamma = Q.SpecificHeatCapacity.HeatCapacityRatio((Q.SpecificHeatCapacity)1000d, (Q.SpecificHeatCapacity)500d);
@@ -482,6 +600,16 @@ internal static class PrecompiledQuantities
 
     private static void VerifyElectromagneticWavesAndPhotons()
     {
+        var frequency25 = Q.Frequency.FromHertz(2.5e15);
+        var energy25 = Q.Energy.FromPhotonFrequency(frequency25);
+        Close(1.6565175375, energy25.Joule / 1e-18);
+        Close(2.5, energy25.ToPhotonFrequency().Hertz / 1e15);
+        Close(0.662607015, Q.Length.FromDeBroglieMomentum((Q.LinearMomentum)1e-24).Metre / 1e-9);
+
+        Close(15, Q.PowerPerArea.FromOrthogonalElectromagneticFields((Q.ElectricFieldStrength)3d, (Q.AuxillaryMagneticField)5d).Value);
+        Close(3, Q.ForcePerArea.FromAbsorbedRadiation((Q.PowerPerArea)12d, Q.LinearVelocity.FromMetrePerSecond(4)).Pascal);
+        Close(6, Q.ForcePerArea.FromReflectedRadiation((Q.PowerPerArea)12d, Q.LinearVelocity.FromMetrePerSecond(4)).Pascal);
+
         var permittivity = (Q.Permittivity)0.5d;
         var permeability = (Q.Permeability)0.5d;
         var speed = Q.LinearVelocity.FromElectromagneticMedium(permittivity, permeability);
@@ -518,6 +646,12 @@ internal static class PrecompiledQuantities
 
     private static void VerifyRadiationAndMixtures()
     {
+        var halfLife = Q.Time.FromSecond(12);
+        var decayTimeConstant = Q.Time.FromExponentialHalfLife(halfLife);
+        Close(12, decayTimeConstant.HalfLifeFromDecayTimeConstant().Second);
+        Close(0.125, Q.Time.FromSecond(36).ExponentialDecayFraction(decayTimeConstant));
+        Close(0.25, ((Q.InverseLength)Math.Log(2d)).TransmissionThrough(Q.Length.FromMetre(2)));
+
         var avogadroConstant = (Q.InverseAmountOfSubstance)6.02214076e23;
         Q.AmountOfSubstance radionuclide = 120d / avogadroConstant;
         Close(120, radionuclide * avogadroConstant);

@@ -23,6 +23,8 @@ public readonly partial struct Length;
 [QuantityOperator<Area, Length, Length>(Operator.DIVIDE)]
 [QuantityOperator<Area, Time, AreaPerTime>(Operator.DIVIDE)]
 [QuantityOperator<Area, AreaPerTime, Time>(Operator.DIVIDE)]
+[QuantityOperator<Area, SolidAngle, AreaAngle>(Operator.MULTIPLY)]
+[QuantityOperator<Area, PowerPerAreaAngle, RadiantIntensity>(Operator.MULTIPLY)]
 public readonly partial struct Area;
 
 [QuantityOperator<AreaPerTime, Time, Area>(Operator.MULTIPLY)]
@@ -57,6 +59,8 @@ public readonly partial struct Mass;
 
 [QuantityOperator<Force, Mass, LinearAcceleration>(Operator.DIVIDE)]
 [QuantityOperator<Force, LinearAcceleration, Mass>(Operator.DIVIDE)]
+[QuantityOperator<Force, SpecificImpulseByMass, MassPerTime>(Operator.DIVIDE)]
+[QuantityOperator<Force, MassPerTime, SpecificImpulseByMass>(Operator.DIVIDE)]
 public readonly partial struct Force;
 
 [QuantityOperator<Density, Volume, Mass>(Operator.MULTIPLY)]
@@ -65,10 +69,13 @@ public readonly partial struct Force;
 [QuantityOperator<Area, Density, MassPerLength>(Operator.MULTIPLY)]
 [QuantityOperator<Density, Length, MassPerArea>(Operator.MULTIPLY)]
 [QuantityOperator<Length, Density, MassPerArea>(Operator.MULTIPLY)]
+[QuantityOperator<Density, SpecificEnergy, ForcePerArea>(Operator.MULTIPLY)]
 public readonly partial struct Density;
 
 [QuantityOperator<Power, Time, Energy>(Operator.MULTIPLY)]
 [QuantityOperator<Time, Power, Energy>(Operator.MULTIPLY)]
+[QuantityOperator<Power, PowerPerAreaAngle, AreaAngle>(Operator.DIVIDE)]
+[QuantityOperator<Power, AreaAngle, PowerPerAreaAngle>(Operator.DIVIDE)]
 public readonly partial struct Power;
 
 [QuantityOperator<Energy, Time, Power>(Operator.DIVIDE)]
@@ -111,6 +118,7 @@ public readonly partial struct Resistance;
 public readonly partial struct LinearMomentum;
 public readonly partial struct SquareEnergy;
 
+[QuantityOperator<Time, PowerPerArea, EnergyPerArea>(Operator.MULTIPLY)]
 public readonly partial struct Time;
 public readonly partial struct VolumePerTime;
 
@@ -145,6 +153,8 @@ public readonly partial struct Force;
 [QuantityOperator<VolumePerTime, ForcePerArea, Power>(Operator.MULTIPLY)]
 [QuantityOperator<ForcePerArea, Time, ForcePerAreaTime>(Operator.DIVIDE)]
 [QuantityOperator<ForcePerArea, ForcePerAreaTime, Time>(Operator.DIVIDE)]
+[QuantityOperator<ForcePerArea, Density, SpecificEnergy>(Operator.DIVIDE)]
+[QuantityOperator<ForcePerArea, SpecificEnergy, Density>(Operator.DIVIDE)]
 public readonly partial struct ForcePerArea;
 
 [QuantityOperator<ForcePerAreaTime, Time, ForcePerArea>(Operator.MULTIPLY)]
@@ -239,6 +249,7 @@ public readonly partial struct MassPerArea;
 [QuantityOperator<MassPerTime, Area, MassPerAreaTime>(Operator.DIVIDE)]
 [QuantityOperator<MassPerTime, Density, VolumePerTime>(Operator.DIVIDE)]
 [QuantityOperator<MassPerTime, VolumePerTime, Density>(Operator.DIVIDE)]
+[QuantityOperator<MassPerTime, SpecificImpulseByMass, Force>(Operator.MULTIPLY)]
 public readonly partial struct MassPerTime;
 
 [QuantityOperator<MassPerAreaTime, Area, MassPerTime>(Operator.MULTIPLY)]
@@ -281,6 +292,7 @@ public readonly partial struct DynamicViscosity;
 
 [QuantityOperator<SpecificEnergy, Mass, Energy>(Operator.MULTIPLY)]
 [QuantityOperator<Mass, SpecificEnergy, Energy>(Operator.MULTIPLY)]
+[QuantityOperator<SpecificEnergy, Density, ForcePerArea>(Operator.MULTIPLY)]
 public readonly partial struct SpecificEnergy;
 
 [QuantityOperator<Energy, SpecificEnergy, Mass>(Operator.DIVIDE)]
@@ -297,10 +309,13 @@ public readonly partial struct EnergyDensity;
 
 [QuantityOperator<EnergyPerArea, Area, Energy>(Operator.MULTIPLY)]
 [QuantityOperator<Area, EnergyPerArea, Energy>(Operator.MULTIPLY)]
+[QuantityOperator<EnergyPerArea, PowerPerArea, Time>(Operator.DIVIDE)]
+[QuantityOperator<EnergyPerArea, Time, PowerPerArea>(Operator.DIVIDE)]
 public readonly partial struct EnergyPerArea;
 
 [QuantityOperator<PowerPerArea, Area, Power>(Operator.MULTIPLY)]
 [QuantityOperator<Area, PowerPerArea, Power>(Operator.MULTIPLY)]
+[QuantityOperator<PowerPerArea, Time, EnergyPerArea>(Operator.MULTIPLY)]
 public readonly partial struct PowerPerArea;
 
 [QuantityOperator<Power, PowerPerArea, Area>(Operator.DIVIDE)]
@@ -595,6 +610,8 @@ public readonly partial struct LuminousEfficacy;
 
 [QuantityOperator<RadiantIntensity, SolidAngle, Power>(Operator.MULTIPLY)]
 [QuantityOperator<SolidAngle, RadiantIntensity, Power>(Operator.MULTIPLY)]
+[QuantityOperator<RadiantIntensity, PowerPerAreaAngle, Area>(Operator.DIVIDE)]
+[QuantityOperator<RadiantIntensity, Area, PowerPerAreaAngle>(Operator.DIVIDE)]
 public readonly partial struct RadiantIntensity;
 
 [QuantityOperator<Power, RadiantIntensity, SolidAngle>(Operator.DIVIDE)]
@@ -740,3 +757,18 @@ public readonly partial struct ThermalInsulance;
 [QuantityOperator<Length, ThermalInsulance, ThermalConductivity>(Operator.DIVIDE)]
 [QuantityOperator<Length, ThermalConductivity, ThermalInsulance>(Operator.DIVIDE)]
 public readonly partial struct Length;
+
+[QuantityOperator<SpecificImpulseByMass, MassPerTime, Force>(Operator.MULTIPLY)]
+public readonly partial struct SpecificImpulseByMass;
+
+[QuantityOperator<SolidAngle, Area, AreaAngle>(Operator.MULTIPLY)]
+public readonly partial struct SolidAngle;
+
+[QuantityOperator<AreaAngle, Area, SolidAngle>(Operator.DIVIDE)]
+[QuantityOperator<AreaAngle, SolidAngle, Area>(Operator.DIVIDE)]
+[QuantityOperator<AreaAngle, PowerPerAreaAngle, Power>(Operator.MULTIPLY)]
+public readonly partial struct AreaAngle;
+
+[QuantityOperator<PowerPerAreaAngle, AreaAngle, Power>(Operator.MULTIPLY)]
+[QuantityOperator<PowerPerAreaAngle, Area, RadiantIntensity>(Operator.MULTIPLY)]
+public readonly partial struct PowerPerAreaAngle;
