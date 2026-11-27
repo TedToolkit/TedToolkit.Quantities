@@ -33,8 +33,11 @@ internal static class PrecompiledQuantities
         Close(100, interval.Kelvin);
         Close(100, (freezing + interval).DegreeCelsius);
 
-        Q.SquareEnergy squaredEnergy = Q.Energy.FromJoule(3) * Q.Energy.FromJoule(3);
-        Close(9, squaredEnergy.Value);
+        Q.SquareEnergy squaredEnergy = Q.Energy.FromJoule(3) * Q.Energy.FromJoule(4);
+        Close(12, squaredEnergy.Value);
+        Q.SquareTime squaredTime = Q.Time.FromSecond(2) * Q.Time.FromSecond(5);
+        Close(10, squaredTime.Value);
+        Close(5, (squaredTime / Q.Time.FromSecond(2)).Second);
 
         VerifyMechanicsAndFlow();
         VerifyElectromagnetism();
