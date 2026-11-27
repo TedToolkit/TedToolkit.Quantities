@@ -343,6 +343,7 @@ internal static class PrecompiledQuantities
         Close(1.2, inductance.InParallelWith(otherInductance).Henry);
 
         Close(1 / Math.PI, Q.Frequency.FromFirstOrderCutoff(Q.Time.FromMillisecond(500)).Hertz);
+        Close(2.5 / Math.PI, Q.Frequency.FromSeriesRlcBandwidth(resistance, inductance).Hertz);
     }
 
     private static void VerifyHeatTransfer()
@@ -489,6 +490,8 @@ internal static class PrecompiledQuantities
         var electricField = Q.ElectricFieldStrength.FromPlaneWave(magneticField, speed);
         Close(6, electricField.Value);
         Close(3, Q.MagneticFluxDensity.FromPlaneWave(electricField, speed).Tesla);
+        Close(9, Q.EnergyDensity.FromElectricField(electricField, permittivity).Value);
+        Close(18, Q.EnergyDensity.FromMagneticField(magneticField, (Q.Permeability)0.25d).Value);
         var photonProduct = (Q.LengthEnergy)2d;
         var wavelength = Q.Length.FromMillimetre(500);
         Q.Energy photonEnergy = photonProduct / wavelength;

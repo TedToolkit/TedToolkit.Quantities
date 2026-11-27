@@ -47,6 +47,13 @@ public readonly partial struct Frequency
     {
         return AngularVelocity.FromRadianPerSecond(1d / timeConstant.Second).ToFrequency();
     }
+
+    /// <summary>Calculates the full half-power bandwidth of a linear series RLC circuit.</summary>
+    /// <remarks>Use the total positive series resistance and positive inductance.</remarks>
+    public static Frequency FromSeriesRlcBandwidth(Resistance resistance, Inductance inductance)
+    {
+        return AngularVelocity.FromRadianPerSecond(resistance.Ohm / inductance.Henry).ToFrequency();
+    }
 }
 
 public readonly partial struct AngularVelocity
@@ -306,6 +313,18 @@ public readonly partial struct MomentOfInertia
 
 public readonly partial struct EnergyDensity
 {
+    /// <summary>Calculates energy density from instantaneous electric field magnitude in a linear, isotropic, nondispersive medium.</summary>
+    public static EnergyDensity FromElectricField(ElectricFieldStrength field, Permittivity permittivity)
+    {
+        return (EnergyDensity)(0.5d * permittivity.Value * field.Value * field.Value);
+    }
+
+    /// <summary>Calculates energy density from instantaneous magnetic flux density magnitude in a linear, isotropic, nondispersive medium.</summary>
+    public static EnergyDensity FromMagneticField(MagneticFluxDensity field, Permeability permeability)
+    {
+        return (EnergyDensity)(0.5d * field.Value * field.Value / permeability.Value);
+    }
+
     /// <summary>Calculates recoverable energy per unit volume for a single linearly elastic stress and its conjugate strain.</summary>
     public static EnergyDensity FromElasticStrain(Stress stress, double strain)
     {

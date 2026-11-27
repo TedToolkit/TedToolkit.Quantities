@@ -77,7 +77,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **217 physical formulas**. Each calculation uses up to two input quantities.
+The inventory lists **220 physical formulas**. Each calculation uses up to two input quantities.
 Dimension-one inputs such as ratios use `double` and count as one quantity. Swapped products,
 solved forms, and typed variants share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
@@ -211,6 +211,7 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| Δf = R/(2πL) | `Frequency` | Full width between the half-power frequencies of a linear series RLC circuit. Use the total positive series resistance R and positive inductance L. Supported methods include `Frequency.FromSeriesRlcBandwidth`. | [MIT series RLC bandwidth][mit-rlc-bandwidth] |
 | R = g/σ | `ElectricConductivity`, `InverseLength`, `Resistance` | Uniform ohmic conductor with positive conductivity. The geometric factor g is length per cross-sectional area. | [OpenStax resistivity][openstax-resistivity] |
 | C = εg | `Capacitance`, `Length`, `Permittivity` | Ideal parallel plates with negligible fringing and a uniform dielectric. The geometric length g is the ratio of overlap area to plate separation. | [OpenStax capacitance of electrode geometries][openstax-capacitor-geometry] |
 | Φₑ = q_free/ε | `ElectricCharge`, `ElectricFlux`, `Permittivity` | Electric flux through a closed surface in a homogeneous linear dielectric of constant permittivity. Use the signed enclosed free charge. | [OpenStax Gauss's law][openstax-gauss-law] · [MIT Electromagnetics and Applications, chapter 2][mit-fields-and-media] |
@@ -350,6 +351,8 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| uₑ = ½εE² | `EnergyDensity` | Electric field contribution to energy density in a linear, isotropic, nondispersive medium. Use instantaneous field magnitude E and positive absolute permittivity ε. Supported methods include `EnergyDensity.FromElectricField`. | [MIT Physics of Waves, equation 12.24][mit-field-energy] |
+| uₘ = B²/(2μ) | `EnergyDensity` | Magnetic field contribution to energy density in a linear, isotropic, nondispersive medium. Use instantaneous magnetic flux density magnitude B and positive absolute permeability μ. Supported methods include `EnergyDensity.FromMagneticField`. | [MIT Physics of Waves, equation 12.24][mit-field-energy] |
 | v = 1/√(εμ) | `LinearVelocity` | Phase speed in a lossless, isotropic, nondispersive linear medium with positive absolute permittivity and permeability. Supported methods include `LinearVelocity.FromElectromagneticMedium`. | [OpenStax electromagnetic wave equations][openstax-em-wave-equations] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
 | E = vB | `ElectricFieldStrength`, `MagneticFluxDensity` | Progressive plane wave in a lossless medium. Use matching electric and magnetic magnitudes and the phase speed. Supported methods include `ElectricFieldStrength.FromPlaneWave` and `MagneticFluxDensity.FromPlaneWave`. | [OpenStax electromagnetic wave energy][openstax-em-wave-energy] · [MIT linear electromagnetic media][mit-linear-electromagnetic-media] |
 
@@ -366,6 +369,8 @@ Update the corresponding row when changing a formula's coverage.
 
 ## Formula references
 
+- [MIT series RLC bandwidth][mit-rlc-bandwidth]
+- [MIT Physics of Waves, equation 12.24][mit-field-energy]
 - [BIPM SI Brochure][bipm-si-brochure]
 - [BIPM katal resolution][bipm-katal-resolution]
 - [CIE irradiance][cie-irradiance]
@@ -615,3 +620,5 @@ Update the corresponding row when changing a formula's coverage.
 [openstax-gauss-law]: https://openstax.org/books/university-physics-volume-2/pages/6-2-explaining-gausss-law
 [cie-luminous-exitance]: https://cie.co.at/eilvterm/17-21-081
 [openstax-radioactive-decay]: https://openstax.org/books/university-physics-volume-3/pages/10-3-radioactive-decay
+[mit-rlc-bandwidth]: https://web.mit.edu/6.101/www/s2019/handouts/L02_4.pdf
+[mit-field-energy]: https://ocw.mit.edu/courses/8-03sc-physics-iii-vibrations-and-waves-fall-2016/ef731c1b91d77a6db003f6c27e300d25_MIT8_03SCF16_Textbook.pdf
