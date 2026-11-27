@@ -237,6 +237,7 @@ public readonly partial struct Density;
 
 [QuantityOperator<KinematicViscosity, Density, DynamicViscosity>(Operator.MULTIPLY)]
 [QuantityOperator<Density, KinematicViscosity, DynamicViscosity>(Operator.MULTIPLY)]
+[QuantityOperator<KinematicViscosity, ThermalDiffusivity, double>(Operator.DIVIDE)]
 public readonly partial struct KinematicViscosity;
 
 [QuantityOperator<DynamicViscosity, KinematicViscosity, Density>(Operator.DIVIDE)]
@@ -457,7 +458,16 @@ public readonly partial struct HeatFlowRatePerArea;
 
 [QuantityOperator<ThermalResistance, Area, ThermalInsulance>(Operator.MULTIPLY)]
 [QuantityOperator<Area, ThermalResistance, ThermalInsulance>(Operator.MULTIPLY)]
+[QuantityOperator<ThermalResistance, HeatCapacity, Time>(Operator.MULTIPLY)]
+[QuantityOperator<HeatCapacity, ThermalResistance, Time>(Operator.MULTIPLY)]
 public readonly partial struct ThermalResistance;
+
+[QuantityOperator<Time, ThermalResistance, HeatCapacity>(Operator.DIVIDE)]
+[QuantityOperator<Time, HeatCapacity, ThermalResistance>(Operator.DIVIDE)]
+public readonly partial struct Time;
+
+[QuantityOperator<SpecificHeatPressure, SpecificHeatVolume, double>(Operator.DIVIDE)]
+public readonly partial struct SpecificHeatPressure;
 
 [QuantityOperator<ThermalInsulance, ThermalResistance, Area>(Operator.DIVIDE)]
 [QuantityOperator<ThermalInsulance, Area, ThermalResistance>(Operator.DIVIDE)]

@@ -171,6 +171,21 @@ public readonly partial struct Length
     {
         return (Length)((initialVelocity.Value + 0.5d * acceleration.Value * elapsed.Value) * elapsed.Value);
     }
+
+    /// <summary>Calculates hydraulic diameter from flow area and positive wetted perimeter.</summary>
+    public static Length HydraulicDiameter(Area flowArea, Length wettedPerimeter)
+    {
+        return 4d * (flowArea / wettedPerimeter);
+    }
+
+    /// <summary>Calculates the signed equilibrium rise of a liquid in a vertical circular capillary tube.</summary>
+    /// <remarks>Use the liquid density when the gas density is negligible and measure the contact angle through the liquid.</remarks>
+    public static Length CapillaryRise(
+        ForcePerLength surfaceTension, Density liquidDensity, LinearAcceleration gravity, Length tubeRadius, PlaneAngle contactAngle)
+    {
+        return (Length)(2d * surfaceTension.Value * Math.Cos(contactAngle.Radian)
+                        / (liquidDensity.Value * gravity.Value * tubeRadius.Value));
+    }
 }
 
 public readonly partial struct Area
@@ -291,6 +306,12 @@ public readonly partial struct Energy
     {
         return 0.5d * FromGravitationalPotential(gravitationalParameter, orbitingMass, radius);
     }
+
+    /// <summary>Calculates heat engine efficiency from this net work output and the positive heat input over the same cycle.</summary>
+    public double HeatEngineEfficiency(Energy heatInput)
+    {
+        return Value / heatInput.Value;
+    }
 }
 
 public readonly partial struct Force
@@ -357,6 +378,12 @@ public readonly partial struct Force
     public static Force FromLift(Density density, LinearVelocity relativeSpeed, Area referenceArea, double liftCoefficient)
     {
         return (ForcePerArea.FromDynamicPressure(density, relativeSpeed) * referenceArea) * liftCoefficient;
+    }
+
+    /// <summary>Calculates Stokes drag magnitude on an isolated rigid sphere in creeping Newtonian flow.</summary>
+    public static Force FromStokesDrag(DynamicViscosity viscosity, Length sphereRadius, LinearVelocity relativeSpeed)
+    {
+        return (Force)((6d * Math.PI) * viscosity.Value * sphereRadius.Value * Math.Abs(relativeSpeed.Value));
     }
 }
 
@@ -453,6 +480,30 @@ public readonly partial struct ForcePerArea
         Volume finalVolume, ThermodynamicTemperature finalTemperature)
     {
         return this * ((initialVolume.Value / finalVolume.Value) * (finalTemperature.Kelvin / initialTemperature.Kelvin));
+    }
+
+    /// <summary>Calculates the absolute pressure after a reversible adiabatic volume change of a calorically perfect ideal gas.</summary>
+    public ForcePerArea AfterIsentropicVolumeChange(Volume initialVolume, Volume finalVolume, double heatCapacityRatio)
+    {
+        return this * Math.Pow(initialVolume.Value / finalVolume.Value, heatCapacityRatio);
+    }
+
+    /// <summary>Calculates the Darcy–Weisbach friction pressure drop for fully developed flow in a straight duct.</summary>
+    /// <param name="density">The fluid density, assumed constant along the duct.</param>
+    /// <param name="meanSpeed">The cross-sectional mean flow speed.</param>
+    /// <param name="ductLength">The length of the constant cross-section duct.</param>
+    /// <param name="hydraulicDiameter">The positive hydraulic diameter.</param>
+    /// <param name="darcyFrictionFactor">The Darcy friction factor for the given duct and flow conditions.</param>
+    public static ForcePerArea FromDarcyWeisbach(
+        Density density, LinearVelocity meanSpeed, Length ductLength, Length hydraulicDiameter, double darcyFrictionFactor)
+    {
+        return FromDynamicPressure(density, meanSpeed) * (darcyFrictionFactor * (ductLength / hydraulicDiameter));
+    }
+
+    /// <summary>Calculates the inside-to-outside pressure jump across a single spherical interface.</summary>
+    public static ForcePerArea FromSphericalSurfaceTension(ForcePerLength surfaceTension, Length radius)
+    {
+        return (ForcePerArea)(2d * surfaceTension.Value / radius.Value);
     }
 }
 
@@ -551,6 +602,33 @@ public readonly partial struct LinearVelocity
     public double MachNumber(LinearVelocity soundSpeed)
     {
         return Math.Abs(Value) / soundSpeed.Value;
+    }
+
+    /// <summary>Calculates the Froude number for open-channel flow using this mean velocity and positive hydraulic depth.</summary>
+    public double FroudeNumber(LinearAcceleration gravity, Length hydraulicDepth)
+    {
+        return Math.Abs(Value) / FromShallowWaterGravityWave(gravity, hydraulicDepth).Value;
+    }
+
+    /// <summary>Calculates the Weber number using this relative speed, the fluid density, reference length, and positive surface tension.</summary>
+    public double WeberNumber(Density density, Length characteristicLength, ForcePerLength surfaceTension)
+    {
+        return density.Value * Value * Value * characteristicLength.Value / surfaceTension.Value;
+    }
+
+    /// <summary>Calculates the Darcy friction factor from this positive mean speed in fully developed laminar circular-pipe flow.</summary>
+    public double DarcyFrictionFactorForLaminarPipe(Length pipeDiameter, KinematicViscosity kinematicViscosity)
+    {
+        return 64d / ReynoldsNumber(pipeDiameter, kinematicViscosity);
+    }
+
+    /// <summary>Calculates a rigid sphere's signed terminal velocity in an unbounded Newtonian fluid at very low Reynolds number.</summary>
+    /// <returns>The terminal velocity, positive downward and negative for a rising sphere.</returns>
+    public static LinearVelocity StokesTerminalVelocity(
+        Density sphereDensity, Density fluidDensity, DynamicViscosity viscosity, LinearAcceleration gravity, Length sphereRadius)
+    {
+        var radiusSquared = (sphereRadius * sphereRadius).Value;
+        return FromMetrePerSecond((2d / 9d) * (sphereDensity.Value - fluidDensity.Value) * gravity.Value * radiusSquared / viscosity.Value);
     }
 
     /// <summary>Calculates the Reynolds number for a flow using kinematic viscosity.</summary>
@@ -730,6 +808,39 @@ public readonly partial struct Capacitance
 
 public readonly partial struct ThermodynamicTemperature
 {
+    /// <summary>Calculates the absolute temperature after a reversible adiabatic volume change of a calorically perfect ideal gas.</summary>
+    public ThermodynamicTemperature AfterIsentropicVolumeChange(Volume initialVolume, Volume finalVolume, double heatCapacityRatio)
+    {
+        return FromKelvin(Kelvin * Math.Pow(initialVolume.Value / finalVolume.Value, heatCapacityRatio - 1d));
+    }
+
+    /// <summary>Calculates Carnot engine efficiency with this hot reservoir and a colder reservoir.</summary>
+    public double CarnotEfficiency(ThermodynamicTemperature coldReservoir)
+    {
+        return DifferenceInKelvins(coldReservoir) / Kelvin;
+    }
+
+    /// <summary>Calculates the Carnot refrigerator coefficient of performance with this hot reservoir and a colder reservoir.</summary>
+    public double CarnotRefrigeratorCoefficientOfPerformance(ThermodynamicTemperature coldReservoir)
+    {
+        return coldReservoir.Kelvin / DifferenceInKelvins(coldReservoir);
+    }
+
+    /// <summary>Calculates the Carnot heat pump coefficient of performance with this hot reservoir and a colder reservoir.</summary>
+    public double CarnotHeatPumpCoefficientOfPerformance(ThermodynamicTemperature coldReservoir)
+    {
+        return Kelvin / DifferenceInKelvins(coldReservoir);
+    }
+
+    /// <summary>Calculates this body's temperature after lumped heating or cooling against constant surroundings.</summary>
+    /// <remarks>Use constant, positive thermal resistance and heat capacity, negligible internal temperature gradients, and nonnegative elapsed time.</remarks>
+    public ThermodynamicTemperature AfterLumpedHeatTransfer(
+        ThermodynamicTemperature surroundings, ThermalResistance resistance, HeatCapacity heatCapacity, Time elapsed)
+    {
+        var decay = Math.Exp(-elapsed.Value / (resistance * heatCapacity).Value);
+        return surroundings.AddKelvins(DifferenceInKelvins(surroundings) * decay);
+    }
+
     /// <summary>Returns this absolute temperature minus the reference temperature, in kelvins.</summary>
     public double DifferenceInKelvins(ThermodynamicTemperature reference)
     {
@@ -767,6 +878,18 @@ public readonly partial struct HeatCapacity
 
 public readonly partial struct CoefficientOfHeatTransfer
 {
+    /// <summary>Calculates the Biot number using this surface coefficient and the solid's characteristic length and conductivity.</summary>
+    public double BiotNumber(Length characteristicLength, ThermalConductivity solidConductivity)
+    {
+        return Value * characteristicLength.Value / solidConductivity.Value;
+    }
+
+    /// <summary>Calculates the Nusselt number using this convection coefficient and the fluid's characteristic length and conductivity.</summary>
+    public double NusseltNumber(Length characteristicLength, ThermalConductivity fluidConductivity)
+    {
+        return Value * characteristicLength.Value / fluidConductivity.Value;
+    }
+
     /// <summary>Calculates heat flux from the signed driving temperature difference in kelvins.</summary>
     public HeatFlowRatePerArea HeatFluxForTemperatureChange(double deltaKelvins)
     {
@@ -776,6 +899,34 @@ public readonly partial struct CoefficientOfHeatTransfer
 
 public readonly partial struct ThermalResistance
 {
+    /// <summary>Calculates steady radial conduction resistance of a homogeneous cylindrical shell with constant conductivity.</summary>
+    public static ThermalResistance FromCylindricalConduction(
+        ThermalConductivity conductivity, Length innerRadius, Length outerRadius, Length axialLength)
+    {
+        return (ThermalResistance)(Math.Log(outerRadius / innerRadius) / ((2d * Math.PI) * conductivity.Value * axialLength.Value));
+    }
+
+    /// <summary>Calculates steady radial conduction resistance of a homogeneous spherical shell with constant conductivity.</summary>
+    public static ThermalResistance FromSphericalConduction(ThermalConductivity conductivity, Length innerRadius, Length outerRadius)
+    {
+        var inverseRadiusDifference = (outerRadius.Value - innerRadius.Value) / outerRadius.Value / innerRadius.Value;
+        return (ThermalResistance)(inverseRadiusDifference / ((4d * Math.PI) * conductivity.Value));
+    }
+
+    /// <summary>Calculates equivalent resistance for two thermal paths in series, with the same heat flow through both.</summary>
+    public ThermalResistance InSeriesWith(ThermalResistance other)
+    {
+        return (ThermalResistance)(Value + other.Value);
+    }
+
+    /// <summary>Calculates equivalent resistance for two positive thermal resistances between the same temperature nodes.</summary>
+    public ThermalResistance InParallelWith(ThermalResistance other)
+    {
+        var smaller = Math.Min(Value, other.Value);
+        var larger = Math.Max(Value, other.Value);
+        return (ThermalResistance)(smaller / (1d + smaller / larger));
+    }
+
     /// <summary>Calculates the signed heat-flow rate from the driving temperature difference in kelvins.</summary>
     public HeatFlowRate HeatFlowForTemperatureChange(double deltaKelvins)
     {
@@ -798,6 +949,15 @@ public readonly partial struct ThermalResistance
     public static ThermalResistance FromHeatTransferCoefficient(CoefficientOfHeatTransfer coefficient, Area area)
     {
         return (ThermalResistance)(1d / (coefficient.Value * area.Value));
+    }
+}
+
+public readonly partial struct ThermalDiffusivity
+{
+    /// <summary>Calculates the Fourier number for this thermal diffusivity, elapsed time, and positive characteristic length.</summary>
+    public double FourierNumber(Time elapsed, Length characteristicLength)
+    {
+        return Value * elapsed.Value / (characteristicLength * characteristicLength).Value;
     }
 }
 

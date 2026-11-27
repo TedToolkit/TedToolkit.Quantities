@@ -77,7 +77,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **172 physical formulas**. Swapped products, solved forms, and typed variants
+The inventory lists **197 physical formulas**. Swapped products, solved forms, and typed variants
 share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
 
@@ -171,6 +171,15 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| Δp = fᴅ(ℓ / Dₕ)ρv² / 2 | `ForcePerArea` | Friction loss in fully developed, constant-density flow through a straight duct of uniform section. Use the Darcy factor, the mean speed and the hydraulic diameter. Supported methods include `ForcePerArea.FromDarcyWeisbach`. | [USBR friction head loss][usbr-friction] · [NMSU pipe flow manual][nmsu-pipe-networks] |
+| fᴅ = 64 / Reᴅ | `double` | Fully developed laminar flow of a Newtonian fluid in a circular pipe. Use Reynolds number based on pipe diameter and positive mean speed. Also follows by substituting the Poiseuille flow into Darcy–Weisbach. Supported methods include `LinearVelocity.DarcyFrictionFactorForLaminarPipe`. | [NMSU pipe flow manual][nmsu-pipe-networks] · [OpenStax viscosity and laminar flow][openstax-viscosity] |
+| Dₕ = 4A / Pwet | `Length` | Use the flow cross section and its positive wetted perimeter. The result is four times the hydraulic radius. Supported methods include `Length.HydraulicDiameter`. | [USBR friction head loss][usbr-friction] · [NMSU pipe flow manual][nmsu-pipe-networks] |
+| Fr = v / √(gD) | `double` | Open-channel flow. Use mean speed magnitude and hydraulic depth D, equal to flow area divided by the free-surface width. Supported methods include `LinearVelocity.FroudeNumber`. | [USBR Froude number][usbr-froude] · [MIT surface gravity waves][mit-surface-gravity-waves] |
+| D = 6πμrv | `Force` | Magnitude of Stokes drag on an isolated rigid sphere without slip in unbounded Newtonian fluid, at Reynolds number much smaller than one. Supported methods include `Force.FromStokesDrag`. | [OpenStax drag and terminal speed][openstax-stokes-drag] |
+| vₜ = 2(ρₛ − ρf)gr² / (9μ) | `LinearVelocity` | Terminal settling or rise of an isolated rigid sphere in an unbounded Newtonian fluid in the Stokes regime. The result is positive downward. Supported methods include `LinearVelocity.StokesTerminalVelocity`. | [UC San Diego Stokes settling][ucsd-stokes-settling] |
+| pinside − poutside = 2σ / r | `ForcePerArea` | Pressure jump across one spherical interface of positive radius r and uniform surface tension σ. Supported methods include `ForcePerArea.FromSphericalSurfaceTension`. | [MIT interfacial pressure][mit-interfacial-pressure] |
+| h = 2σ cos θ / (ρgr) | `Length` | Equilibrium in a vertical circular capillary of internal radius r with negligible gas density. Measure contact angle through the liquid. Negative height represents depression. Supported methods include `Length.CapillaryRise`. | [OpenStax capillary action][openstax-capillary-action] |
+| We = ρv²ℓ / σ | `double` | Use fluid density, relative speed, representative length and positive surface tension for the same flow. Supported methods include `LinearVelocity.WeberNumber`. | [MIT Weber number][mit-weber] |
 | Ma = v / c | `double` | Use the flow speed magnitude relative to the body and the speed of sound at the relevant local fluid state. Supported methods include `LinearVelocity.MachNumber`. | [NACA compressible flow report][naca-compressible-flow] |
 | D = ½ρv²CᴅA | `Force` | Drag magnitude. Use a nonnegative drag coefficient and the reference area used to define it at the specified flow condition. Supported methods include `Force.FromDrag`. | [NASA drag equation][nasa-drag] |
 | L = ½ρv²CʟA | `Force` | Signed lift along the convention used for the lift coefficient. Use its reference area and the specified flow condition. Supported methods include `Force.FromLift`. | [NASA lift equation][nasa-lift] |
@@ -242,6 +251,22 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| γ = cₚ / cᵥ | `double` | Use specific heats at constant pressure and constant volume for the same gas state. | [NASA specific heat ratio][nasa-specific-heat-ratio] |
+| p₂ = p₁(V₁ / V₂)ᵞ | `ForcePerArea` | Fixed amount of calorically perfect ideal gas undergoing reversible adiabatic compression or expansion. Use absolute pressure, positive volumes and constant heat capacity ratio γ. Supported methods include `ForcePerArea.AfterIsentropicVolumeChange`. | [NASA isentropic compression and expansion][nasa-isentropic-compression] |
+| T₂ = T₁(V₁ / V₂)^(γ − 1) | `ThermodynamicTemperature` | Same reversible adiabatic model with absolute temperatures and positive volumes. Supported methods include `ThermodynamicTemperature.AfterIsentropicVolumeChange`. | [NASA isentropic compression and expansion][nasa-isentropic-compression] |
+| η = Wnet / Qhot | `double` | Net work delivered and positive heat absorbed from the hot reservoir over the same engine cycle. Supported methods include `Energy.HeatEngineEfficiency`. | [OpenStax heat engines][openstax-heat-engines] |
+| ηCarnot = 1 − Tcold / Thot | `double` | Reversible engine between two reservoirs at positive absolute temperatures, with the hot reservoir warmer. Supported methods include `ThermodynamicTemperature.CarnotEfficiency`. | [OpenStax Carnot cycle][openstax-carnot] |
+| COPcool = Tcold / (Thot − Tcold) | `double` | Reversible refrigerator between the given positive absolute temperatures. The numerator uses the cold reservoir. Supported methods include `ThermodynamicTemperature.CarnotRefrigeratorCoefficientOfPerformance`. | [OpenStax Carnot cycle][openstax-carnot] |
+| COPheat = Thot / (Thot − Tcold) | `double` | Reversible heat pump between the given positive absolute temperatures. The numerator uses the hot reservoir. Supported methods include `ThermodynamicTemperature.CarnotHeatPumpCoefficientOfPerformance`. | [OpenStax Carnot cycle][openstax-carnot] |
+| τ = RₜC | `HeatCapacity`, `ThermalResistance`, `Time` | Single thermal lump with positive constant thermal resistance and heat capacity. For convection, Rₜ = 1/(hA). | [Michigan Tech lumped heat transfer][michigan-tech-lumped-heat] |
+| T(t) = T∞ + (T₀ − T∞) exp(−t/τ) | `ThermodynamicTemperature` | Lumped body with negligible internal temperature gradients. Use constant surroundings, positive constant Rₜ and C, and nonnegative time t. Supported methods include `ThermodynamicTemperature.AfterLumpedHeatTransfer`. | [Michigan Tech lumped heat transfer][michigan-tech-lumped-heat] |
+| Rₜ = ln(rₒ/rᵢ) / (2πkℓ) | `ThermalResistance` | Steady radial conduction through a homogeneous cylindrical shell of axial length ℓ, constant positive conductivity k and outer radius larger than the positive inner radius. Neglect end effects. Supported methods include `ThermalResistance.FromCylindricalConduction`. | [Princeton thermal resistance notes, §§8.7–8.8][princeton-thermal-resistance] |
+| Rₜ = (1/rᵢ − 1/rₒ) / (4πk) | `ThermalResistance` | Steady radial conduction through a concentric spherical shell with constant positive conductivity and outer radius larger than the positive inner radius. Supported methods include `ThermalResistance.FromSphericalConduction`. | [Princeton thermal resistance notes, §§8.7–8.8][princeton-thermal-resistance] |
+| Rseries = R₁ + R₂ | `ThermalResistance` | Series thermal paths with the same rate of heat transfer through each resistance. Supported methods include `ThermalResistance.InSeriesWith`. | [Princeton thermal resistance notes, §§8.7–8.8][princeton-thermal-resistance] |
+| 1 / Rparallel = 1 / R₁ + 1 / R₂ | `ThermalResistance` | Two positive thermal resistances connecting the same pair of temperature nodes. Supported methods include `ThermalResistance.InParallelWith`. | [Princeton thermal resistance notes, §§8.7–8.8][princeton-thermal-resistance] |
+| Bi = hℓ / ksolid, Nu = hℓ / kfluid | `double` | Use the solid characteristic length and conductivity for Biot. Use the fluid conductivity and length associated with the convection problem for Nusselt. Supported methods include `CoefficientOfHeatTransfer.BiotNumber` and `CoefficientOfHeatTransfer.NusseltNumber`. | [MIT heat and mass transfer dimensionless numbers][mit-transport-numbers] |
+| Pr = ν / α | `double` | Use kinematic viscosity and thermal diffusivity for the same fluid state. | [MIT heat and mass transfer dimensionless numbers][mit-transport-numbers] |
+| Fo = αt / ℓ² | `double` | Use thermal diffusivity, elapsed diffusion time and the positive characteristic length for the same body. Supported methods include `ThermalDiffusivity.FourierNumber`. | [MIT heat and mass transfer dimensionless numbers][mit-transport-numbers] |
 | q″ = εσ(Tₛ⁴ − Tₑ⁴) | `HeatFlowRatePerArea` | Net outward flux from a grey surface surrounded by a large black isothermal enclosure. Use absolute temperatures, emissivity from zero to one, and a supplied Stefan–Boltzmann constant. Supported methods include `HeatFlowRatePerArea.FromThermalRadiation`. | [OpenStax radiative heat transfer][openstax-radiative-heat-transfer] |
 | p₂ = p₁(V₁ / V₂)(T₂ / T₁) | `ForcePerArea` | Two equilibrium states of a fixed amount of ideal gas. Use absolute pressures and absolute temperatures. Supported methods include `ForcePerArea.AfterIdealGasStateChange`. | [OpenStax ideal gas law][openstax-ideal-gas-law] |
 | R″ = ARₜ | `Area`, `ThermalInsulance`, `ThermalResistance` | Relate total thermal resistance to area-normalized resistance for the same uniform surface. | [OpenStax heat and conduction][openstax-heat-and-conduction] · [QUDT heat-transfer coefficient][qudt-heat-transfer-coefficient] |
@@ -381,6 +406,21 @@ Update the corresponding row when changing a formula's coverage.
 - [OpenStax speed of sound][openstax-speed-of-sound]
 - [OpenStax standing waves][openstax-standing-waves]
 - [OpenStax wave speed on a string][openstax-stretched-string]
+- [USBR friction head loss][usbr-friction]
+- [USBR Froude number][usbr-froude]
+- [NMSU pipe flow manual][nmsu-pipe-networks]
+- [OpenStax drag and terminal speed][openstax-stokes-drag]
+- [UC San Diego Stokes settling][ucsd-stokes-settling]
+- [MIT interfacial pressure][mit-interfacial-pressure]
+- [MIT Weber number][mit-weber]
+- [OpenStax capillary action][openstax-capillary-action]
+- [NASA isentropic compression and expansion][nasa-isentropic-compression]
+- [NASA specific heat ratio][nasa-specific-heat-ratio]
+- [OpenStax Carnot cycle][openstax-carnot]
+- [OpenStax heat engines][openstax-heat-engines]
+- [Princeton thermal resistance notes, §§8.7–8.8][princeton-thermal-resistance]
+- [Michigan Tech lumped heat transfer][michigan-tech-lumped-heat]
+- [MIT heat and mass transfer dimensionless numbers][mit-transport-numbers]
 
 [bipm-si-brochure]: https://www.bipm.org/en/publications/si-brochure
 [bipm-katal-resolution]: https://www.bipm.org/en/-/resolution-cgpm-21-12
@@ -468,3 +508,18 @@ Update the corresponding row when changing a formula's coverage.
 [openstax-speed-of-sound]: https://openstax.org/books/university-physics-volume-1/pages/17-2-speed-of-sound
 [openstax-standing-waves]: https://openstax.org/books/university-physics-volume-1/pages/16-6-standing-waves-and-resonance
 [openstax-stretched-string]: https://openstax.org/books/university-physics-volume-1/pages/16-3-wave-speed-on-a-stretched-string
+[usbr-friction]: https://www.usbr.gov/tsc/techreferences/mands/wmm/chap02_16.html
+[usbr-froude]: https://www.usbr.gov/tsc/techreferences/mands/wmm/chap02_12.html
+[nmsu-pipe-networks]: https://nmwrri.nmsu.edu/footer_pages/nm-wrri-library-database-files/wrri-library-pdfs/wrrilibrary7/007529.pdf
+[openstax-stokes-drag]: https://openstax.org/books/university-physics-volume-1/pages/6-4-drag-force-and-terminal-speed
+[ucsd-stokes-settling]: https://igppweb.ucsd.edu/~guy/sio224/Stokes.pdf
+[mit-interfacial-pressure]: https://web.mit.edu/fluids-modules/www/potential_flows/LecturesHTML/lec04/lecture4.html
+[mit-weber]: https://web.mit.edu/fluids-modules/www/potential_flows/LecturesHTML/lec06/lecture6.html
+[openstax-capillary-action]: https://openstax.org/books/college-physics-2e/pages/11-8-cohesion-and-adhesion-in-liquids-surface-tension-and-capillary-action
+[nasa-isentropic-compression]: https://www.grc.nasa.gov/www/k-12/airplane/compexp.html
+[nasa-specific-heat-ratio]: https://www.grc.nasa.gov/www/k-12/airplane/isndrv.html
+[openstax-carnot]: https://openstax.org/books/university-physics-volume-2/pages/4-5-the-carnot-cycle
+[openstax-heat-engines]: https://openstax.org/books/university-physics-volume-2/pages/4-2-heat-engines
+[princeton-thermal-resistance]: https://rosenreview.cbe.princeton.edu/sites/g/files/toruqf6461/files/documents/Transport_I_12_14_0.pdf
+[michigan-tech-lumped-heat]: https://pages.mtu.edu/~fmorriso/cm3120/lectures/2021_CM3120_module2_6blectureV.pdf
+[mit-transport-numbers]: https://ocw.mit.edu/courses/3-185-transport-phenomena-in-materials-engineering-fall-2003/a55c74dc21def01fc0054de35574d1e5_3_21.pdf

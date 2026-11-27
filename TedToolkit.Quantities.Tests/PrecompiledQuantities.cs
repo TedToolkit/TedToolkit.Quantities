@@ -46,8 +46,10 @@ internal static class PrecompiledQuantities
 
         VerifyMechanicsAndFlow();
         VerifyWaves();
+        VerifyFluidTransport();
         VerifyElectromagnetism();
         VerifyHeatTransfer();
+        VerifyThermodynamicProcesses();
         VerifyLightChemistryAndDose();
         VerifyQuantityConversions();
 
@@ -255,6 +257,35 @@ internal static class PrecompiledQuantities
         Close(2, Q.LinearVelocity.FromShallowWaterGravityWave(gravity, Q.Length.FromMillimetre(400)).MetrePerSecond);
     }
 
+    private static void VerifyFluidTransport()
+    {
+        var density = (Q.Density)500d;
+        var gravity = (Q.LinearAcceleration)10d;
+        var speed = Q.LinearVelocity.FromMetrePerSecond(3);
+        var diameter = Q.Length.HydraulicDiameter(Q.Area.FromSquareMetre(0.5), Q.Length.FromMetre(2));
+        Close(1, diameter.Metre);
+        Close(900, Q.ForcePerArea.FromDarcyWeisbach(density, speed, Q.Length.FromMetre(10), diameter, 0.04).Pascal);
+        Close(0.64, Q.LinearVelocity.FromMetrePerSecond(0.004).DarcyFrictionFactorForLaminarPipe(
+            Q.Length.FromMillimetre(100), (Q.KinematicViscosity)4e-6));
+        Close(1.5, speed.FroudeNumber(gravity, Q.Length.FromMillimetre(400)));
+
+        var surfaceTension = (Q.ForcePerLength)0.075d;
+        var capillaryRadius = Q.Length.FromMillimetre(10);
+        Close(15, Q.ForcePerArea.FromSphericalSurfaceTension(surfaceTension, capillaryRadius).Pascal);
+        Close(3, Q.Length.CapillaryRise(
+            surfaceTension, density, gravity, capillaryRadius, Q.PlaneAngle.FromRadian(0)).Millimetre);
+        Close(-3, Q.Length.CapillaryRise(
+            surfaceTension, density, gravity, capillaryRadius, Q.PlaneAngle.FromRadian(Math.PI)).Millimetre);
+        Close(600, speed.WeberNumber(density, capillaryRadius, surfaceTension));
+
+        var sphereRadius = Q.Length.FromMillimetre(1);
+        var viscosity = (Q.DynamicViscosity)0.1d;
+        Close(6e-6 * Math.PI, Q.Force.FromStokesDrag(
+            viscosity, sphereRadius, Q.LinearVelocity.FromMetrePerSecond(-0.01)).Newton);
+        Close(-2e-3 / 9, Q.LinearVelocity.StokesTerminalVelocity(
+            (Q.Density)490d, density, viscosity, gravity, sphereRadius).MetrePerSecond);
+    }
+
     private static void VerifyElectromagnetism()
     {
         var resistance = Q.Resistance.FromOhm(10);
@@ -398,6 +429,47 @@ internal static class PrecompiledQuantities
         Close(6, deposited.Joule);
         Close(2, perMass.Value);
         Close(2, Q.AbsorbedDose.FromDepositedEnergy(deposited, Q.Mass.FromKilogram(3)).Gray);
+    }
+
+    private static void VerifyThermodynamicProcesses()
+    {
+        var hot = Q.ThermodynamicTemperature.FromKelvin(300);
+        var cold = Q.ThermodynamicTemperature.FromKelvin(200);
+        var gamma = (Q.SpecificHeatPressure)1000d / (Q.SpecificHeatVolume)500d;
+        Close(2, gamma);
+        var initialVolume = Q.Volume.FromLitre(2);
+        var finalVolume = Q.Volume.FromLitre(1);
+        Close(400000, Q.ForcePerArea.FromPascal(100000).AfterIsentropicVolumeChange(
+            initialVolume, finalVolume, gamma).Pascal);
+        Close(600, hot.AfterIsentropicVolumeChange(initialVolume, finalVolume, gamma).Kelvin);
+        Close(0.4, Q.Energy.FromJoule(40).HeatEngineEfficiency(Q.Energy.FromJoule(100)));
+        Close(1d / 3, hot.CarnotEfficiency(cold));
+        Close(2, hot.CarnotRefrigeratorCoefficientOfPerformance(cold));
+        Close(3, hot.CarnotHeatPumpCoefficientOfPerformance(cold));
+
+        var resistance = (Q.ThermalResistance)0.2d;
+        var capacity = (Q.HeatCapacity)10d;
+        Q.Time timeConstant = capacity * resistance;
+        Close(2, timeConstant.Second);
+        Close(10, (timeConstant / resistance).Value);
+        Close(0.2, (timeConstant / capacity).Value);
+        Close(200 + 100 / Math.E, hot.AfterLumpedHeatTransfer(cold, resistance, capacity, Q.Time.FromSecond(2)).Kelvin);
+        Close(0.5, resistance.InSeriesWith((Q.ThermalResistance)0.3d).Value);
+        Close(0.12, resistance.InParallelWith((Q.ThermalResistance)0.3d).Value);
+
+        var conductivity = (Q.ThermalConductivity)2d;
+        var innerRadius = Q.Length.FromMillimetre(500);
+        var outerRadius = Q.Length.FromMetre(1);
+        Close(Math.Log(2) / (4 * Math.PI), Q.ThermalResistance.FromCylindricalConduction(
+            conductivity, innerRadius, outerRadius, Q.Length.FromMetre(1)).Value);
+        Close(1 / (8 * Math.PI), Q.ThermalResistance.FromSphericalConduction(conductivity, innerRadius, outerRadius).Value);
+        var convection = (Q.CoefficientOfHeatTransfer)5d;
+        var characteristicLength = Q.Length.FromMillimetre(100);
+        Close(0.25, convection.BiotNumber(characteristicLength, conductivity));
+        Close(1, convection.NusseltNumber(characteristicLength, (Q.ThermalConductivity)0.5d));
+        var diffusivity = (Q.ThermalDiffusivity)0.1d;
+        Close(2, (Q.KinematicViscosity)0.2d / diffusivity);
+        Close(0.8, diffusivity.FourierNumber(Q.Time.FromSecond(2), innerRadius));
     }
 
     private static void Close(double expected, double actual)
