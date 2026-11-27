@@ -466,9 +466,6 @@ public readonly partial struct ThermalResistance;
 [QuantityOperator<Time, HeatCapacity, ThermalResistance>(Operator.DIVIDE)]
 public readonly partial struct Time;
 
-[QuantityOperator<SpecificHeatPressure, SpecificHeatVolume, double>(Operator.DIVIDE)]
-public readonly partial struct SpecificHeatPressure;
-
 [QuantityOperator<ThermalInsulance, ThermalResistance, Area>(Operator.DIVIDE)]
 [QuantityOperator<ThermalInsulance, Area, ThermalResistance>(Operator.DIVIDE)]
 public readonly partial struct ThermalInsulance;

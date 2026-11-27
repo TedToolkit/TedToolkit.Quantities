@@ -435,7 +435,7 @@ internal static class PrecompiledQuantities
     {
         var hot = Q.ThermodynamicTemperature.FromKelvin(300);
         var cold = Q.ThermodynamicTemperature.FromKelvin(200);
-        var gamma = (Q.SpecificHeatPressure)1000d / (Q.SpecificHeatVolume)500d;
+        var gamma = Q.SpecificHeatCapacity.HeatCapacityRatio((Q.SpecificHeatCapacity)1000d, (Q.SpecificHeatCapacity)500d);
         Close(2, gamma);
         var initialVolume = Q.Volume.FromLitre(2);
         var finalVolume = Q.Volume.FromLitre(1);

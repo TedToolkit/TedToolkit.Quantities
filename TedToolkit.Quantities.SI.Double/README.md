@@ -251,7 +251,7 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
-| γ = cₚ / cᵥ | `double` | Use specific heats at constant pressure and constant volume for the same gas state. | [NASA specific heat ratio][nasa-specific-heat-ratio] |
+| γ = cₚ / cᵥ | `double` | Use two `SpecificHeatCapacity` inputs with units of J/(kg·K), measured at constant pressure and constant volume for the same gas state. Supported methods include `SpecificHeatCapacity.HeatCapacityRatio`. | [NASA specific heat ratio][nasa-specific-heat-ratio] |
 | p₂ = p₁(V₁ / V₂)ᵞ | `ForcePerArea` | Fixed amount of calorically perfect ideal gas undergoing reversible adiabatic compression or expansion. Use absolute pressure, positive volumes and constant heat capacity ratio γ. Supported methods include `ForcePerArea.AfterIsentropicVolumeChange`. | [NASA isentropic compression and expansion][nasa-isentropic-compression] |
 | T₂ = T₁(V₁ / V₂)^(γ − 1) | `ThermodynamicTemperature` | Same reversible adiabatic model with absolute temperatures and positive volumes. Supported methods include `ThermodynamicTemperature.AfterIsentropicVolumeChange`. | [NASA isentropic compression and expansion][nasa-isentropic-compression] |
 | η = Wnet / Qhot | `double` | Net work delivered and positive heat absorbed from the hot reservoir over the same engine cycle. Supported methods include `Energy.HeatEngineEfficiency`. | [OpenStax heat engines][openstax-heat-engines] |

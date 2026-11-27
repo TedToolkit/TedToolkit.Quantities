@@ -861,6 +861,16 @@ public readonly partial struct ThermodynamicTemperature
     }
 }
 
+public readonly partial struct SpecificHeatCapacity
+{
+    /// <summary>Calculates the ratio of specific heat at constant pressure to specific heat at constant volume.</summary>
+    /// <remarks>Both mass-specific heat capacities must refer to the same gas state.</remarks>
+    public static double HeatCapacityRatio(SpecificHeatCapacity atConstantPressure, SpecificHeatCapacity atConstantVolume)
+    {
+        return atConstantPressure.Value / atConstantVolume.Value;
+    }
+}
+
 public readonly partial struct HeatCapacity
 {
     /// <summary>Calculates sensible heat for a signed temperature change in kelvins at constant or average heat capacity.</summary>
