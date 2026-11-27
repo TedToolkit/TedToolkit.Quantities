@@ -4,18 +4,10 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net7.0</TargetFrameworks>
     <Description>Precompiled double-precision quantities for the QUDT SI quantity system.</Description>
-    <AdditionalQudtQuantities>DimensionlessRatio TemperatureDifference ThermodynamicTemperature:DEGC Pressure Conductance Resistivity TemperatureGradient Width Height Depth Radius Diameter Distance Wavelength PathLength Impulse ThermalConductance ReynoldsNumber</AdditionalQudtQuantities>
-    <SiBuildTool>Build/bin/$(Configuration)/net11.0/TedToolkit.Quantities.SI.Double.Build.dll</SiBuildTool>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net7.0'">
-    <CheckFormulaReadme Condition="'$(CheckFormulaReadme)' == '' and '$(GITHUB_ACTIONS)' == 'true'">true</CheckFormulaReadme>
-    <FormulaReadmeMode Condition="'$(CheckFormulaReadme)' == 'true'">check</FormulaReadmeMode>
-    <FormulaReadmeMode Condition="'$(FormulaReadmeMode)' == ''">update</FormulaReadmeMode>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Build/**/*.cs"/>
+    <AdditionalFiles Include="QuantityUnits.json"/>
     <ProjectReference Include="../TedToolkit.Quantities/TedToolkit.Quantities.csproj"/>
     <ProjectReference Include="../TedToolkit.Quantities.Analyzer/TedToolkit.Quantities.Analyzer.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all"/>
@@ -25,32 +17,5 @@
     <Analyzer Include="../TedToolkit.Quantities.Analyzer/bin/$(Configuration)/netstandard2.0/Numbers.dll"/>
     <Analyzer Include="../TedToolkit.Quantities.Analyzer/bin/$(Configuration)/netstandard2.0/System.Memory.dll"/>
     <Analyzer Include="../TedToolkit.Quantities.Analyzer/bin/$(Configuration)/netstandard2.0/Newtonsoft.Json.dll"/>
-    <ProjectReference Include="Build/TedToolkit.Quantities.SI.Double.Build.csproj"
-                      ReferenceOutputAssembly="false" PrivateAssets="all" SkipGetTargetFrameworkProperties="true"
-                      GlobalPropertiesToRemove="TargetFramework;RuntimeIdentifier;SelfContained"/>
   </ItemGroup>
-
-  <Target Name="GenerateQudtCatalog" BeforeTargets="CoreCompile">
-    <PropertyGroup>
-      <QudtCatalogDirectory>../TedToolkit.Quantities.Analyzer/QUDT</QudtCatalogDirectory>
-      <QudtCatalog>$(IntermediateOutputPath)Quantity.SI.Catalog.json</QudtCatalog>
-    </PropertyGroup>
-    <MakeDir Directories="$(IntermediateOutputPath)" Condition="'$(DesignTimeBuild)' != 'true'"/>
-    <Exec WorkingDirectory="$(MSBuildProjectDirectory)" Condition="'$(DesignTimeBuild)' != 'true'"
-          Command="dotnet &quot;$(SiBuildTool)&quot; --quantity-catalog &quot;$(QudtCatalogDirectory)/SI.json&quot; &quot;$(QudtCatalogDirectory)/ALL.json&quot; &quot;$(QudtCatalog)&quot; $(AdditionalQudtQuantities)"/>
-    <ItemGroup>
-      <AdditionalFiles Include="$(QudtCatalog)" Condition="Exists('$(QudtCatalog)')"/>
-    </ItemGroup>
-  </Target>
-
-  <Target Name="GenerateFormulaReadme" AfterTargets="CoreCompile"
-          Condition="'$(TargetFramework)' == 'net7.0' and '$(DesignTimeBuild)' != 'true'">
-    <PropertyGroup>
-      <FormulaSourceList>$(IntermediateOutputPath)FormulaSources.txt</FormulaSourceList>
-    </PropertyGroup>
-    <WriteLinesToFile File="$(FormulaSourceList)" Lines="@(Compile->'%(FullPath)')"
-                      Overwrite="true" WriteOnlyWhenDifferent="true"/>
-    <Exec WorkingDirectory="$(MSBuildProjectDirectory)"
-          Command="dotnet &quot;$(SiBuildTool)&quot; --formula-readme &quot;$(MSBuildProjectDirectory)&quot; &quot;$(QudtCatalog)&quot; &quot;$(FormulaSourceList)&quot; $(FormulaReadmeMode)"/>
-  </Target>
 </Project>

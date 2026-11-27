@@ -1,8 +1,9 @@
 # TedToolkit.Quantities.SI.Double
 
-Precompiled double-precision quantity types from the repository's QUDT SI catalog, with additional
-QUDT kinds for typed formulas and conversions, such as `Pressure` and `ThermalConductance`. It targets .NET
-Standard 2.0 and .NET 7, matching the base library's generic math interface on .NET 7 and later.
+Precompiled double-precision quantities and typed formulas using the existing
+`TedToolkit.Quantities` package. [AssemblyInfo.cs](AssemblyInfo.cs) selects all 150 quantity kinds
+in the repository's QUDT SI catalog and additional kinds used by the formulas, such as
+`Pressure` and `ThermalConductance`. The package targets .NET Standard 2.0 and .NET 7.
 
 ```sh
 dotnet add package TedToolkit.Quantities.SI.Double
@@ -21,13 +22,12 @@ Console.WriteLine(speed.MillimetrePerMinute); // 1200
 Quantities are stored in coherent SI units. `Length.Value` is in metres, regardless of the unit used
 to construct it. Use named factories and unit accessors such as `FromMillimetre`, `Millimetre`, or
 `As(LengthUnit.Millimetre)` at API boundaries. Explicit casts to or from `double` use the coherent
-value. The `None` member of each unit enum also selects the coherent unit, including quantities that
-have no named unit in the catalog. Equality and ordering follow the base library's `Tolerance` rules.
-Unit conversions are generated from the multipliers and offsets in the QUDT data. A unit is exposed
-when those parameters describe an invertible affine conversion.
+value. Use `Value` for quantities without named units. Equality and ordering follow the base
+library's `Tolerance` rules. Unit availability and conversions follow the QUDT data used by
+the base generator.
 
-The cross-quantity operators are declared in [QuantityRelations.cs](QuantityRelations.cs). The
-generator checks the SI exponents of every declared relation. The operators use scalar values,
+The cross-quantity operators are implemented in [QuantityRelations.cs](QuantityRelations.cs).
+The operators use scalar values,
 including aligned, normal, projected, and averaged components as specified in the coverage list.
 Formulas that require a direction, geometry, or physical interpretation are available through
 named methods in [ContextualFormulas.cs](ContextualFormulas.cs).
@@ -39,16 +39,15 @@ reference with `TedToolkit.Quantities.SI.Double` and remove the assembly-level `
 
 ## Quantity conversions
 
-The SI package generates a conversion for each ordered pair of distinct exposed types with
+The SI package defines a conversion for each ordered pair of distinct exposed types with
 matching exponents for the seven SI base dimensions. A cast preserves the coherent SI value
 and selects the quantity kind used to interpret it. For example, `(Torque)energy` preserves the
 number. Calculating torque from a force and lever arm uses `Torque.FromPerpendicularLeverArm`.
 Likewise, `Radius.FromDiameter` calculates half the diameter of a circle and
 `AngularVelocity.FromFrequency` computes the angular velocity for one revolution per cycle.
 
-`[QuantityImplicitlyConvertsTo<TTarget>]` in [QuantityWidenings.cs](QuantityWidenings.cs) makes a
-validated same-dimension conversion implicit in the specific-to-general direction. The selected
-directions are:
+[QuantityConversions.cs](QuantityConversions.cs) defines the implicit and explicit casts in C#.
+The package adds the following implicit conversions from specialized to general types.
 
 | Specialized quantity | General quantity |
 | --- | --- |
@@ -66,31 +65,16 @@ Force force = weight;
 GravitationalAttraction restored = (GravitationalAttraction)force;
 ```
 
-The other same-dimension directions use explicit casts. Quantities of different dimensions
-combine through the formulas below. [C# conversion operators](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/user-defined-conversion-operators)
+The base library also supplies implicit casts between the QUDT aliases `ElectricPotential`
+and `EnergyPerElectricCharge`. The remaining same-dimension directions use explicit casts.
+Quantities of different dimensions combine through the formulas below.
+[C# conversion operators](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/user-defined-conversion-operators)
 
-## Maintaining the formula inventory
-
-The package uses `[assembly: Quantities<double>(QuantitySystems.SI)]` to select the QUDT SI catalog.
-The project supplies any additional QUDT kinds and units through the generator's `AdditionalFiles` input.
-
-Place a `// Formula domain/name` comment above the operator attribute or named method for each
-physical relation. Add `// Equation ...`, `// Applies ...`, and one `// Source [title](url)` line
-per source at that declaration. Swapped operands and solved forms inherit the formula from their
-operator family. Use a `// Formula domain/name` comment with the same ID to associate a named
-method or a different typed variant with the existing entry.
-
-The `net7.0` build updates the marked formula coverage and reference sections below. GitHub Actions
-checks that the committed README matches the attributes. The same check can run locally:
-
-```sh
-dotnet build TedToolkit.Quantities.SI.Double -c Release -f net7.0 -p:CheckFormulaReadme=true
-```
-
-<!-- BEGIN GENERATED FORMULA COVERAGE -->
 ## Formula coverage
 
-The inventory has **114 rows**. Swapped products, solved forms, and typed variants share a row. Result types include the supported operators and named calculations.
+The inventory lists **114 physical formulas**. Swapped products, solved forms, and typed variants
+share a row. Each formula's source comments record its equation, applicable conditions, and references.
+Update the corresponding row when changing a formula's coverage.
 
 ### Geometry and algebra
 
@@ -287,4 +271,3 @@ The inventory has **114 rows**. Swapped products, solved forms, and typed varian
 - [QUDT quantity definitions](https://github.com/qudt/qudt-public-repo/releases/tag/v3.5.4)
 - [QUDT thermal conductance](https://qudt.org/vocab/quantitykind/ThermalConductance)
 - [QUDT thermal resistivity](https://qudt.org/vocab/quantitykind/ThermalResistivity)
-<!-- END GENERATED FORMULA COVERAGE -->

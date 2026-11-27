@@ -86,12 +86,27 @@ internal static class Helpers
     /// <param name="fileName">file name.</param>
     /// <param name="jsons">json values.</param>
     /// <param name="quantities">quantities.</param>
-    /// <param name="catalog">The supplied catalog when the project provides one.</param>
     /// <returns>results.</returns>
-    public static DataCollection GetData(string? fileName, IEnumerable<string> jsons, string[] quantities,
-        string? catalog)
+    public static DataCollection GetData(string? fileName, IEnumerable<string> jsons, string[] quantities)
     {
-        var jObject = JObject.Parse(catalog ?? ReadEmbeddedCatalog(fileName));
+        var asm = typeof(QuantitiesGenerator).Assembly;
+
+        string? resourceName = null;
+        if (fileName is not null)
+        {
+            resourceName = asm.GetManifestResourceNames()
+                .FirstOrDefault(n => n.EndsWith(fileName + ".json", StringComparison.OrdinalIgnoreCase));
+        }
+
+        resourceName ??= asm.GetManifestResourceNames()
+            .FirstOrDefault(n => n.EndsWith("ISQ.json", StringComparison.OrdinalIgnoreCase));
+
+        JObject jObject;
+        using (var stream = asm.GetManifestResourceStream(resourceName)!)
+        using (var reader = new StreamReader(stream))
+        {
+            jObject = JObject.Parse(reader.ReadToEnd());
+        }
 
         foreach (var json in jsons)
         {
@@ -106,18 +121,6 @@ internal static class Helpers
                 .Where(QuantityPredict)
                 .ToDictionary(i => i.Key, i => i.Value),
         };
-
-        static string ReadEmbeddedCatalog(string? name)
-        {
-            var assembly = typeof(QuantitiesGenerator).Assembly;
-            var resources = assembly.GetManifestResourceNames();
-            var resource = name is null
-                ? null
-                : resources.FirstOrDefault(item => item.EndsWith(name + ".json", StringComparison.OrdinalIgnoreCase));
-            resource ??= resources.FirstOrDefault(item => item.EndsWith("ISQ.json", StringComparison.OrdinalIgnoreCase));
-            using var reader = new StreamReader(assembly.GetManifestResourceStream(resource)!);
-            return reader.ReadToEnd();
-        }
 
         bool QuantityPredict(KeyValuePair<string, Quantity> pair)
         {

@@ -23,10 +23,8 @@ internal static class PrecompiledQuantities
         Close(4, (volume / area).Metre);
         Close(2, (distance / Q.Length.FromMillimetre(300)).Value);
 
-        foreach (var unit in Enum.GetValues<Q.AmountOfSubstanceUnit>())
-        {
-            Close(2.5, Q.AmountOfSubstance.From(2.5, unit).As(unit));
-        }
+        var amount = Q.AmountOfSubstance.FromMole(2.5);
+        Close(2500, amount.Millimole);
 
         var freezing = Q.ThermodynamicTemperature.FromDegreeCelsius(0);
         var boiling = Q.ThermodynamicTemperature.FromKelvin(373.15);
@@ -36,11 +34,7 @@ internal static class PrecompiledQuantities
         Close(100, (freezing + interval).DegreeCelsius);
 
         Q.SquareEnergy squaredEnergy = Q.Energy.FromJoule(3) * Q.Energy.FromJoule(3);
-        Close(9, squaredEnergy.As(Q.SquareEnergyUnit.None));
-        if (squaredEnergy.ToString() != "9 m⁴·kg²·s⁻⁴")
-        {
-            throw new InvalidOperationException($"Unexpected coherent unit: {squaredEnergy}");
-        }
+        Close(9, squaredEnergy.Value);
 
         VerifyMechanicsAndFlow();
         VerifyElectromagnetism();

@@ -7,6 +7,8 @@
 
 using System.Collections.Immutable;
 
+using Cysharp.Text;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -124,6 +126,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
         try
         {
             var (compilations, texts) = arg;
+
             if (compilations.GetTypeByMetadataName("TedToolkit.Quantities.QuantitiesAttribute`1")
                 ?.BaseType?.FullName
                 is "System.Attribute")
@@ -132,17 +135,15 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
             }
 
             var unitAttribute = ReadUnit(compilations);
-            var tDataType = unitAttribute?.TDataType;
-            var flag = unitAttribute?.Flag ?? 0;
-            var units = unitAttribute?.Units;
+            var tDataType = unitAttribute?.TDataType!;
+            var flag = unitAttribute?.Flag!;
+            var units = unitAttribute?.Units!;
             var quantitySystem = unitAttribute?.QuantitySystem;
-            var catalog = texts.SingleOrDefault(text => quantitySystem is not null
-                && string.Equals(Path.GetFileName(text.Path), $"Quantity.{quantitySystem}.Catalog.json",
-                    StringComparison.OrdinalIgnoreCase));
+            var quantities = unitAttribute?.Quantities;
+
             var data = Helpers.GetData(quantitySystem,
-                texts.Where(text => text != catalog).Select(text => text.GetText(context.CancellationToken)!.ToString()),
-                unitAttribute?.Quantities ?? Array.Empty<string>(),
-                catalog?.GetText(context.CancellationToken)?.ToString());
+                texts.Select(t => t.GetText(context.CancellationToken)!.ToString()),
+                quantities ?? Array.Empty<string>());
 
             var unit = new UnitSystem(units, data);
             {
@@ -153,7 +154,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                 {
                     var enumGenerator = new QuantityUnitEnumGenerator(data, quantity.Value, unit);
                     enumGenerator.GenerateCode(context);
-                    if (tDataType is not null)
+                    if (unitAttribute is not null)
                     {
                         toStringExtensions = toStringExtensions.AddMember(enumGenerator.GenerateToString());
                     }
@@ -167,7 +168,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                 new QuantitiesAttributeGenerator(data).Generate(context);
             }
 
-            if (tDataType is null)
+            if (unitAttribute is null)
             {
                 return;
             }
@@ -175,17 +176,14 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
             var isPublic = (flag & 1 << 0) is 0;
             var generateMethods = (flag & 1 << 1) is not 0;
             var generateProperties = (flag & 1 << 2) is not 0;
-            var declaredQuantities = data.Quantities.Values
-                .Select(quantity => compilations.Assembly.GetTypeByMetadataName("TedToolkit.Quantities." + quantity.Name))
-                .OfType<INamedTypeSymbol>()
-                .ToDictionary(symbol => symbol.Name);
-            var hasDimensionConversions = declaredQuantities.Values.Any(QuantityStructGenerator.HasWidening);
 
             foreach (var quantity in data.Quantities)
             {
-                declaredQuantities.TryGetValue(quantity.Value.Name, out var quantitySymbol);
+                var quantitySymbol =
+                    compilations.Assembly.GetTypeByMetadataName(ZString.Concat("TedToolkit.Quantities.",
+                        quantity.Value.Name));
                 new QuantityStructGenerator(data, quantity.Value, tDataType, unit,
-                        isPublic, quantitySymbol, hasDimensionConversions)
+                        isPublic, quantitySymbol)
                     .GenerateCode(context);
             }
 
@@ -206,6 +204,7 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
 #pragma warning restore CA1031
         {
             var msg = e.GetType().Name + ": " + e.Message + "\n" + e.StackTrace;
+            context.AddSource("_ERROR", msg);
             context.ReportDiagnostic(Diagnostic.Create(
                 new DiagnosticDescriptor("ERR", msg, msg, "Error", DiagnosticSeverity.Error, true), Location.None));
         }

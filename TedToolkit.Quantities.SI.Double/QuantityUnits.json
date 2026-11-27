@@ -1,0 +1,9 @@
+{
+  "Quantities": {
+    "ThermodynamicTemperature": {
+      "Units": [
+        "DEGC"
+      ]
+    }
+  }
+}
