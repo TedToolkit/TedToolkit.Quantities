@@ -82,6 +82,7 @@ public readonly partial struct ElectricCurrent;
 [QuantityOperator<ElectricCharge, ElectricCurrent, Time>(Operator.DIVIDE)]
 public readonly partial struct ElectricCharge;
 
+[QuantityOperator<double, InverseLength, Length>(Operator.DIVIDE)]
 public readonly partial struct InverseLength;
 public readonly partial struct LinearMomentum;
 public readonly partial struct SquareEnergy;
@@ -523,6 +524,14 @@ public readonly partial struct RadiantIntensity;
 public readonly partial struct Power;
 
 // Amount of substance and radiation dose.
+
+[QuantityOperator<InverseAmountOfSubstance, AmountOfSubstance, double>(Operator.MULTIPLY)]
+[QuantityOperator<AmountOfSubstance, InverseAmountOfSubstance, double>(Operator.MULTIPLY)]
+[QuantityOperator<double, InverseAmountOfSubstance, AmountOfSubstance>(Operator.DIVIDE)]
+public readonly partial struct InverseAmountOfSubstance;
+
+[QuantityOperator<double, AmountOfSubstance, InverseAmountOfSubstance>(Operator.DIVIDE)]
+public readonly partial struct AmountOfSubstance;
 
 [QuantityOperator<Density, MolarMass, AmountOfSubstancePerVolume>(Operator.DIVIDE)]
 [QuantityOperator<Density, AmountOfSubstancePerVolume, MolarMass>(Operator.DIVIDE)]

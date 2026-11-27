@@ -289,6 +289,12 @@ public readonly partial struct Length
     {
         return screenDistance * (wavelength / slitSeparation);
     }
+
+    /// <summary>Calculates the half-value thickness for narrow-beam exponential attenuation at a fixed photon energy.</summary>
+    public static Length HalfValueThickness(InverseLength linearAttenuationCoefficient)
+    {
+        return Math.Log(2d) / linearAttenuationCoefficient;
+    }
 }
 
 public readonly partial struct Area
@@ -310,6 +316,12 @@ public readonly partial struct Area
 
 public readonly partial struct Volume
 {
+    /// <summary>Calculates the volume fraction of this component using the total component volume before mixing.</summary>
+    public double VolumeFraction(Volume totalBeforeMixing)
+    {
+        return Value / totalBeforeMixing.Value;
+    }
+
     /// <summary>Calculates the volume enclosed by a sphere of positive radius.</summary>
     public static Volume FromSphere(Length radius)
     {
@@ -1356,6 +1368,13 @@ public readonly partial struct Illuminance
 
 public readonly partial struct PowerPerArea
 {
+    /// <summary>Calculates transmitted irradiance for a narrow monoenergetic beam crossing a uniform material.</summary>
+    /// <remarks>Use the linear attenuation coefficient at the photon energy and the path length through the material.</remarks>
+    public PowerPerArea AfterExponentialAttenuation(InverseLength linearAttenuationCoefficient, Length pathLength)
+    {
+        return this * Math.Exp(-(linearAttenuationCoefficient * pathLength));
+    }
+
     /// <summary>Calculates irradiance transmitted through an ideal polarizer for linearly polarized incident light.</summary>
     /// <param name="axisAngle">Angle between the incident polarization and the transmission axis.</param>
     public PowerPerArea AfterIdealPolarizer(PlaneAngle axisAngle)
@@ -1408,10 +1427,99 @@ public readonly partial struct AbsorbedDose
 
 public readonly partial struct Activity
 {
+    /// <summary>Calculates the activity of a single radionuclide from its amount and positive half-life.</summary>
+    public static Activity FromAmountAndHalfLife(
+        AmountOfSubstance radionuclideAmount, Time halfLife, InverseAmountOfSubstance avogadroConstant)
+    {
+        return (Activity)((radionuclideAmount * avogadroConstant) * (Math.Log(2d) / halfLife.Value));
+    }
+
     /// <summary>Calculates the remaining activity of a single radionuclide after radioactive decay.</summary>
     /// <remarks>The half-life must be positive, elapsed time must be nonnegative, and the nuclide is neither replenished nor removed by other processes.</remarks>
     public Activity AfterDecay(Time elapsed, Time halfLife)
     {
         return this * Math.Pow(0.5d, elapsed.Value / halfLife.Value);
+    }
+}
+
+public readonly partial struct DoseEquivalent
+{
+    /// <summary>Calculates dose equivalent at a point from absorbed dose and its mean radiation quality factor.</summary>
+    public static DoseEquivalent FromAbsorbedDose(AbsorbedDose dose, double qualityFactor)
+    {
+        return (DoseEquivalent)(dose.Value * qualityFactor);
+    }
+}
+
+public readonly partial struct Exposure
+{
+    /// <summary>Calculates photon exposure from the total charge of ions of one sign and the mass of air.</summary>
+    /// <remarks>Use the ion charge produced when the electrons liberated by the photons are fully stopped in air.</remarks>
+    public static Exposure FromIonizationInAir(ElectricCharge ionChargeOfOneSign, Mass airMass)
+    {
+        return (Exposure)Math.Abs((ionChargeOfOneSign / airMass).Value);
+    }
+}
+
+public readonly partial struct Mass
+{
+    /// <summary>Calculates this component's mass fraction in a mixture of positive total mass.</summary>
+    public double MassFraction(Mass totalMass)
+    {
+        return Value / totalMass.Value;
+    }
+}
+
+public readonly partial struct AmountOfSubstance
+{
+    /// <summary>Calculates this component's amount fraction using the positive total amount of all mixture components.</summary>
+    public double AmountFraction(AmountOfSubstance totalAmount)
+    {
+        return Value / totalAmount.Value;
+    }
+}
+
+public readonly partial struct AmountOfSubstancePerVolume
+{
+    /// <summary>Calculates solute concentration after dilution at constant solute amount.</summary>
+    public AmountOfSubstancePerVolume AfterDilution(Volume initialSolutionVolume, Volume finalSolutionVolume)
+    {
+        return (this * initialSolutionVolume) / finalSolutionVolume;
+    }
+
+    /// <summary>Calculates the concentration of the same solute after mixing two solutions without reaction or loss.</summary>
+    /// <remarks>Use the actual positive final solution volume.</remarks>
+    public static AmountOfSubstancePerVolume FromMixing(
+        AmountOfSubstancePerVolume firstConcentration, Volume firstVolume,
+        AmountOfSubstancePerVolume secondConcentration, Volume secondVolume, Volume finalSolutionVolume)
+    {
+        var firstAmount = firstConcentration * firstVolume;
+        var secondAmount = secondConcentration * secondVolume;
+        return (AmountOfSubstance)(firstAmount.Value + secondAmount.Value) / finalSolutionVolume;
+    }
+
+    /// <summary>Calculates solute concentration from its mass fraction and molar mass and the density of the complete solution.</summary>
+    public static AmountOfSubstancePerVolume FromMassFraction(double soluteMassFraction, Density solutionDensity, MolarMass soluteMolarMass)
+    {
+        return (solutionDensity * soluteMassFraction) / soluteMolarMass;
+    }
+
+    /// <summary>Calculates amount concentration from the molality of a single solute dissolved in a solvent.</summary>
+    public static AmountOfSubstancePerVolume FromMolality(
+        AmountOfSubstancePerMass molality, Density solutionDensity, MolarMass soluteMolarMass)
+    {
+        return (AmountOfSubstancePerVolume)(molality.Value * solutionDensity.Value / (1d + molality.Value * soluteMolarMass.Value));
+    }
+}
+
+public readonly partial struct AmountOfSubstancePerMass
+{
+    /// <summary>Calculates molality from the amount concentration of a single solute dissolved in a solvent.</summary>
+    /// <remarks>The complete solution density must exceed the mass of solute per unit solution volume.</remarks>
+    public static AmountOfSubstancePerMass FromAmountConcentration(
+        AmountOfSubstancePerVolume concentration, Density solutionDensity, MolarMass soluteMolarMass)
+    {
+        var soluteDensity = concentration * soluteMolarMass;
+        return (AmountOfSubstancePerMass)(concentration.Value / (solutionDensity.Value - soluteDensity.Value));
     }
 }

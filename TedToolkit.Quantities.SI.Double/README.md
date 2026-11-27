@@ -77,7 +77,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **235 physical formulas**. Swapped products, solved forms, and typed variants
+The inventory lists **246 physical formulas**. Swapped products, solved forms, and typed variants
 share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
 
@@ -94,7 +94,7 @@ Update the corresponding row when changing a formula's coverage.
 | C = 2πr | `Length` | Circumference of a circle with positive radius. Supported methods include `Length.CircumferenceFromRadius`. | [OpenStax geometry][openstax-geometry] |
 | d = 2r | `Length` | The radius and diameter refer to the same circle. Supported methods include `Length.DiameterFromRadius`, `Length.RadiusFromDiameter`. | [OpenStax geometry][openstax-geometry] |
 | s = rθ | `Length`, `PlaneAngle` | Circular arc with a positive radius. A signed central angle gives a signed arc length. Supported methods include `PlaneAngle.FromArc`, `PlaneAngle.ToArcLength`. | [OpenStax rotational variables][openstax-rotational-variables] |
-| κ = 1 / ℓ, r = κℓ | `InverseLength`, `double` | The reciprocal requires a nonzero length. The product is one when κ and ℓ are reciprocals. | [NIST SP 811][nist-sp-811] |
+| κ = 1 / ℓ, r = κℓ | `InverseLength`, `Length`, `double` | The reciprocal requires a nonzero divisor. The product is one when κ and ℓ are reciprocals. | [NIST SP 811][nist-sp-811] |
 | Length ratio = ℓ₂ / ℓ₁ | `double` | Use a nonzero reference length. Both lengths use the same unit basis. | [QUDT quantity definitions][qudt-quantity-definitions] |
 | V = Aℓ | `Area`, `Length`, `Volume` | Prism or extrusion with uniform cross section perpendicular to its length. | [OpenStax prism volume][openstax-prism-volume] |
 | A = ab | `Area`, `Length` | Rectangular sides are perpendicular. The inverse solves for the other side. | [OpenStax area][openstax-area] |
@@ -348,6 +348,17 @@ Update the corresponding row when changing a formula's coverage.
 
 | Formula | Result types | Applicability and named entry points | Source |
 | --- | --- | --- | --- |
+| N = nNₐ | `AmountOfSubstance`, `InverseAmountOfSubstance`, `double` | Use amount of substance for the specified entities and the Avogadro constant in reciprocal moles. The count is a dimension-one scalar. | [BIPM definition of the mole][bipm-mole] |
+| A = nNₐ ln 2 / t½ | `Activity` | Single radionuclide with a positive half-life. Use its own amount and the Avogadro constant. Supported methods include `Activity.FromAmountAndHalfLife`. | [BIPM definition of the mole][bipm-mole] · [OpenStax radioactive decay][openstax-radioactive-decay] |
+| H = DQ | `DoseEquivalent` | Operational dose equivalent at a specified point. Use the absorbed dose and the mean radiation quality factor for that same point. Supported methods include `DoseEquivalent.FromAbsorbedDose`. | [IAEA operational dose quantities][iaea-dose-equivalent] |
+| X = abs(Qion) / mₐᵢᵣ | `Exposure` | Use the total charge of ions of one sign per mass of air when electrons liberated by the photons are fully stopped in air. Supported methods include `Exposure.FromIonizationInAir`. | [IAEA radiation dosimetry handbook][iaea-exposure] |
+| I = I₀ exp(−μx) | `PowerPerArea` | Narrow monoenergetic photon beam in a homogeneous material, with negligible contribution from scattered photons at the detector. Use the linear attenuation coefficient at that photon energy. Supported methods include `PowerPerArea.AfterExponentialAttenuation`. | [NIST photon attenuation][nist-photon-attenuation] |
+| x½ = ln 2 / μ | `Length` | Half-value thickness for a narrow monoenergetic beam in a homogeneous material. Use the positive linear attenuation coefficient at the photon energy. Supported methods include `Length.HalfValueThickness`. | [NIST half-value layer][nist-half-value-layer] |
+| c₂ = c₁V₁ / V₂ | `AmountOfSubstancePerVolume` | Dilution of one solute without loss or reaction. Use the initial and actual final solution volumes. Supported methods include `AmountOfSubstancePerVolume.AfterDilution`. | [OpenStax molarity and dilution][openstax-molarity] |
+| c = (c₁V₁ + c₂V₂) / Vfinal | `AmountOfSubstancePerVolume` | Mix two solutions of the same solute without loss or reaction, and use the actual final volume. Derived by adding the solute amounts from cV. Supported methods include `AmountOfSubstancePerVolume.FromMixing`. | [IUPAC amount concentration][iupac-amount-concentration] · [OpenStax molarity and dilution][openstax-molarity] |
+| wᵢ = mᵢ/m, xᵢ = nᵢ/n, φᵢ = Vᵢ/ΣVⱼ | `double` | Use the mass, amount or volume of the component and the corresponding positive total over all components. Volume fractions use each volume before mixing. Supported methods include `Mass.MassFraction`, `AmountOfSubstance.AmountFraction`, `Volume.VolumeFraction`. | [IUPAC fractions][iupac-fraction] · [IUPAC volume fraction][iupac-volume-fraction] |
+| c = wρ / M | `AmountOfSubstancePerVolume` | Use the solute mass fraction w, complete solution density ρ, and solute molar mass M. Follows from solute mass wρV and c = n/V. Supported methods include `AmountOfSubstancePerVolume.FromMassFraction`. | [IUPAC fractions][iupac-fraction] · [IUPAC amount concentration][iupac-amount-concentration] · [IUPAC molar mass][iupac-molar-mass] |
+| c = bρ / (1 + bM), b = c / (ρ − cM) | `AmountOfSubstancePerMass`, `AmountOfSubstancePerVolume` | Single solute of molar mass M in a solvent. Use total solution density ρ and positive solvent mass. Derived by subtracting solute mass from total solution mass to obtain the solvent mass. Supported methods include `AmountOfSubstancePerVolume.FromMolality`, `AmountOfSubstancePerMass.FromAmountConcentration`. | [IUPAC molality][iupac-molality] · [IUPAC amount concentration][iupac-amount-concentration] · [IUPAC molar mass][iupac-molar-mass] |
 | A(t) = A₀ × 0.5^(t / t½) | `Activity` | Single radionuclide with positive half-life, starting activity A₀ and nonnegative elapsed time. The nuclide has no other source or removal process. Supported methods include `Activity.AfterDecay`. | [OpenStax radioactive decay][openstax-radioactive-decay] |
 | D = Edeposited / m | `AbsorbedDose`, `Energy`, `Mass` | Mean energy deposited by ionizing radiation in the specified matter. Supported methods include `AbsorbedDose.FromDepositedEnergy`. | [IAEA dosimetry][iaea-dosimetry] |
 | ΔD = Ḋ̄Δt | `AbsorbedDose`, `AbsorbedDoseRate`, `Time` | Constant or interval-averaged absorbed dose rate for the same matter. | [IAEA dosimetry][iaea-dosimetry] |
@@ -482,6 +493,15 @@ Update the corresponding row when changing a formula's coverage.
 - [NIST radiometric calibration handbook][nist-cone-solid-angle]
 - [CIE photometric distance law][cie-photometric-distance]
 - [CIE basic law of radiometry and photometry][cie-basic-radiometry]
+- [BIPM definition of the mole][bipm-mole]
+- [IAEA operational dose quantities][iaea-dose-equivalent]
+- [IAEA radiation dosimetry handbook][iaea-exposure]
+- [NIST photon attenuation][nist-photon-attenuation]
+- [NIST half-value layer][nist-half-value-layer]
+- [IUPAC molality][iupac-molality]
+- [IUPAC fractions][iupac-fraction]
+- [IUPAC volume fraction][iupac-volume-fraction]
+- [OpenStax molarity and dilution][openstax-molarity]
 
 [bipm-si-brochure]: https://www.bipm.org/en/publications/si-brochure
 [bipm-katal-resolution]: https://www.bipm.org/en/-/resolution-cgpm-21-12
@@ -602,3 +622,12 @@ Update the corresponding row when changing a formula's coverage.
 [nist-cone-solid-angle]: https://nvlpubs.nist.gov/nistpubs/Legacy/hb/nisthandbook152.pdf
 [cie-photometric-distance]: https://cie.co.at/eilvterm/17-25-104
 [cie-basic-radiometry]: https://cie.co.at/eilvterm/17-25-088
+[bipm-mole]: https://www.bipm.org/en/si-base-units/mole
+[iaea-dose-equivalent]: https://nucleus.iaea.org/sites/orpnet/training/ExternalRadiation/Shared%20Documents/2_quantities%20-%20Final.pdf
+[iaea-exposure]: https://www-pub.iaea.org/mtcd/publications/pdf/pub1196_web.pdf
+[nist-photon-attenuation]: https://physics.nist.gov/PhysRefData/XrayMassCoef/chap2.html
+[nist-half-value-layer]: https://srd.nist.gov/NSRDS/NSRDS-NBS29.pdf
+[iupac-molality]: https://goldbook.iupac.org/terms/view/M03970
+[iupac-fraction]: https://goldbook.iupac.org/terms/view/F02494
+[iupac-volume-fraction]: https://goldbook.iupac.org/terms/view/V06643
+[openstax-molarity]: https://openstax.org/books/chemistry-2e/pages/3-3-molarity

@@ -53,6 +53,7 @@ internal static class PrecompiledQuantities
         VerifyThermodynamicProcesses();
         VerifyOptics();
         VerifyLightChemistryAndDose();
+        VerifyRadiationAndMixtures();
         VerifyQuantityConversions();
 
         if (typeof(Q.Length).Assembly == typeof(TedToolkit.Quantities.Length).Assembly)
@@ -577,6 +578,38 @@ internal static class PrecompiledQuantities
         var diffusivity = (Q.ThermalDiffusivity)0.1d;
         Close(2, (Q.KinematicViscosity)0.2d / diffusivity);
         Close(0.8, diffusivity.FourierNumber(Q.Time.FromSecond(2), innerRadius));
+    }
+
+    private static void VerifyRadiationAndMixtures()
+    {
+        var avogadroConstant = (Q.InverseAmountOfSubstance)6.02214076e23;
+        Q.AmountOfSubstance radionuclide = 120d / avogadroConstant;
+        Close(120, radionuclide * avogadroConstant);
+        Close(1, (120d / radionuclide).Value / avogadroConstant.Value);
+        Close(30 * Math.Log(2), Q.Activity.FromAmountAndHalfLife(radionuclide, Q.Time.FromSecond(4), avogadroConstant).Value);
+        Close(6, Q.DoseEquivalent.FromAbsorbedDose(Q.AbsorbedDose.FromGray(2), 3).Value);
+        Close(4e-6, Q.Exposure.FromIonizationInAir((Q.ElectricCharge)(-2e-6), Q.Mass.FromKilogram(0.5)).Value);
+
+        var coefficient = (Q.InverseLength)2d;
+        Close(Math.Log(2) / 2, Q.Length.HalfValueThickness(coefficient).Metre);
+        Close(5, ((Q.PowerPerArea)20d).AfterExponentialAttenuation(
+            coefficient, Q.Length.FromMillimetre(1000 * Math.Log(2))).Value);
+
+        var concentration = (Q.AmountOfSubstancePerVolume)1200d;
+        var initialVolume = Q.Volume.FromLitre(2);
+        Close(600, concentration.AfterDilution(initialVolume, Q.Volume.FromLitre(4)).Value);
+        Close(1200, Q.AmountOfSubstancePerVolume.FromMixing(
+            concentration, initialVolume, (Q.AmountOfSubstancePerVolume)600d, Q.Volume.FromLitre(1), Q.Volume.FromLitre(2.5)).Value);
+        Close(0.25, Q.Mass.FromKilogram(0.5).MassFraction(Q.Mass.FromKilogram(2)));
+        Close(1d / 3, Q.AmountOfSubstance.FromMole(2).AmountFraction(Q.AmountOfSubstance.FromMole(6)));
+        Close(0.25, Q.Volume.FromLitre(1).VolumeFraction(Q.Volume.FromLitre(4)));
+
+        var molarMass = (Q.MolarMass)0.05d;
+        Close(1000, Q.AmountOfSubstancePerVolume.FromMassFraction(0.05, (Q.Density)1000d, molarMass).Value);
+        var solutionDensity = (Q.Density)1100d;
+        var fromMolality = Q.AmountOfSubstancePerVolume.FromMolality((Q.AmountOfSubstancePerMass)2d, solutionDensity, molarMass);
+        Close(2000, fromMolality.Value);
+        Close(2, Q.AmountOfSubstancePerMass.FromAmountConcentration(fromMolality, solutionDensity, molarMass).Value);
     }
 
     private static void Close(double expected, double actual)
