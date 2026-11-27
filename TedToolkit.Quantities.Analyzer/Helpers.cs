@@ -86,8 +86,11 @@ internal static class Helpers
     /// <param name="fileName">file name.</param>
     /// <param name="jsons">json values.</param>
     /// <param name="quantities">quantities.</param>
+    /// <param name="requireCatalog">Whether the named catalog must exist.</param>
     /// <returns>results.</returns>
-    public static DataCollection GetData(string? fileName, IEnumerable<string> jsons, string[] quantities)
+    /// <exception cref="InvalidOperationException">The required QUDT catalog is missing.</exception>
+    public static DataCollection GetData(string? fileName, IEnumerable<string> jsons, string[] quantities,
+        bool requireCatalog = false)
     {
         var asm = typeof(QuantitiesGenerator).Assembly;
 
@@ -96,6 +99,12 @@ internal static class Helpers
         {
             resourceName = asm.GetManifestResourceNames()
                 .FirstOrDefault(n => n.EndsWith(fileName + ".json", StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (requireCatalog && resourceName is null)
+        {
+            throw new InvalidOperationException(
+                $"The QUDT {fileName} catalog is missing. Run TedToolkit.Quantities.Generator before building the library.");
         }
 
         resourceName ??= asm.GetManifestResourceNames()

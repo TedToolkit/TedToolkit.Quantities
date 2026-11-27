@@ -30,52 +30,36 @@ namespace TedToolkit.Quantities.Analyzer;
 /// <param name="unitSystem">unit system.</param>
 /// <param name="isPublic">is public.</param>
 /// <param name="quantitySymbol">quantity symbol.</param>
+/// <param name="generatedNamespace">The namespace of the generated quantity.</param>
+/// <param name="precompiled">Whether the quantity is part of the coherent SI library.</param>
 internal sealed class QuantityStructGenerator(
     DataCollection data,
     Quantity quantity,
     ITypeSymbol typeName,
     UnitSystem unitSystem,
     bool isPublic,
-    INamedTypeSymbol? quantitySymbol)
+    INamedTypeSymbol? quantitySymbol,
+    string generatedNamespace,
+    bool precompiled)
 {
+    private bool IsAbsoluteTemperature
+    {
+        get
+        {
+            return precompiled && quantity.Name == "ThermodynamicTemperature";
+        }
+    }
+
     private IEnumerable<Operator> CreateCustomOperators()
     {
-        if (quantitySymbol is null)
+        foreach (var (_, leftType, rightType, resultType, operatorName) in
+                 QuantityOperatorDeclaration.Read(quantitySymbol))
         {
-            yield break;
-        }
-
-        foreach (var attributeData in quantitySymbol.GetAttributes()
-                     .Where(a => a.AttributeClass is { IsGenericType: true, } attributeClass
-                                 && attributeClass.ConstructUnboundGenericType().FullName is
-                                     "TedToolkit.Quantities.QuantityOperatorAttribute<,,>"))
-        {
-            if (attributeData.ConstructorArguments.FirstOrDefault().Value is not int value)
+            if (precompiled && !MatchesDimension(operatorName, leftType, rightType, resultType))
             {
-                continue;
+                throw new InvalidOperationException(
+                    $"The declared result of {leftType.Name} {operatorName} {rightType.Name} has incompatible dimensions: {resultType.Name}.");
             }
-
-            if (value > 3)
-            {
-                continue;
-            }
-
-            var operatorName = value switch
-            {
-                0 => "+",
-                1 => "-",
-                2 => "*",
-                _ => "/",
-            };
-
-            if (attributeData.AttributeClass is not { TypeArguments.Length: > 2, } attributeClass)
-            {
-                continue;
-            }
-
-            var leftType = attributeClass.TypeArguments[0];
-            var rightType = attributeClass.TypeArguments[1];
-            var resultType = attributeClass.TypeArguments[2];
 
             var leftValue = leftType.SpecialType is SpecialType.None ? "left.Value" : "left";
             var rightValue = rightType.SpecialType is SpecialType.None ? "right.Value" : "right";
@@ -87,6 +71,107 @@ internal sealed class QuantityStructGenerator(
                 .AddStatement(leftValue.ToSimpleName().Operator(operatorName, rightValue.ToSimpleName()).Parenthesized
                     .Cast(returnType).Return);
         }
+    }
+
+    private bool MatchesDimension(string operation, ITypeSymbol left, ITypeSymbol right, ITypeSymbol result)
+    {
+        var leftDimension = GetDimension(left);
+        var rightDimension = GetDimension(right);
+        var resultDimension = GetDimension(result);
+        return operation switch
+        {
+            "+" or "-" => leftDimension == rightDimension && leftDimension == resultDimension,
+            "*" => CombinesDimensions(leftDimension, rightDimension, resultDimension),
+            "/" => CombinesDimensions(rightDimension, resultDimension, leftDimension),
+            _ => false,
+        };
+
+        Dimension GetDimension(ITypeSymbol type)
+        {
+            // QUDT's dimensionless flag is metadata. Only the seven SI exponents compose.
+            return type.SpecialType == SpecialType.System_Double
+                ? default
+                : GetSiDimension(data.Quantities[type.Name]);
+        }
+    }
+
+    private Dimension GetSiDimension(in Quantity value)
+    {
+        return data.Dimensions[value.Dimension] with { Dimensionless = 0, };
+    }
+
+    private IEnumerable<TedToolkit.RoslynHelper.Syntaxes.Conversion> CreateQuantityConversions()
+    {
+        if (!precompiled)
+        {
+            foreach (var name in quantity.ExactMatch.Where(data.Quantities.ContainsKey))
+            {
+                yield return CreateConversion(name, true);
+            }
+
+            yield break;
+        }
+
+        var dimension = GetSiDimension(quantity);
+        var wideningTargets = GetWideningTargets(dimension);
+        foreach (var target in data.Quantities.Values)
+        {
+            if (target.Name != quantity.Name && GetSiDimension(target) == dimension)
+            {
+                yield return CreateConversion(target.Name, wideningTargets.Contains(target.Name));
+            }
+        }
+
+        static TedToolkit.RoslynHelper.Syntaxes.Conversion CreateConversion(string name, bool isImplicit)
+        {
+            var target = new DataType(name);
+            return (isImplicit ? ImplicitConversionTo(target) : ExplicitConversionTo(target))
+                .AddStatement("@value.Value".ToSimpleName().Cast(target).Return);
+        }
+    }
+
+    private HashSet<string> GetWideningTargets(in Dimension dimension)
+    {
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        if (quantitySymbol is null)
+        {
+            return result;
+        }
+
+        foreach (var attribute in quantitySymbol.GetAttributes())
+        {
+            if (attribute.AttributeClass is not { IsGenericType: true, } attributeClass
+                || attributeClass.ConstructUnboundGenericType().FullName
+                    is not "TedToolkit.Quantities.QuantityImplicitlyConvertsToAttribute<>")
+            {
+                continue;
+            }
+
+            var target = attributeClass.TypeArguments[0];
+            if (target.ContainingNamespace.ToDisplayString() != generatedNamespace
+                || target.Name == quantity.Name
+                || !data.Quantities.TryGetValue(target.Name, out var targetQuantity)
+                || GetSiDimension(targetQuantity) != dimension)
+            {
+                throw new InvalidOperationException(
+                    $"Implicit conversion from {quantity.Name} to {target} must target a distinct quantity in the same SI dimension.");
+            }
+
+            result.Add(target.Name);
+        }
+
+        return result;
+    }
+
+    private static bool CombinesDimensions(in Dimension left, in Dimension right, in Dimension result)
+    {
+        return left.AmountOfSubstance + right.AmountOfSubstance == result.AmountOfSubstance
+               && left.ElectricCurrent + right.ElectricCurrent == result.ElectricCurrent
+               && left.Length + right.Length == result.Length
+               && left.LuminousIntensity + right.LuminousIntensity == result.LuminousIntensity
+               && left.Mass + right.Mass == result.Mass
+               && left.ThermodynamicTemperature + right.ThermodynamicTemperature == result.ThermodynamicTemperature
+               && left.Time + right.Time == result.Time;
     }
 
     /// <summary>
@@ -148,7 +233,10 @@ internal sealed class QuantityStructGenerator(
                     section.AddStatement("AssertValue".ToSimpleName().Invoke()
                         .AddArgument(Argument("Value".ToSimpleName())));
                     section.AddStatement(new ReturnStatement());
-                })))
+                }, section => section
+                    .AddStatement("Value = @value".ToSimpleName())
+                    .AddStatement("AssertValue(Value)".ToSimpleName())
+                    .AddStatement(new ReturnStatement()))))
             .AddMember(Method("As", new(typeType)).Public
                 .AddParameter(Parameter(new DataType(quantity.UnitName), "unit"))
                 .AddStatement(CreateSwitchStatement((info, section) =>
@@ -165,7 +253,7 @@ internal sealed class QuantityStructGenerator(
                     {
                         section.AddStatement(exp.Cast(typeType).Return);
                     }
-                })))
+                }, section => section.AddStatement("Value".ToSimpleName().Return))))
             .AddMember(Method("ToString", new(DataType.String)).Override.Public
                 .AddStatement("ToString".ToSimpleName().Invoke()
                     .AddArgument(Argument(SimpleNameExpression.Null))
@@ -176,6 +264,7 @@ internal sealed class QuantityStructGenerator(
                 .AddParameter(Parameter<IFormatProvider?>("formatProvider").AddNull())
                 .AddStatement("ToString".ToSimpleName().Invoke()
                     .AddArgument(Argument(GetSystemUnitName().ToSimpleName()))
+                    .AddArguments(precompiled ? ["format".ToSimpleName(), "formatProvider".ToSimpleName(),] : [])
                     .Return))
             .AddMember(Method("ToString", new(DataType.String)).Public
                 .AddParameter(Parameter(new DataType(quantity.UnitName), "unit"))
@@ -187,7 +276,8 @@ internal sealed class QuantityStructGenerator(
                     .ToSimpleName().Return))
             .AddMember(Method("Equals", new(DataType.Bool)).Public
                 .AddParameter(Parameter(quantityType, "other"))
-                .AddStatement("Tolerance.CurrentOrDefault.Equals(this, other)".ToSimpleName().Return))
+                .AddStatement((precompiled ? "Value.Equals(other.Value)" : "Tolerance.CurrentOrDefault.Equals(this, other)")
+                    .ToSimpleName().Return))
             .AddMember(Method("Equals", new(DataType.Bool)).Public.Override
                 .AddParameter(Parameter(DataType.Object.Null, "obj"))
                 .AddStatement(ZString.Concat("obj is ", quantity.Name, " other && Equals(other)").ToSimpleName()
@@ -196,7 +286,8 @@ internal sealed class QuantityStructGenerator(
                 .AddStatement("Value.GetHashCode()".ToSimpleName().Return))
             .AddMember(Method("CompareTo", new(DataType.Int)).Public
                 .AddParameter(Parameter(quantityType, "other"))
-                .AddStatement("Tolerance.CurrentOrDefault.Compare(this, other)".ToSimpleName().Return))
+                .AddStatement((precompiled ? "Value.CompareTo(other.Value)" : "Tolerance.CurrentOrDefault.Compare(this, other)")
+                    .ToSimpleName().Return))
             .AddMember(Method("CompareTo", new(DataType.Int)).Public
                 .AddParameter(Parameter(DataType.Object.Null, "other"))
                 .AddStatement("global::TedToolkit.Quantities.Internals.CompareTo(this, other)".ToSimpleName().Return))
@@ -256,30 +347,41 @@ internal sealed class QuantityStructGenerator(
                             .AddArgument(Argument(enumName)).Return)));
         }
 
-        structDeclaration
-            .AddMember(Operator(new(quantityType), "-")
-                .AddParameter(Parameter(quantityType, "value"))
-                .AddStatement("(-@value.Value)".ToSimpleName().Cast(quantityType).Return))
-            .AddMember(Operator(new(quantityType), "+")
-                .AddParameter(Parameter(quantityType, "left"))
-                .AddParameter(Parameter(quantityType, "right"))
-                .AddStatement("(left.Value + right.Value)".ToSimpleName().Cast(quantityType).Return))
-            .AddMember(Operator(new(quantityType), "%")
-                .AddParameter(Parameter(quantityType, "left"))
-                .AddParameter(Parameter(quantityType, "right"))
-                .AddStatement("(left.Value % right.Value)".ToSimpleName().Cast(quantityType).Return))
-            .AddMember(Operator(new(quantityType), "/")
-                .AddParameter(Parameter(quantityType, "left"))
-                .AddParameter(Parameter(typeType, "right"))
-                .AddStatement("(left.Value / right)".ToSimpleName().Cast(quantityType).Return))
-            .AddMember(Operator(new(quantityType), "*")
-                .AddParameter(Parameter(quantityType, "left"))
-                .AddParameter(Parameter(typeType, "right"))
-                .AddStatement("(left.Value * right)".ToSimpleName().Cast(quantityType).Return))
-            .AddMember(Operator(new(quantityType), "*")
-                .AddParameter(Parameter(typeType, "left"))
-                .AddParameter(Parameter(quantityType, "right"))
-                .AddStatement("(left * right.Value)".ToSimpleName().Cast(quantityType).Return));
+        if (!IsAbsoluteTemperature)
+        {
+            structDeclaration
+                .AddMember(Operator(new(quantityType), "-")
+                    .AddParameter(Parameter(quantityType, "value"))
+                    .AddStatement("(-@value.Value)".ToSimpleName().Cast(quantityType).Return))
+                .AddMember(Operator(new(quantityType), "+")
+                    .AddParameter(Parameter(quantityType, "left"))
+                    .AddParameter(Parameter(quantityType, "right"))
+                    .AddStatement("(left.Value + right.Value)".ToSimpleName().Cast(quantityType).Return))
+                .AddMember(Operator(new(quantityType), "%")
+                    .AddParameter(Parameter(quantityType, "left"))
+                    .AddParameter(Parameter(quantityType, "right"))
+                    .AddStatement("(left.Value % right.Value)".ToSimpleName().Cast(quantityType).Return))
+                .AddMember(Operator(new(quantityType), "/")
+                    .AddParameter(Parameter(quantityType, "left"))
+                    .AddParameter(Parameter(typeType, "right"))
+                    .AddStatement("(left.Value / right)".ToSimpleName().Cast(quantityType).Return))
+                .AddMember(Operator(new(quantityType), "*")
+                    .AddParameter(Parameter(quantityType, "left"))
+                    .AddParameter(Parameter(typeType, "right"))
+                    .AddStatement("(left.Value * right)".ToSimpleName().Cast(quantityType).Return))
+                .AddMember(Operator(new(quantityType), "*")
+                    .AddParameter(Parameter(typeType, "left"))
+                    .AddParameter(Parameter(quantityType, "right"))
+                    .AddStatement("(left * right.Value)".ToSimpleName().Cast(quantityType).Return));
+
+            if (precompiled)
+            {
+                structDeclaration.AddMember(Operator(new(quantityType), "-")
+                    .AddParameter(Parameter(quantityType, "left"))
+                    .AddParameter(Parameter(quantityType, "right"))
+                    .AddStatement("(left.Value - right.Value)".ToSimpleName().Cast(quantityType).Return));
+            }
+        }
 
         foreach (var customOperator in CreateCustomOperators())
         {
@@ -371,15 +473,12 @@ internal sealed class QuantityStructGenerator(
             .AddMember(convertTo.AddStatement("@value.Value".ToSimpleName().Return))
             .AddMember(convertFrom.AddStatement("new(@value)".ToSimpleName().Return));
 
-        foreach (var se in quantity.ExactMatch.Where(data.Quantities.ContainsKey))
+        foreach (var conversion in CreateQuantityConversions())
         {
-            var seType = new DataType(se);
-            structDeclaration
-                .AddMember(ImplicitConversionTo(seType)
-                    .AddStatement("@value.Value".ToSimpleName().Cast(seType).Return));
+            structDeclaration.AddMember(conversion);
         }
 
-        var space = NameSpace("TedToolkit.Quantities")
+        var space = NameSpace(generatedNamespace)
             .AddMember(structDeclaration);
 
         if (typeName.IsFloatingPoint())
@@ -464,6 +563,18 @@ internal sealed class QuantityStructGenerator(
             return argText;
         }
 
+        if (precompiled)
+        {
+            var coherentUnit = allUnits
+                .Where(u => u.Conversion.Multiplier.CompareTo(Data.Conversion.Unit.Multiplier) == 0
+                            && u.Conversion.Offset.IsZero)
+                .OrderByDescending(u => u.ApplicableSystem)
+                .FirstOrDefault();
+            return string.IsNullOrEmpty(coherentUnit.Key)
+                ? none
+                : ZString.Concat(quantity.UnitName, '.', coherentUnit.GetUnitName(data.Units.Values));
+        }
+
         if (quantity.IsNoDimensions)
         {
             var memberName = allUnits
@@ -509,9 +620,18 @@ internal sealed class QuantityStructGenerator(
     }
 
     private SwitchStatement CreateSwitchStatement(
-        Action<Unit, SwitchSection> getStatements)
+        Action<Unit, SwitchSection> getStatements,
+        Action<SwitchSection> addCoherentCase)
     {
         var statement = new SwitchStatement("unit".ToSimpleName());
+
+        if (precompiled)
+        {
+            var coherentCase = new SwitchSection()
+                .AddLabel(new SwitchLabel(ZString.Concat(quantity.UnitName, ".None").ToSimpleName()));
+            addCoherentCase(coherentCase);
+            statement.AddSection(coherentCase);
+        }
 
         foreach (var quantityUnit in quantity.Units)
         {
@@ -519,7 +639,7 @@ internal sealed class QuantityStructGenerator(
 
             var section = new SwitchSection()
                 .AddLabel(new SwitchLabel(ZString
-                    .Concat("global::TedToolkit.Quantities.", quantity.UnitName, '.',
+                    .Concat(quantity.UnitName, '.',
                         unit.GetUnitName(data.Units.Values))
                     .ToSimpleName()));
 

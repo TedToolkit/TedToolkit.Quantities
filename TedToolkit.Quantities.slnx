@@ -7,6 +7,7 @@
   </Folder>
   <Project Path="TedToolkit.Quantities.Analyzer/TedToolkit.Quantities.Analyzer.csproj" />
   <Project Path="TedToolkit.Quantities.Data/TedToolkit.Quantities.Data.csproj" />
+  <Project Path="TedToolkit.Quantities.SI.Double/TedToolkit.Quantities.SI.Double.csproj" />
   <Project Path="TedToolkit.Quantities.Generator/TedToolkit.Quantities.Generator.csproj" />
   <Project Path="TedToolkit.Quantities.Tests/TedToolkit.Quantities.Tests.csproj">
     <BuildDependency Project="TedToolkit.Quantities.Analyzer/TedToolkit.Quantities.Analyzer.csproj" />

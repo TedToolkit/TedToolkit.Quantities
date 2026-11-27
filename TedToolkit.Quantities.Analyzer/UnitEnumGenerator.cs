@@ -27,7 +27,8 @@ public sealed class UnitEnumGenerator(IReadOnlyList<Unit> units)
     /// Generate the code of the unit enum.
     /// </summary>
     /// <param name="context">context.</param>
-    public void GenerateCode(scoped in SourceProductionContext context)
+    /// <param name="generatedNamespace">The namespace of the generated enum.</param>
+    public void GenerateCode(scoped in SourceProductionContext context, string generatedNamespace)
     {
         var enumDeclaration = Enum("AllUnit").Public
             .AddEnumMember(new EnumMember("None"));
@@ -40,7 +41,7 @@ public sealed class UnitEnumGenerator(IReadOnlyList<Unit> units)
         }
 
         File()
-            .AddNameSpace(NameSpace("TedToolkit.Quantities")
+            .AddNameSpace(NameSpace(generatedNamespace)
                 .AddMember(enumDeclaration))
             .Generate(context, "_AllUnits");
     }

@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="NugetPackage.props" Sdk="TedToolkit.Build.Sdk"/>
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net7.0</TargetFrameworks>
+    <Description>Precompiled double-precision quantities for the QUDT SI quantity system.</Description>
+    <PrecompileSiQuantities>true</PrecompileSiQuantities>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net7.0'">
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CheckFormulaReadme Condition="'$(CheckFormulaReadme)' == '' and '$(GITHUB_ACTIONS)' == 'true'">true</CheckFormulaReadme>
+    <FormulaReadmeMode Condition="'$(CheckFormulaReadme)' == 'true'">check</FormulaReadmeMode>
+    <FormulaReadmeMode Condition="'$(FormulaReadmeMode)' == ''">update</FormulaReadmeMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="PrecompileSiQuantities"/>
+    <ProjectReference Include="../TedToolkit.Quantities/TedToolkit.Quantities.csproj"/>
+    <ProjectReference Include="../TedToolkit.Quantities.Analyzer/TedToolkit.Quantities.Analyzer.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all"/>
+    <Analyzer Include="../TedToolkit.Quantities.Analyzer/bin/$(Configuration)/netstandard2.0/TedToolkit.Quantities.Data.dll"/>
+    <Analyzer Include="../TedToolkit.Quantities.Analyzer/bin/$(Configuration)/netstandard2.0/TedToolkit.RoslynHelper.dll"/>
+    <Analyzer Include="../TedToolkit.Quantities.Analyzer/bin/$(Configuration)/netstandard2.0/ZString.dll"/>
+    <Analyzer Include="../TedToolkit.Quantities.Analyzer/bin/$(Configuration)/netstandard2.0/Numbers.dll"/>
+    <Analyzer Include="../TedToolkit.Quantities.Analyzer/bin/$(Configuration)/netstandard2.0/System.Memory.dll"/>
+    <Analyzer Include="../TedToolkit.Quantities.Analyzer/bin/$(Configuration)/netstandard2.0/Newtonsoft.Json.dll"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net7.0'">
+    <ProjectReference Include="../TedToolkit.Quantities.Generator/TedToolkit.Quantities.Generator.csproj"
+                      ReferenceOutputAssembly="false" PrivateAssets="all" SkipGetTargetFrameworkProperties="true"
+                      GlobalPropertiesToRemove="TargetFramework;RuntimeIdentifier;SelfContained"/>
+  </ItemGroup>
+
+  <Target Name="GenerateFormulaReadme" AfterTargets="CoreCompile"
+          Condition="'$(TargetFramework)' == 'net7.0' and '$(DesignTimeBuild)' != 'true'">
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)"
+          Command="dotnet &quot;../TedToolkit.Quantities.Generator/bin/$(Configuration)/net11.0/TedToolkit.Quantities.Generator.dll&quot; --formula-readme &quot;$(CompilerGeneratedFilesOutputPath)&quot; &quot;$(MSBuildProjectDirectory)/README.md&quot; $(FormulaReadmeMode)"/>
+  </Target>
+</Project>

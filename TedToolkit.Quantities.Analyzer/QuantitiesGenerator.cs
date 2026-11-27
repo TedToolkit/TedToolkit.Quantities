@@ -12,6 +12,7 @@ using Cysharp.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
+using TedToolkit.Quantities.Data;
 using TedToolkit.RoslynHelper;
 
 using static TedToolkit.RoslynHelper.SourceComposer;
@@ -26,6 +27,10 @@ namespace TedToolkit.Quantities.Analyzer;
 [Generator(LanguageNames.CSharp)]
 public sealed class QuantitiesGenerator : IIncrementalGenerator
 {
+    private const string DefaultNamespace = "TedToolkit.Quantities";
+
+    private const string PrecompiledNamespace = "TedToolkit.Quantities.SI.Double";
+
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -34,7 +39,10 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
                            && Path.GetExtension(file.Path).Equals(".json", StringComparison.OrdinalIgnoreCase));
         var compilationProvider = context.CompilationProvider;
 
-        var combined = compilationProvider.Combine(additionalJsonFiles.Collect());
+        var precompiled = context.AnalyzerConfigOptionsProvider.Select((provider, _) =>
+            provider.GlobalOptions.TryGetValue("build_property.PrecompileSiQuantities", out var value)
+            && string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
+        var combined = compilationProvider.Combine(additionalJsonFiles.Collect()).Combine(precompiled);
 
         context.RegisterSourceOutput(combined, Generate);
     }
@@ -121,54 +129,59 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
     }
 
     private static void Generate(SourceProductionContext context,
-        (Compilation Compilation, ImmutableArray<AdditionalText> Texts) arg)
+        ((Compilation Compilation, ImmutableArray<AdditionalText> Texts) Input, bool Precompiled) arg)
     {
         try
         {
-            var (compilations, texts) = arg;
+            var ((compilations, texts), precompiled) = arg;
+            var generatedNamespace = precompiled ? PrecompiledNamespace : DefaultNamespace;
 
-            if (compilations.GetTypeByMetadataName("TedToolkit.Quantities.QuantitiesAttribute`1")
+            if (!precompiled && compilations.GetTypeByMetadataName("TedToolkit.Quantities.QuantitiesAttribute`1")
                 ?.BaseType?.FullName
                 is "System.Attribute")
             {
                 return;
             }
 
-            var unitAttribute = ReadUnit(compilations);
-            var tDataType = unitAttribute?.TDataType!;
-            var flag = unitAttribute?.Flag!;
-            var units = unitAttribute?.Units!;
-            var quantitySystem = unitAttribute?.QuantitySystem;
-            var quantities = unitAttribute?.Quantities;
-
-            var data = Helpers.GetData(quantitySystem,
-                texts.Select(t => t.GetText(context.CancellationToken)!.ToString()),
-                quantities ?? Array.Empty<string>());
+            var unitAttribute = precompiled ? null : ReadUnit(compilations);
+            var tDataType = precompiled
+                ? compilations.GetSpecialType(SpecialType.System_Double)
+                : unitAttribute?.TDataType;
+            var flag = unitAttribute?.Flag ?? 0;
+            var units = unitAttribute?.Units;
+            var data = precompiled
+                ? GetPrecompiledData()
+                : Helpers.GetData(unitAttribute?.QuantitySystem,
+                    texts.Select(t => t.GetText(context.CancellationToken)!.ToString()),
+                    unitAttribute?.Quantities ?? Array.Empty<string>());
 
             var unit = new UnitSystem(units, data);
             {
-                new UnitEnumGenerator([.. data.Units.Values,]).GenerateCode(context);
+                new UnitEnumGenerator([.. data.Units.Values,]).GenerateCode(context, generatedNamespace);
 
                 var toStringExtensions = Class("UnitToStringExtensions").Public.Static;
                 foreach (var quantity in data.Quantities)
                 {
                     var enumGenerator = new QuantityUnitEnumGenerator(data, quantity.Value, unit);
-                    enumGenerator.GenerateCode(context);
-                    if (unitAttribute is not null)
+                    enumGenerator.GenerateCode(context, generatedNamespace);
+                    if (tDataType is not null)
                     {
                         toStringExtensions = toStringExtensions.AddMember(enumGenerator.GenerateToString());
                     }
                 }
 
                 File()
-                    .AddNameSpace(NameSpace("TedToolkit.Quantities")
+                    .AddNameSpace(NameSpace(generatedNamespace)
                         .AddMember(toStringExtensions))
                     .Generate(context, "_UnitToStringExtensions");
 
-                new QuantitiesAttributeGenerator(data).Generate(context);
+                if (!precompiled)
+                {
+                    new QuantitiesAttributeGenerator(data).Generate(context);
+                }
             }
 
-            if (unitAttribute is null)
+            if (tDataType is null)
             {
                 return;
             }
@@ -176,19 +189,32 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
             var isPublic = (flag & 1 << 0) is 0;
             var generateMethods = (flag & 1 << 1) is not 0;
             var generateProperties = (flag & 1 << 2) is not 0;
+            var declaredQuantities = new List<INamedTypeSymbol>();
 
             foreach (var quantity in data.Quantities)
             {
                 var quantitySymbol =
-                    compilations.Assembly.GetTypeByMetadataName(ZString.Concat("TedToolkit.Quantities.",
+                    compilations.Assembly.GetTypeByMetadataName(ZString.Concat(generatedNamespace, ".",
                         quantity.Value.Name));
+                if (quantitySymbol is not null)
+                {
+                    declaredQuantities.Add(quantitySymbol);
+                }
+
                 new QuantityStructGenerator(data, quantity.Value, tDataType, unit,
-                        isPublic, quantitySymbol)
+                        isPublic, quantitySymbol, generatedNamespace, precompiled)
                     .GenerateCode(context);
             }
 
-            new ToleranceGenerator(data.Quantities.Values.ToArray(), isPublic, tDataType)
-                .Generate(context, compilations);
+            if (precompiled)
+            {
+                QuantityFormulaCoverage.Generate(context, declaredQuantities);
+            }
+            else
+            {
+                new ToleranceGenerator(data.Quantities.Values.ToArray(), isPublic, tDataType)
+                    .Generate(context, compilations);
+            }
 
             if (generateProperties)
             {
@@ -204,9 +230,66 @@ public sealed class QuantitiesGenerator : IIncrementalGenerator
 #pragma warning restore CA1031
         {
             var msg = e.GetType().Name + ": " + e.Message + "\n" + e.StackTrace;
-            context.AddSource("_ERROR", msg);
             context.ReportDiagnostic(Diagnostic.Create(
                 new DiagnosticDescriptor("ERR", msg, msg, "Error", DiagnosticSeverity.Error, true), Location.None));
+        }
+    }
+
+    private static DataCollection GetPrecompiledData()
+    {
+        var si = Helpers.GetData("SI", [], [], requireCatalog: true);
+        string[] originalSupplemental = ["DimensionlessRatio", "TemperatureDifference",];
+        string[] additionalSupplemental =
+        [
+            "Pressure", "Conductance", "Resistivity", "TemperatureGradient",
+            "Thickness", "Width", "Height", "Depth", "Radius", "Diameter", "Distance", "Wavelength", "PathLength",
+            "Impulse", "ThermalConductance", "ReynoldsNumber",
+        ];
+        var catalog = Helpers.GetData("ALL", [], [.. originalSupplemental, .. additionalSupplemental,],
+            requireCatalog: true);
+        var quantities = si.Quantities.ToDictionary(pair => pair.Key, pair => pair.Value);
+        var units = si.Units.ToDictionary(pair => pair.Key, pair => pair.Value);
+        var dimensions = si.Dimensions.ToDictionary(pair => pair.Key, pair => pair.Value);
+        AddQuantities(originalSupplemental);
+
+        const string Celsius = "DEGC";
+
+        const string Temperature = "ThermodynamicTemperature";
+        units[Celsius] = catalog.Units[Celsius];
+        var temperature = quantities[Temperature];
+        quantities[Temperature] = temperature with { Units = temperature.Units.Union([Celsius,]).ToArray(), };
+
+        // Append new units after Celsius to keep the existing public enum values stable.
+        AddQuantities(additionalSupplemental);
+
+        var convertibleUnits = units.Where(pair =>
+        {
+            var conversion = pair.Value.Conversion;
+            return conversion.Multiplier.IsFinite && !conversion.Multiplier.IsZero && conversion.Offset.IsFinite;
+        }).ToDictionary(pair => pair.Key, pair => pair.Value);
+        var convertibleQuantities = quantities.ToDictionary(pair => pair.Key, pair => pair.Value with
+        {
+            Units = pair.Value.Units.Where(convertibleUnits.ContainsKey).ToArray(),
+        });
+        return new(convertibleQuantities, convertibleUnits, dimensions);
+
+        void AddQuantities(IEnumerable<string> names)
+        {
+            foreach (var name in names)
+            {
+                if (quantities.ContainsKey(name))
+                {
+                    continue;
+                }
+
+                var quantity = catalog.Quantities[name];
+                quantities.Add(name, quantity);
+                dimensions[quantity.Dimension] = catalog.Dimensions[quantity.Dimension];
+                foreach (var unit in quantity.Units)
+                {
+                    units[unit] = catalog.Units[unit];
+                }
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 // <copyright file="Program.cs" company="TedToolkit">
 // Copyright (c) TedToolkit. All rights reserved.
 // Licensed under the LGPL-3.0 license. See COPYING, COPYING.LESSER file in the project root for full license information.
@@ -15,6 +15,12 @@ using TedToolkit.Quantities.Generator;
 
 using VDS.RDF;
 using VDS.RDF.Parsing;
+
+if (args is ["--formula-readme", var generatedDirectory, var readmePath, var mode])
+{
+    FormulaReadme.Update(generatedDirectory, readmePath, mode == "check");
+    return;
+}
 
 var repository = DirectoryPath.CurrentDirectory;
 var quantityFolder = repository / "TedToolkit.Quantities";
