@@ -49,7 +49,10 @@ public readonly partial struct Frequency
     }
 
     /// <summary>Calculates the full half-power bandwidth of a linear series RLC circuit.</summary>
-    /// <remarks>Use the total positive series resistance and positive inductance.</remarks>
+    /// <param name="resistance">The total positive series resistance.</param>
+    /// <param name="inductance">The positive series inductance.</param>
+    /// <returns>The difference between the upper and lower half-power frequencies.</returns>
+    /// <remarks><c>Δf = R / (2πL)</c>, with the bandwidth expressed in hertz.</remarks>
     public static Frequency FromSeriesRlcBandwidth(Resistance resistance, Inductance inductance)
     {
         return AngularVelocity.FromRadianPerSecond(resistance.Ohm / inductance.Henry).ToFrequency();
@@ -67,14 +70,19 @@ public readonly partial struct Frequency
         return FromWaveSpeed(waveSpeed, 4d * resonatorLength);
     }
 
-    /// <summary>Calculates the quality factor of a linear series RLC circuit from this resonance frequency and its positive half-power bandwidth.</summary>
+    /// <summary>Calculates the quality factor of a linear series RLC circuit at this resonance frequency.</summary>
+    /// <param name="halfPowerBandwidth">The positive difference between the upper and lower half-power frequencies.</param>
+    /// <returns>The dimensionless quality factor.</returns>
+    /// <remarks><c>Q = f₀ / Δf</c>.</remarks>
     public double SeriesRlcQualityFactor(Frequency halfPowerBandwidth)
     {
         return Hertz / halfPowerBandwidth.Hertz;
     }
 
     /// <summary>Calculates the observed frequency for motion along the line of sight in vacuum.</summary>
-    /// <param name="recessionVelocity">Signed relative velocity, positive for recession and negative for approach, with magnitude below the vacuum light speed.</param>
+    /// <param name="recessionVelocity">The signed relative velocity, positive for recession and negative for approach, with magnitude below the vacuum light speed.</param>
+    /// <returns>The observed frequency relative to this emitted frequency.</returns>
+    /// <remarks><c>fobs = femit √((1 − β) / (1 + β))</c>, where <c>β = v / c</c>.</remarks>
     public Frequency ObserveLongitudinalDoppler(LinearVelocity recessionVelocity)
     {
         var beta = recessionVelocity.Value / PhysicalConstants.VacuumLightSpeed;
@@ -137,7 +145,11 @@ public readonly partial struct PlaneAngle
         return FromRadian(Math.Atan(transmittedIndex / incidentIndex));
     }
 
-    /// <summary>Calculates the signed phase difference from optical path difference and positive vacuum wavelength.</summary>
+    /// <summary>Calculates the signed phase difference between two optical paths.</summary>
+    /// <param name="pathDifference">The signed optical path difference.</param>
+    /// <param name="vacuumWavelength">The positive vacuum wavelength.</param>
+    /// <returns>The phase difference without wrapping it to a single revolution.</returns>
+    /// <remarks><c>Δφ = 2π ΔLopt / λ₀</c> in radians.</remarks>
     public static PlaneAngle FromOpticalPathDifference(Length pathDifference, Length vacuumWavelength)
     {
         return FromRevolution(pathDifference / vacuumWavelength);
@@ -169,8 +181,12 @@ public readonly partial struct PlaneAngle
 
     /// <summary>Calculates the transmitted angle for a ray incident at this angle on a planar optical interface.</summary>
     /// <param name="incidentToTransmittedIndexRatio">The positive ratio of the incident and transmitted refractive indices.</param>
-    /// <param name="transmittedAngle">The signed transmitted angle measured from the normal when a real angle exists.</param>
-    /// <returns>True for a real transmitted angle and false for total internal reflection.</returns>
+    /// <param name="transmittedAngle">The signed transmitted angle from the normal, or the default angle on failure.</param>
+    /// <returns>True for a real transmitted angle, including a grazing ray. False for total internal reflection.</returns>
+    /// <remarks>
+    /// Snell's law gives <c>sin θₜ = (nᵢ / nₜ) sin θᵢ</c>.
+    /// Use an incident angle between −π/2 and π/2 from the normal.
+    /// </remarks>
     public bool TryRefractionAngle(double incidentToTransmittedIndexRatio, out PlaneAngle transmittedAngle)
     {
         var sine = incidentToTransmittedIndexRatio * Math.Sin(Radian);
@@ -199,7 +215,13 @@ public readonly partial struct SolidAngle
         return (radius * radius) * Steradian;
     }
 
-    /// <summary>Calculates the solid angle inside a circular cone whose half-angle lies between zero and π radians.</summary>
+    /// <summary>Calculates the solid angle of a circular cone.</summary>
+    /// <param name="halfAngle">The half-angle from the cone axis, between zero and π radians.</param>
+    /// <returns>The solid angle in steradians.</returns>
+    /// <remarks>
+    /// <c>Ω = 2π(1 − cos θ) = 4π sin²(θ / 2)</c>.
+    /// The half-angle form retains precision for narrow cones.
+    /// </remarks>
     public static SolidAngle FromCone(PlaneAngle halfAngle)
     {
         var sine = Math.Sin(0.5d * halfAngle.Radian);
@@ -245,19 +267,31 @@ public readonly partial struct Length
         return 4d * (flowArea / wettedPerimeter);
     }
 
-    /// <summary>Calculates paraxial focal length from signed object and image distances.</summary>
+    /// <summary>Calculates focal length from the object and image distances of a paraxial thin lens.</summary>
+    /// <param name="objectDistance">The signed object distance, positive for a real object.</param>
+    /// <param name="imageDistance">The signed image distance, positive for a real image and negative for a virtual image.</param>
+    /// <returns>The signed focal length, positive for a converging lens and negative for a diverging lens.</returns>
+    /// <remarks><c>1/f = 1/dₒ + 1/dᵢ</c>. Use nonzero distances and a nonzero reciprocal sum for a finite focal length.</remarks>
     public static Length FocalLengthFromConjugates(Length objectDistance, Length imageDistance)
     {
         return FromMetre(1d / (1d / objectDistance.Metre + 1d / imageDistance.Metre));
     }
 
-    /// <summary>Calculates signed paraxial image distance from focal length and signed object distance for a thin lens.</summary>
+    /// <summary>Calculates the signed image distance for a paraxial thin lens.</summary>
+    /// <param name="focalLength">The nonzero focal length, positive for a converging lens and negative for a diverging lens.</param>
+    /// <param name="objectDistance">The nonzero signed object distance, positive for a real object.</param>
+    /// <returns>The image distance, positive for a real image and negative for a virtual image.</returns>
+    /// <remarks><c>1/dᵢ = 1/f − 1/dₒ</c>. A finite image requires a nonzero reciprocal difference.</remarks>
     public static Length ImageDistanceFromThinLens(Length focalLength, Length objectDistance)
     {
         return FromMetre(1d / (1d / focalLength.Metre - 1d / objectDistance.Metre));
     }
 
-    /// <summary>Calculates signed lateral magnification from paraxial object and image distances.</summary>
+    /// <summary>Calculates the signed lateral magnification of a paraxial thin lens.</summary>
+    /// <param name="objectDistance">The nonzero signed object distance, positive for a real object.</param>
+    /// <param name="imageDistance">The signed image distance, positive for a real image and negative for a virtual image.</param>
+    /// <returns>The dimensionless ratio of image height to object height, negative for an inverted image.</returns>
+    /// <remarks><c>m = −dᵢ / dₒ</c>.</remarks>
     public static double LateralMagnification(Length objectDistance, Length imageDistance)
     {
         return -(imageDistance / objectDistance);
@@ -269,7 +303,10 @@ public readonly partial struct Length
         return vacuumWavelength * (0.61d / numericalAperture);
     }
 
-    /// <summary>Calculates the half-value thickness for narrow-beam exponential attenuation at a fixed photon energy.</summary>
+    /// <summary>Calculates the thickness that halves a monoenergetic narrow beam's intensity.</summary>
+    /// <param name="linearAttenuationCoefficient">The positive linear attenuation coefficient of the homogeneous material.</param>
+    /// <returns>The half-value thickness.</returns>
+    /// <remarks><c>x½ = ln 2 / μ</c>.</remarks>
     public static Length HalfValueThickness(InverseLength linearAttenuationCoefficient)
     {
         return Math.Log(2d) / linearAttenuationCoefficient;
@@ -282,6 +319,10 @@ public readonly partial struct Length
     }
 
     /// <summary>Calculates the wavelength increase for Compton scattering from an initially stationary electron.</summary>
+    /// <param name="electronComptonWavelength">The electron's positive Compton wavelength.</param>
+    /// <param name="scatteringAngle">The angle between the incident and scattered photon directions, between zero and π radians.</param>
+    /// <returns>The nonnegative increase in wavelength.</returns>
+    /// <remarks><c>Δλ = λ꜀(1 − cos θ) = 2λ꜀ sin²(θ / 2)</c>.</remarks>
     public static Length ComptonWavelengthShift(Length electronComptonWavelength, PlaneAngle scatteringAngle)
     {
         var sine = Math.Sin(0.5d * scatteringAngle.Radian);
@@ -330,7 +371,10 @@ public readonly partial struct Length
         return flowArea / topWidth;
     }
 
-    /// <summary>Calculates the Schwarzschild horizon radius for a nonrotating, uncharged mass from its positive standard gravitational parameter.</summary>
+    /// <summary>Calculates the horizon radius of a nonrotating, uncharged mass.</summary>
+    /// <param name="gravitationalParameter">The body's positive standard gravitational parameter μ = GM.</param>
+    /// <returns>The Schwarzschild radius.</returns>
+    /// <remarks><c>rₛ = 2μ / c²</c>, with <c>c</c> the vacuum speed of light.</remarks>
     public static Length SchwarzschildRadius(StandardGravitationalParameter gravitationalParameter)
     {
         return FromMetre(2d * (gravitationalParameter.Value / PhysicalConstants.VacuumLightSpeed) / PhysicalConstants.VacuumLightSpeed);
@@ -428,13 +472,21 @@ public readonly partial struct MomentOfInertia
 
 public readonly partial struct EnergyDensity
 {
-    /// <summary>Calculates energy density from instantaneous electric field magnitude in a linear, isotropic, nondispersive medium.</summary>
+    /// <summary>Calculates the electric contribution to energy density in a linear, isotropic, nondispersive medium.</summary>
+    /// <param name="field">The instantaneous electric field magnitude.</param>
+    /// <param name="permittivity">The medium's positive absolute permittivity.</param>
+    /// <returns>The electric field energy per unit volume.</returns>
+    /// <remarks><c>uₑ = εE² / 2</c>.</remarks>
     public static EnergyDensity FromElectricField(ElectricFieldStrength field, Permittivity permittivity)
     {
         return (EnergyDensity)(0.5d * permittivity.Value * field.Value * field.Value);
     }
 
-    /// <summary>Calculates energy density from instantaneous magnetic flux density magnitude in a linear, isotropic, nondispersive medium.</summary>
+    /// <summary>Calculates the magnetic contribution to energy density in a linear, isotropic, nondispersive medium.</summary>
+    /// <param name="field">The instantaneous magnetic flux density magnitude.</param>
+    /// <param name="permeability">The medium's positive absolute permeability.</param>
+    /// <returns>The magnetic field energy per unit volume.</returns>
+    /// <remarks><c>uₘ = B² / (2μ)</c>.</remarks>
     public static EnergyDensity FromMagneticField(MagneticFluxDensity field, Permeability permeability)
     {
         return (EnergyDensity)(0.5d * field.Value * field.Value / permeability.Value);
@@ -480,15 +532,17 @@ public readonly partial struct Energy
     /// <param name="externalPressure">The pressure opposing expansion.</param>
     /// <param name="volumeChange">The final volume minus the initial volume.</param>
     /// <returns>The work done by the system, positive for expansion at positive pressure.</returns>
+    /// <remarks><c>W = pₑₓₜ ΔV</c>.</remarks>
     public static Energy FromConstantPressureWork(ForcePerArea externalPressure, Volume volumeChange)
     {
         return (Energy)(externalPressure.Value * volumeChange.Value);
     }
 
     /// <summary>Calculates the energy stored in a linear capacitor.</summary>
-    /// <param name="capacitance">The capacitance of the capacitor.</param>
-    /// <param name="voltage">The voltage across the capacitor.</param>
-    /// <returns>The stored electrical energy.</returns>
+    /// <param name="capacitance">The positive capacitance of the capacitor.</param>
+    /// <param name="voltage">The signed voltage across the capacitor.</param>
+    /// <returns>The stored electrical energy, independent of voltage polarity.</returns>
+    /// <remarks><c>U = CV² / 2</c>.</remarks>
     public static Energy FromCapacitor(Capacitance capacitance, ElectricPotential voltage)
     {
         return (capacitance * voltage) * voltage * 0.5d;
@@ -524,14 +578,22 @@ public readonly partial struct Energy
         return (Energy)(Math.Abs(momentum.Value) * vacuumLightSpeed.Value);
     }
 
-    /// <summary>Calculates photon energy in a downward bound-state transition from the upper and lower level energies.</summary>
+    /// <summary>Calculates the photon energy in a downward transition between two bound levels.</summary>
+    /// <param name="upperLevel">The initial level energy.</param>
+    /// <param name="lowerLevel">The lower final level energy on the same energy reference.</param>
+    /// <returns>The emitted photon energy.</returns>
+    /// <remarks><c>Eγ = Eupper − Elower</c>. Both levels may have negative energies relative to the same reference.</remarks>
     public static Energy FromEmissionTransition(Energy upperLevel, Energy lowerLevel)
     {
         return (Energy)(upperLevel.Value - lowerLevel.Value);
     }
 
-    /// <summary>Calculates maximum photoelectron kinetic energy from photon energy and a positive work function.</summary>
-    /// <returns>True when the photon energy reaches the emission threshold.</returns>
+    /// <summary>Calculates the maximum electron kinetic energy for single-photon photoemission.</summary>
+    /// <param name="photonEnergy">The incident photon energy.</param>
+    /// <param name="workFunction">The material's positive work function.</param>
+    /// <param name="kineticEnergy">The maximum kinetic energy on success, or the default energy on failure.</param>
+    /// <returns>True when photon energy reaches or exceeds the work function. False below that threshold.</returns>
+    /// <remarks><c>Kmax = Eγ − W</c>. The maximum kinetic energy at the threshold is zero.</remarks>
     public static bool TryPhotoelectronKineticEnergy(Energy photonEnergy, Energy workFunction, out Energy kineticEnergy)
     {
         var difference = photonEnergy.Value - workFunction.Value;
@@ -551,9 +613,11 @@ public readonly partial struct Energy
         return (Energy)(0.5d * momentum.Value * (momentum.Value / mass.Value));
     }
 
-    /// <summary>Calculates the change in internal energy of a closed system with no change in macroscopic kinetic or potential energy.</summary>
-    /// <param name="heatAdded">Signed heat transferred into the system.</param>
-    /// <param name="workDoneBySystem">Signed work done by the system on its surroundings.</param>
+    /// <summary>Calculates the internal energy change of a closed system with no change in macroscopic kinetic or potential energy.</summary>
+    /// <param name="heatAdded">The signed heat transferred into the system.</param>
+    /// <param name="workDoneBySystem">The signed work done by the system on its surroundings.</param>
+    /// <returns>The signed change in internal energy.</returns>
+    /// <remarks><c>ΔU = Q − W</c>.</remarks>
     public static Energy FromHeatAndWork(Energy heatAdded, Energy workDoneBySystem)
     {
         return FromJoule(heatAdded.Joule - workDoneBySystem.Joule);
@@ -565,7 +629,11 @@ public readonly partial struct Energy
         return (Energy)(-parallelDipoleMoment.Value * field.Value);
     }
 
-    /// <summary>Calculates orientation-dependent potential energy from the signed parallel dipole component and a uniform magnetic field magnitude in vacuum.</summary>
+    /// <summary>Calculates the orientation-dependent potential energy of a magnetic dipole in a uniform field in vacuum.</summary>
+    /// <param name="parallelDipoleMoment">The signed dipole component parallel to the applied field, in weber metres.</param>
+    /// <param name="field">The auxiliary magnetic field magnitude, in amperes per metre.</param>
+    /// <returns>The potential energy relative to perpendicular alignment.</returns>
+    /// <remarks><c>U = −j∥H</c>, using the QUDT magnetic dipole moment <c>j = μ₀m</c>.</remarks>
     public static Energy FromMagneticDipole(MagneticDipoleMoment parallelDipoleMoment, AuxillaryMagneticField field)
     {
         return (Energy)(-parallelDipoleMoment.Value * field.Value);
@@ -649,7 +717,11 @@ public readonly partial struct Torque
         return (Torque)(perpendicularDipoleMoment.Value * field.Value);
     }
 
-    /// <summary>Calculates the torque magnitude on a magnetic dipole from its perpendicular moment and a uniform magnetic field magnitude in vacuum.</summary>
+    /// <summary>Calculates the torque magnitude on a magnetic dipole in a uniform field in vacuum.</summary>
+    /// <param name="perpendicularDipoleMoment">The magnitude of the dipole component perpendicular to the applied field, in weber metres.</param>
+    /// <param name="field">The auxiliary magnetic field magnitude, in amperes per metre.</param>
+    /// <returns>The magnitude of the torque.</returns>
+    /// <remarks><c>τ = j⊥H</c>, using the QUDT magnetic dipole moment <c>j = μ₀m</c>.</remarks>
     public static Torque FromMagneticDipole(MagneticDipoleMoment perpendicularDipoleMoment, AuxillaryMagneticField field)
     {
         return (Torque)(perpendicularDipoleMoment.Value * field.Value);
@@ -710,6 +782,10 @@ public readonly partial struct ForcePerArea
     }
 
     /// <summary>Calculates the inside-to-outside pressure jump across a single spherical interface.</summary>
+    /// <param name="surfaceTension">The uniform surface tension of the interface.</param>
+    /// <param name="radius">The positive radius of the interface.</param>
+    /// <returns>The inside pressure minus the outside pressure.</returns>
+    /// <remarks><c>Δp = 2σ / r</c> for one interface.</remarks>
     public static ForcePerArea FromSphericalSurfaceTension(ForcePerLength surfaceTension, Length radius)
     {
         return (ForcePerArea)(2d * surfaceTension.Value / radius.Value);
@@ -766,7 +842,11 @@ public readonly partial struct Stress
         return (Stress)(shearModulus.Value * shearStrain);
     }
 
-    /// <summary>Calculates signed surface shear stress in elastic torsion of a solid circular shaft.</summary>
+    /// <summary>Calculates the surface shear stress in elastic torsion of a solid circular shaft.</summary>
+    /// <param name="torque">The signed torque about the shaft axis.</param>
+    /// <param name="radius">The positive radius of the shaft.</param>
+    /// <returns>The signed shear stress at the outer surface.</returns>
+    /// <remarks><c>τsurface = 2T / (πr³)</c>.</remarks>
     public static Stress FromSolidShaftTorque(Torque torque, Length radius)
     {
         return (Stress)(2d * torque.Value / (Area.FromCircle(radius) * radius).Value);
@@ -851,7 +931,12 @@ public readonly partial struct LinearVelocity
     }
 
     /// <summary>Calculates ideal discharge speed from a small opening below the free surface of a large vessel.</summary>
-    /// <remarks>Use positive head and uniform gravity, with equal surface and outlet pressures and negligible losses.</remarks>
+    /// <param name="gravity">The positive magnitude of uniform gravitational acceleration.</param>
+    /// <param name="head">The positive vertical distance from the free surface to the opening.</param>
+    /// <returns>The speed at the opening.</returns>
+    /// <remarks>
+    /// <c>v = √(2gh)</c>. The pressures at the surface and outlet are equal and flow losses are negligible.
+    /// </remarks>
     public static LinearVelocity FromTorricelliHead(LinearAcceleration gravity, Length head)
     {
         return FromMetrePerSecond(Math.Sqrt(2d * gravity.Value * head.Value));
@@ -875,8 +960,13 @@ public readonly partial struct LinearVelocity
         return FromMetrePerSecond(Math.Sqrt(3d * PhysicalConstants.MolarGasConstant * temperature.Kelvin / molarMass.Value));
     }
 
-    /// <summary>Transforms this signed velocity between collinear inertial frames using the signed velocity of the intermediate frame.</summary>
-    /// <remarks>Both speeds have magnitudes below the vacuum light speed. All velocities are measured along the same positive direction.</remarks>
+    /// <summary>Transforms this signed velocity from an intermediate inertial frame to the observer's frame.</summary>
+    /// <param name="frameVelocity">The signed velocity of the intermediate frame relative to the observer.</param>
+    /// <returns>The signed velocity measured by the observer.</returns>
+    /// <remarks>
+    /// <c>u = (u′ + v) / (1 + u′v / c²)</c>.
+    /// Use collinear velocities with a common positive direction and magnitudes below the vacuum speed of light.
+    /// </remarks>
     public LinearVelocity AddCollinearRelativisticVelocity(LinearVelocity frameVelocity)
     {
         var beta = Value / PhysicalConstants.VacuumLightSpeed;
@@ -923,14 +1013,22 @@ public readonly partial struct Time
         return FromKeplerOrbit(gravitationalParameter, radius);
     }
 
-    /// <summary>Calculates the period of a Newtonian elliptic orbit from positive semi-major axis and gravitational parameter.</summary>
+    /// <summary>Calculates the period of a Newtonian elliptic orbit with negligible orbiting mass.</summary>
+    /// <param name="gravitationalParameter">The positive standard gravitational parameter of the central body.</param>
+    /// <param name="semiMajorAxis">The positive semi-major axis of the orbit.</param>
+    /// <returns>The orbital period.</returns>
+    /// <remarks><c>T = 2π√(a³ / μ)</c>.</remarks>
     public static Time FromKeplerOrbit(StandardGravitationalParameter gravitationalParameter, Length semiMajorAxis)
     {
         var axis = semiMajorAxis.Metre;
         return FromSecond((2d * Math.PI * axis) * Math.Sqrt(axis / gravitationalParameter.Value));
     }
 
-    /// <summary>Calculates the period of a positive mass on an undamped, massless spring with positive stiffness.</summary>
+    /// <summary>Calculates the period of an undamped oscillator with a massless linear spring.</summary>
+    /// <param name="mass">The positive oscillating mass.</param>
+    /// <param name="stiffness">The positive stiffness of the spring.</param>
+    /// <returns>The oscillator period.</returns>
+    /// <remarks><c>T = 2π√(m / k)</c>.</remarks>
     public static Time FromMassSpring(Mass mass, ForcePerLength stiffness)
     {
         return FromSecond((2d * Math.PI) * Math.Sqrt(mass.Value / stiffness.Value));
@@ -939,6 +1037,8 @@ public readonly partial struct Time
     /// <summary>Calculates the small-angle period of a simple pendulum in uniform gravity.</summary>
     /// <param name="length">The positive distance from the pivot to the point mass.</param>
     /// <param name="gravity">The positive magnitude of gravitational acceleration.</param>
+    /// <returns>The approximate period for small oscillations.</returns>
+    /// <remarks><c>T ≈ 2π√(ℓ / g)</c>.</remarks>
     public static Time FromSimplePendulum(Length length, LinearAcceleration gravity)
     {
         return FromSecond((2d * Math.PI) * Math.Sqrt(length.Value / gravity.Value));
@@ -950,7 +1050,10 @@ public readonly partial struct Time
         return this * lorentzFactor;
     }
 
-    /// <summary>Calculates the fraction of a signal remaining after this nonnegative elapsed time with a positive exponential decay time constant.</summary>
+    /// <summary>Calculates the fraction of a signal remaining after this nonnegative elapsed time.</summary>
+    /// <param name="timeConstant">The positive exponential decay time constant.</param>
+    /// <returns>The remaining dimensionless fraction.</returns>
+    /// <remarks><c>x/x₀ = exp(−t / τ)</c>.</remarks>
     public double ExponentialDecayFraction(Time timeConstant)
     {
         return Math.Exp(-Second / timeConstant.Second);
@@ -1042,8 +1145,9 @@ public readonly partial struct ElectromotiveForce
 {
     /// <summary>Calculates the average induced electromotive force using Faraday's law.</summary>
     /// <param name="fluxLinkageChange">The signed final minus initial flux linkage summed over the winding's turns.</param>
-    /// <param name="elapsed">The time over which the flux linkage changes.</param>
-    /// <returns>The signed induced electromotive force with Lenz's-law polarity.</returns>
+    /// <param name="elapsed">The positive duration over which the flux linkage changes.</param>
+    /// <returns>The signed average induced electromotive force with Lenz's-law polarity.</returns>
+    /// <remarks><c>ℰ = −ΔΛ / Δt</c>.</remarks>
     public static ElectromotiveForce FromFluxLinkageChange(MagneticFlux fluxLinkageChange, Time elapsed)
     {
         return FromVolt(-fluxLinkageChange.Weber / elapsed.Second);
@@ -1109,19 +1213,28 @@ public readonly partial struct Inductance
 
 public readonly partial struct ThermodynamicTemperature
 {
-    /// <summary>Calculates Carnot engine efficiency with this hot reservoir and a colder reservoir.</summary>
+    /// <summary>Calculates the efficiency of a reversible engine with this hot reservoir.</summary>
+    /// <param name="coldReservoir">The positive absolute temperature of the cold reservoir, below this temperature.</param>
+    /// <returns>The dimensionless engine efficiency.</returns>
+    /// <remarks><c>η = 1 − Tcold / Thot</c>, using absolute temperatures in kelvins.</remarks>
     public double CarnotEfficiency(ThermodynamicTemperature coldReservoir)
     {
         return DifferenceInKelvins(coldReservoir) / Kelvin;
     }
 
-    /// <summary>Calculates the Carnot refrigerator coefficient of performance with this hot reservoir and a colder reservoir.</summary>
+    /// <summary>Calculates the coefficient of performance of a reversible refrigerator with this hot reservoir.</summary>
+    /// <param name="coldReservoir">The positive absolute temperature of the cold reservoir, below this temperature.</param>
+    /// <returns>The dimensionless ratio of heat removed from the cold reservoir to work input.</returns>
+    /// <remarks><c>COPcool = Tcold / (Thot − Tcold)</c>, using absolute temperatures in kelvins.</remarks>
     public double CarnotRefrigeratorCoefficientOfPerformance(ThermodynamicTemperature coldReservoir)
     {
         return coldReservoir.Kelvin / DifferenceInKelvins(coldReservoir);
     }
 
-    /// <summary>Calculates the Carnot heat pump coefficient of performance with this hot reservoir and a colder reservoir.</summary>
+    /// <summary>Calculates the coefficient of performance of a reversible heat pump with this hot reservoir.</summary>
+    /// <param name="coldReservoir">The positive absolute temperature of the cold reservoir, below this temperature.</param>
+    /// <returns>The dimensionless ratio of heat delivered to the hot reservoir to work input.</returns>
+    /// <remarks><c>COPheat = Thot / (Thot − Tcold)</c>, using absolute temperatures in kelvins.</remarks>
     public double CarnotHeatPumpCoefficientOfPerformance(ThermodynamicTemperature coldReservoir)
     {
         return Kelvin / DifferenceInKelvins(coldReservoir);
@@ -1389,7 +1502,11 @@ public readonly partial struct PowerPerArea
         return (PowerPerArea)(intensity.Value / (distance * distance).Value);
     }
 
-    /// <summary>Calculates total blackbody radiant exitance from absolute temperature and the Stefan–Boltzmann constant.</summary>
+    /// <summary>Calculates the total radiant exitance of a blackbody.</summary>
+    /// <param name="temperature">The absolute temperature of the emitting surface.</param>
+    /// <param name="stefanBoltzmannConstant">The Stefan–Boltzmann constant, in watts per square metre per kelvin to the fourth power.</param>
+    /// <returns>The total emitted power per unit surface area.</returns>
+    /// <remarks><c>Mₑ = σT⁴</c>, with <c>T</c> in kelvins.</remarks>
     public static PowerPerArea FromBlackbodyTemperature(ThermodynamicTemperature temperature, PowerPerAreaQuarticTemperature stefanBoltzmannConstant)
     {
         return (PowerPerArea)(stefanBoltzmannConstant.Value * Math.Pow(temperature.Kelvin, 4d));
@@ -1534,7 +1651,10 @@ public readonly partial struct ForcePerLength
 
 public readonly partial struct InverseLength
 {
-    /// <summary>Calculates the surviving intensity fraction of a monoenergetic narrow beam through homogeneous material of nonnegative thickness using this nonnegative linear attenuation coefficient.</summary>
+    /// <summary>Calculates narrow-beam transmission through a homogeneous material from this linear attenuation coefficient.</summary>
+    /// <param name="thickness">The nonnegative distance travelled in the material.</param>
+    /// <returns>The surviving fraction of the incident intensity.</returns>
+    /// <remarks><c>I/I₀ = exp(−μx)</c>. Use a monoenergetic beam and a nonnegative coefficient.</remarks>
     public double TransmissionThrough(Length thickness)
     {
         return Math.Exp(-Value * thickness.Value);
@@ -1601,13 +1721,19 @@ public readonly partial struct AmountOfSubstancePerVolume
 
 public readonly partial struct ThermalConductivity
 {
-    /// <summary>Calculates one-dimensional conductive heat flux along the axis of the signed temperature gradient in kelvins per metre.</summary>
+    /// <summary>Calculates conductive heat flux along the axis of a one-dimensional temperature gradient.</summary>
+    /// <param name="kelvinsPerMetre">The signed temperature gradient along the chosen axis, in kelvins per metre.</param>
+    /// <returns>The signed heat flux along that same axis.</returns>
+    /// <remarks><c>q″ = −k dT/dx</c>, so heat flows toward lower temperature for positive conductivity.</remarks>
     public HeatFlowRatePerArea HeatFluxForTemperatureGradient(double kelvinsPerMetre)
     {
         return (HeatFlowRatePerArea)(-Value * kelvinsPerMetre);
     }
 
-    /// <summary>Calculates the signed temperature gradient in kelvins per metre from heat flux along the same axis and this positive conductivity.</summary>
+    /// <summary>Calculates the one-dimensional temperature gradient from conductive heat flux and this positive conductivity.</summary>
+    /// <param name="heatFlux">The signed heat flux along the chosen axis.</param>
+    /// <returns>The signed temperature gradient along that same axis, in kelvins per metre.</returns>
+    /// <remarks><c>dT/dx = −q″ / k</c>.</remarks>
     public double TemperatureGradientInKelvinsPerMetre(HeatFlowRatePerArea heatFlux)
     {
         return -heatFlux.Value / Value;

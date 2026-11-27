@@ -1,5 +1,6 @@
 extern alias SiDouble;
 
+using System.Runtime.CompilerServices;
 using Q = SiDouble::TedToolkit.Quantities;
 
 internal static class PrecompiledQuantities
@@ -337,13 +338,14 @@ internal static class PrecompiledQuantities
     {
         Close(-1d / Math.PI, Q.AuxillaryMagneticField.FromLongStraightWire(Q.ElectricCurrent.FromAmpere(-4), Q.Length.FromMetre(2)).Value);
 
-        var magneticDipole = Q.MagneticDipoleMoment.FromWeberMetre(6);
-        var auxiliaryField = (Q.AuxillaryMagneticField)2d;
+        var magneticDipole = Q.MagneticDipoleMoment.FromWeberMetre(0.006);
+        var auxiliaryField = Q.AuxillaryMagneticField.FromKiloamperePerMetre(2);
         Close(1.5, Q.ForcePerLength.FromCurrentInMagneticField(Q.ElectricCurrent.FromAmpere(3), Q.MagneticFluxDensity.FromTesla(0.5)).Value);
         Close(18, Q.Torque.FromElectricDipole((Q.ElectricDipoleMoment)6d, (Q.ElectricFieldStrength)3d).Value);
         Close(-18, Q.Energy.FromElectricDipole((Q.ElectricDipoleMoment)6d, (Q.ElectricFieldStrength)3d).Joule);
         Close(12, Q.Torque.FromMagneticDipole(magneticDipole, auxiliaryField).Value);
         Close(-12, Q.Energy.FromMagneticDipole(magneticDipole, auxiliaryField).Joule);
+        Close(12, Q.Energy.FromMagneticDipole(-magneticDipole, auxiliaryField).Joule);
 
         var resistance = Q.Resistance.FromOhm(10);
         var current = Q.ElectricCurrent.FromAmpere(4);
@@ -360,6 +362,8 @@ internal static class PrecompiledQuantities
         Close(-40, (field * path).Volt);
         Close(-4, Q.ElectromotiveForce.FromFluxLinkageChange(
             Q.MagneticFlux.FromWeber(2), Q.Time.FromMillisecond(500)).Volt);
+        Close(4, Q.ElectromotiveForce.FromFluxLinkageChange(
+            Q.MagneticFlux.FromWeber(-2), Q.Time.FromMillisecond(500)).Volt);
 
         Q.MagneticFlux flux = Q.MagneticFluxDensity.FromTesla(2) * Q.Area.FromSquareMetre(0.5);
         Close(1, flux.Weber);
@@ -404,6 +408,10 @@ internal static class PrecompiledQuantities
         var otherCapacitance = Q.Capacitance.FromFarad(0.03);
         Close(0.012, capacitance.InSeriesWith(otherCapacitance).Farad);
         Close(0.05, capacitance.InParallelWith(otherCapacitance).Farad);
+        var storageCapacitance = Q.Capacitance.FromMillifarad(250);
+        var storageVoltage = Q.ElectricPotential.FromVolt(8);
+        Close(8, Q.Energy.FromCapacitor(storageCapacitance, storageVoltage).Joule);
+        Close(8, Q.Energy.FromCapacitor(storageCapacitance, -storageVoltage).Joule);
         var inductance = Q.Inductance.FromHenry(2);
         var otherInductance = Q.Inductance.FromHenry(3);
         Close(5, inductance.InSeriesWith(otherInductance).Henry);
@@ -419,8 +427,11 @@ internal static class PrecompiledQuantities
         var conductionFlux = conductingMaterial.HeatFluxForTemperatureGradient(-3);
         Close(12, conductionFlux.Value);
         Close(-3, conductingMaterial.TemperatureGradientInKelvinsPerMetre(conductionFlux));
+        Close(-12, conductingMaterial.HeatFluxForTemperatureGradient(3).Value);
 
-        Close(48, Q.PowerPerArea.FromBlackbodyTemperature(Q.ThermodynamicTemperature.FromKelvin(2), (Q.PowerPerAreaQuarticTemperature)3d).Value);
+        var stefanBoltzmannConstant = Q.PowerPerAreaQuarticTemperature.FromWattPerSquareMetreQuarticKelvin(5.670374419e-8);
+        var blackbodyExitance = Q.PowerPerArea.FromBlackbodyTemperature(Q.ThermodynamicTemperature.FromKelvin(300), stefanBoltzmannConstant);
+        Close(459.300327939, blackbodyExitance.Value);
         Close(7, Q.Energy.FromHeatAndWork(Q.Energy.FromJoule(10), Q.Energy.FromJoule(3)).Joule);
 
         var room = Q.ThermodynamicTemperature.FromKelvin(290);
@@ -510,10 +521,18 @@ internal static class PrecompiledQuantities
             throw new InvalidOperationException("Expected refraction into the higher-index medium.");
         }
         Close(Math.Asin(0.25), transmittedAngle.Radian);
-        if (Q.PlaneAngle.FromRadian(Math.PI / 3).TryRefractionAngle(1.5, out _))
+        if (Q.PlaneAngle.FromRadian(Math.PI / 3).TryRefractionAngle(1.5, out var reflectedAngle))
         {
             throw new InvalidOperationException("Expected total internal reflection.");
         }
+        Close(0, reflectedAngle.Radian);
+
+        var criticalIncidence = Q.PlaneAngle.CriticalAngle(2, 1);
+        if (!criticalIncidence.TryRefractionAngle(2, out var grazingAngle))
+        {
+            throw new InvalidOperationException("Expected a grazing transmitted ray at the critical angle.");
+        }
+        Close(1, Math.Sin(grazingAngle.Radian));
 
         Close(Math.PI / 6, Q.PlaneAngle.FromFirstDiffractionOrder(Q.Length.FromMillimetre(1), Q.Length.FromMillimetre(2)).Radian);
         Close(Math.PI / 6, Q.PlaneAngle.FromFirstSingleSlitMinimum(Q.Length.FromMillimetre(1), Q.Length.FromMillimetre(2)).Radian);
@@ -522,6 +541,9 @@ internal static class PrecompiledQuantities
         var objectDistance = Q.Length.FromMillimetre(2000);
         var focalLength = Q.Length.FocalLengthFromConjugates(objectDistance, Q.Length.FromMetre(2));
         Close(1, focalLength.Metre);
+        var realImage = Q.Length.ImageDistanceFromThinLens(focalLength, objectDistance);
+        Close(2, realImage.Metre);
+        Close(-1, Q.Length.LateralMagnification(objectDistance, realImage));
         var virtualImage = Q.Length.ImageDistanceFromThinLens(-focalLength, Q.Length.FromMetre(1));
         Close(-0.5, virtualImage.Metre);
         Close(0.5, Q.Length.LateralMagnification(Q.Length.FromMetre(1), virtualImage));
@@ -535,10 +557,14 @@ internal static class PrecompiledQuantities
         Close(Math.Atan(1.5), Q.PlaneAngle.BrewsterAngle(1, 1.5).Radian);
         Close(5, ((Q.PowerPerArea)20d).AfterIdealPolarizer(steepIncidence).Value);
         Close(2 * Math.PI, Q.SolidAngle.FromCone(Q.PlaneAngle.FromRadian(Math.PI / 2)).Steradian);
+        Close(4 * Math.PI, Q.SolidAngle.FromCone(Q.PlaneAngle.FromRadian(Math.PI)).Steradian);
+        var narrowCone = Q.SolidAngle.FromCone(Q.PlaneAngle.FromRadian(1e-9));
+        Close(Math.PI, narrowCone.Steradian / 1e-18);
 
         var wavelength = Q.Length.FromMillimetre(0.001);
         Close(1.22e-4, Q.PlaneAngle.FromRayleighCriterion(wavelength, Q.Length.FromMillimetre(10)).Radian);
         Close(Math.PI / 2, Q.PlaneAngle.FromOpticalPathDifference(wavelength / 4d, wavelength).Radian);
+        Close(-4 * Math.PI, Q.PlaneAngle.FromOpticalPathDifference(-2d * wavelength, wavelength).Radian);
         var numericalAperture = incidence.NumericalAperture(1.5);
         Close(0.75, numericalAperture);
         Close(0.00061 / 0.75, Q.Length.RayleighMicroscopeResolution(wavelength, numericalAperture).Millimetre);
@@ -600,6 +626,10 @@ internal static class PrecompiledQuantities
 
     private static void VerifyElectromagneticWavesAndPhotons()
     {
+        var emittedPhoton = Q.Energy.FromEmissionTransition(
+            Q.Energy.FromElectronVolt(-3.4), Q.Energy.FromElectronVolt(-13.6));
+        Close(10.2, emittedPhoton.ElectronVolt);
+
         var frequency25 = Q.Frequency.FromHertz(2.5e15);
         var energy25 = Q.Energy.FromPhotonFrequency(frequency25);
         Close(1.6565175375, energy25.Joule / 1e-18);
@@ -638,10 +668,17 @@ internal static class PrecompiledQuantities
         }
 
         Close(3, kineticEnergy.Joule);
-        if (Q.Energy.TryPhotoelectronKineticEnergy(photonEnergy, Q.Energy.FromJoule(5), out _))
+        if (!Q.Energy.TryPhotoelectronKineticEnergy(photonEnergy, photonEnergy, out var thresholdKineticEnergy))
+        {
+            throw new InvalidOperationException("Expected zero kinetic energy at the photoelectric threshold.");
+        }
+        Close(0, thresholdKineticEnergy.Joule);
+
+        if (Q.Energy.TryPhotoelectronKineticEnergy(photonEnergy, Q.Energy.FromJoule(5), out var belowThresholdEnergy))
         {
             throw new InvalidOperationException("Expected no photoelectron below the emission threshold.");
         }
+        Close(0, belowThresholdEnergy.Joule);
     }
 
     private static void VerifyRadiationAndMixtures()
@@ -660,7 +697,10 @@ internal static class PrecompiledQuantities
         Close(4e-6, Q.Exposure.FromIonizationInAir((Q.ElectricCharge)(-2e-6), Q.Mass.FromKilogram(0.5)).Value);
 
         var coefficient = (Q.InverseLength)2d;
-        Close(Math.Log(2) / 2, Q.Length.HalfValueThickness(coefficient).Metre);
+        var halfValueThickness = Q.Length.HalfValueThickness(coefficient);
+        Close(Math.Log(2) / 2, halfValueThickness.Metre);
+        Close(1, coefficient.TransmissionThrough(Q.Length.FromMetre(0)));
+        Close(0.5, coefficient.TransmissionThrough(halfValueThickness));
         Close(0.25, Q.Mass.FromKilogram(0.5).MassFraction(Q.Mass.FromKilogram(2)));
         Close(1d / 3, Q.AmountOfSubstance.FromMole(2).AmountFraction(Q.AmountOfSubstance.FromMole(6)));
         Close(0.25, Q.Volume.FromLitre(1).VolumeFraction(Q.Volume.FromLitre(4)));
@@ -722,11 +762,11 @@ internal static class PrecompiledQuantities
         Close(5 * Math.PI, Q.LuminousFluxPerArea.FromEmittedFlux(emitted, area).Value);
     }
 
-    private static void Close(double expected, double actual)
+    private static void Close(double expected, double actual, [CallerArgumentExpression(nameof(actual))] string? expression = null)
     {
         if (!(Math.Abs(expected - actual) <= 1e-9))
         {
-            throw new InvalidOperationException($"Expected {expected}, got {actual}.");
+            throw new InvalidOperationException($"{expression} returned {actual}, expected {expected}.");
         }
     }
 }
