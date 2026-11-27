@@ -168,6 +168,14 @@ public readonly partial struct PlaneAngle
     {
         return FromRadian(1.22d * (wavelength / apertureDiameter));
     }
+
+    /// <summary>Calculates signed elastic twist under constant torque along a uniform solid circular shaft.</summary>
+    public static PlaneAngle TwistOfSolidCircularShaft(Torque torque, ForcePerArea shearModulus, Length radius, Length shaftLength)
+    {
+        var sectionArea = Area.FromCircle(radius).Value;
+        var polarAreaMoment = 0.5d * sectionArea * (radius * radius).Value;
+        return FromRadian(torque.Value * shaftLength.Value / (shearModulus.Value * polarAreaMoment));
+    }
 }
 
 public readonly partial struct SolidAngle
@@ -295,6 +303,18 @@ public readonly partial struct Length
     {
         return Math.Log(2d) / linearAttenuationCoefficient;
     }
+
+    /// <summary>Calculates signed engineering strain from this final length and a positive original gauge length.</summary>
+    public double EngineeringStrainFrom(Length originalLength)
+    {
+        return (Value - originalLength.Value) / originalLength.Value;
+    }
+
+    /// <summary>Calculates the length measured along motion when this proper length moves at the given relative velocity.</summary>
+    public Length ContractedAlongMotion(LinearVelocity relativeVelocity, LinearVelocity vacuumLightSpeed)
+    {
+        return this / relativeVelocity.LorentzFactor(vacuumLightSpeed);
+    }
 }
 
 public readonly partial struct Area
@@ -316,6 +336,12 @@ public readonly partial struct Area
 
 public readonly partial struct Volume
 {
+    /// <summary>Calculates signed volumetric strain from this final volume and a positive original volume.</summary>
+    public double VolumetricStrainFrom(Volume originalVolume)
+    {
+        return (Value - originalVolume.Value) / originalVolume.Value;
+    }
+
     /// <summary>Calculates the volume fraction of this component using the total component volume before mixing.</summary>
     public double VolumeFraction(Volume totalBeforeMixing)
     {
@@ -335,6 +361,45 @@ public readonly partial struct MomentOfInertia
     public static MomentOfInertia FromPointMass(Mass mass, Length perpendicularDistance)
     {
         return (MomentOfInertia)(mass.Value * (perpendicularDistance * perpendicularDistance).Value);
+    }
+
+    /// <summary>Calculates inertia of a uniform thin ring about its central symmetry axis.</summary>
+    public static MomentOfInertia FromThinRing(Mass mass, Length radius)
+    {
+        return FromPointMass(mass, radius);
+    }
+
+    /// <summary>Calculates inertia of a uniform solid disk or solid cylinder about its central symmetry axis.</summary>
+    public static MomentOfInertia FromSolidCylinder(Mass mass, Length radius)
+    {
+        return 0.5d * FromPointMass(mass, radius);
+    }
+
+    /// <summary>Calculates inertia of a uniform thin rod about its midpoint, around an axis perpendicular to its length.</summary>
+    public static MomentOfInertia FromThinRod(Mass mass, Length length)
+    {
+        return FromPointMass(mass, length) / 12d;
+    }
+
+    /// <summary>Calculates inertia of a uniform solid sphere about an axis through its centre.</summary>
+    public static MomentOfInertia FromSolidSphere(Mass mass, Length radius)
+    {
+        return (2d / 5d) * FromPointMass(mass, radius);
+    }
+
+    /// <summary>Transfers this centre-of-mass inertia to a parallel axis at the specified perpendicular distance.</summary>
+    public MomentOfInertia AboutParallelAxis(Mass mass, Length axisSeparation)
+    {
+        return (MomentOfInertia)(Value + FromPointMass(mass, axisSeparation).Value);
+    }
+}
+
+public readonly partial struct EnergyDensity
+{
+    /// <summary>Calculates recoverable energy per unit volume for a single linearly elastic stress and its conjugate strain.</summary>
+    public static EnergyDensity FromElasticStrain(Stress stress, double strain)
+    {
+        return (EnergyDensity)(0.5d * stress.Value * strain);
     }
 }
 
@@ -439,6 +504,44 @@ public readonly partial struct Energy
         MagneticDipoleMoment dipoleMoment, MagneticFluxDensity field, Permeability vacuumPermeability, PlaneAngle angle)
     {
         return (Energy)(-(dipoleMoment.Value / vacuumPermeability.Value) * field.Value * Math.Cos(angle.Radian));
+    }
+
+    /// <summary>Calculates the rest energy of a body using the positive vacuum speed of light.</summary>
+    public static Energy FromRestMass(Mass restMass, LinearVelocity vacuumLightSpeed)
+    {
+        return (Energy)(restMass.Value * vacuumLightSpeed.Value * vacuumLightSpeed.Value);
+    }
+
+    /// <summary>Calculates total relativistic energy from rest mass and velocity measured in the same inertial frame.</summary>
+    public static Energy FromRelativisticMotion(Mass restMass, LinearVelocity velocity, LinearVelocity vacuumLightSpeed)
+    {
+        return FromRestMass(restMass, vacuumLightSpeed) * velocity.LorentzFactor(vacuumLightSpeed);
+    }
+
+    /// <summary>Calculates relativistic kinetic energy from rest mass and subluminal velocity.</summary>
+    public static Energy FromRelativisticKineticEnergy(Mass restMass, LinearVelocity velocity, LinearVelocity vacuumLightSpeed)
+    {
+        var beta = velocity.Value / vacuumLightSpeed.Value;
+        var gamma = velocity.LorentzFactor(vacuumLightSpeed);
+        var gammaTimesBeta = gamma * beta;
+        return FromRestMass(restMass, vacuumLightSpeed) * (gammaTimesBeta * gammaTimesBeta / (gamma + 1d));
+    }
+
+    /// <summary>Calculates positive total relativistic energy from rest mass and momentum magnitude or a signed collinear momentum.</summary>
+    public static Energy FromRelativisticMomentum(Mass restMass, LinearMomentum momentum, LinearVelocity vacuumLightSpeed)
+    {
+        var restEnergy = FromRestMass(restMass, vacuumLightSpeed).Value;
+        var momentumTimesLightSpeed = momentum.Value * vacuumLightSpeed.Value;
+        return (Energy)Math.Sqrt(restEnergy * restEnergy + momentumTimesLightSpeed * momentumTimesLightSpeed);
+    }
+}
+
+public readonly partial struct LinearMomentum
+{
+    /// <summary>Calculates signed relativistic momentum along the given subluminal velocity in an inertial frame.</summary>
+    public static LinearMomentum FromRelativisticMotion(Mass restMass, LinearVelocity velocity, LinearVelocity vacuumLightSpeed)
+    {
+        return (restMass * velocity) * velocity.LorentzFactor(vacuumLightSpeed);
     }
 }
 
@@ -549,6 +652,12 @@ public readonly partial struct Torque
 
 public readonly partial struct ForcePerLength
 {
+    /// <summary>Calculates axial stiffness of a straight uniform bar in the linear elastic regime.</summary>
+    public static ForcePerLength AxialStiffness(ForcePerArea youngsModulus, Area crossSection, Length barLength)
+    {
+        return (youngsModulus * crossSection) / barLength;
+    }
+
     /// <summary>Calculates force per unit length between long parallel conductors in a uniform linear medium.</summary>
     /// <returns>The signed force per unit length, positive for currents in the same direction and attraction.</returns>
     public static ForcePerLength FromParallelCurrents(
@@ -561,6 +670,24 @@ public readonly partial struct ForcePerLength
 
 public readonly partial struct ForcePerArea
 {
+    /// <summary>Calculates the signed pressure change for a small volumetric strain with constant bulk modulus.</summary>
+    public static ForcePerArea PressureChangeFromBulkModulus(ForcePerArea bulkModulus, Volume originalVolume, Volume finalVolume)
+    {
+        return bulkModulus * (-finalVolume.VolumetricStrainFrom(originalVolume));
+    }
+
+    /// <summary>Calculates shear modulus from Young's modulus and Poisson's ratio for stable isotropic linear elasticity.</summary>
+    public static ForcePerArea ShearModulusFromYoungsModulus(ForcePerArea youngsModulus, double poissonsRatio)
+    {
+        return youngsModulus / (2d * (1d + poissonsRatio));
+    }
+
+    /// <summary>Calculates bulk modulus from Young's modulus and Poisson's ratio for stable isotropic linear elasticity.</summary>
+    public static ForcePerArea BulkModulusFromYoungsModulus(ForcePerArea youngsModulus, double poissonsRatio)
+    {
+        return youngsModulus / (3d * (1d - 2d * poissonsRatio));
+    }
+
     /// <summary>Calculates the dynamic pressure of a moving fluid.</summary>
     /// <param name="density">The fluid density at the point of interest.</param>
     /// <param name="speed">The fluid speed at the same point.</param>
@@ -668,6 +795,24 @@ public readonly partial struct VolumePerTime
 
 public readonly partial struct Stress
 {
+    /// <summary>Calculates signed normal stress under uniaxial linear elasticity.</summary>
+    public static Stress FromUniaxialStrain(ForcePerArea youngsModulus, double longitudinalStrain)
+    {
+        return (Stress)(youngsModulus.Value * longitudinalStrain);
+    }
+
+    /// <summary>Calculates signed shear stress from engineering shear strain under linear elasticity.</summary>
+    public static Stress FromElasticShearStrain(ForcePerArea shearModulus, double shearStrain)
+    {
+        return (Stress)(shearModulus.Value * shearStrain);
+    }
+
+    /// <summary>Calculates signed surface shear stress in elastic torsion of a solid circular shaft.</summary>
+    public static Stress FromSolidShaftTorque(Torque torque, Length radius)
+    {
+        return (Stress)(2d * torque.Value / (Area.FromCircle(radius) * radius).Value);
+    }
+
     /// <summary>Calculates signed Newtonian shear stress for a linear velocity profile.</summary>
     /// <param name="viscosity">The dynamic viscosity of the fluid.</param>
     /// <param name="velocityDifference">The signed difference of the velocity component parallel to the layers.</param>
@@ -785,6 +930,22 @@ public readonly partial struct LinearVelocity
         return vacuumLightSpeed.Value / Value;
     }
 
+    /// <summary>Calculates the Lorentz factor of this relative velocity with magnitude below the positive vacuum light speed.</summary>
+    public double LorentzFactor(LinearVelocity vacuumLightSpeed)
+    {
+        var beta = Math.Abs(Value) / vacuumLightSpeed.Value;
+        return 1d / Math.Sqrt((1d - beta) * (1d + beta));
+    }
+
+    /// <summary>Composes this velocity in a moving inertial frame with that frame's collinear velocity in a reference frame.</summary>
+    /// <remarks>Both signed velocities must have magnitudes below the positive vacuum light speed.</remarks>
+    public LinearVelocity ComposeRelativistically(LinearVelocity frameVelocity, LinearVelocity vacuumLightSpeed)
+    {
+        var vacuumSpeed = vacuumLightSpeed.Value;
+        var normalizedProduct = (Value / vacuumSpeed) * (frameVelocity.Value / vacuumSpeed);
+        return FromMetrePerSecond((Value + frameVelocity.Value) / (1d + normalizedProduct));
+    }
+
     /// <summary>Calculates the Reynolds number for a flow using kinematic viscosity.</summary>
     /// <param name="characteristicLength">The representative length for the flow geometry.</param>
     /// <param name="kinematicViscosity">The fluid's kinematic viscosity at the flow conditions.</param>
@@ -831,6 +992,12 @@ public readonly partial struct LinearAcceleration
 
 public readonly partial struct Time
 {
+    /// <summary>Calculates the coordinate duration of this proper interval for a clock moving at the given relative velocity.</summary>
+    public Time DilatedForRelativeVelocity(LinearVelocity relativeVelocity, LinearVelocity vacuumLightSpeed)
+    {
+        return this * relativeVelocity.LorentzFactor(vacuumLightSpeed);
+    }
+
     /// <summary>Calculates the period of a Newtonian circular orbit about a spherical central body.</summary>
     public static Time FromCircularOrbit(StandardGravitationalParameter gravitationalParameter, Length radius)
     {

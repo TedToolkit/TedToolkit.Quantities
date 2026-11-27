@@ -77,7 +77,7 @@ Quantities of different dimensions combine through the formulas below.
 
 ## Formula coverage
 
-The inventory lists **246 physical formulas**. Swapped products, solved forms, and typed variants
+The inventory lists **268 physical formulas**. Swapped products, solved forms, and typed variants
 share a row. The conditions apply to each listed relation, and division requires a nonzero divisor.
 Update the corresponding row when changing a formula's coverage.
 
@@ -111,7 +111,11 @@ Update the corresponding row when changing a formula's coverage.
 | E = −μm / (2r) | `Energy` | Total mechanical energy of a Newtonian circular orbit with negligible orbiting mass and potential energy zero at infinity. Supported methods include `Energy.FromCircularOrbit`. | [OpenStax satellite orbits][openstax-satellite-orbits] |
 | Δθ = ω₀Δt + ½αΔt² | `PlaneAngle` | Constant signed angular acceleration about a fixed axis, with initial angular velocity about the same axis. Supported methods include `PlaneAngle.FromConstantAngularAcceleration`. | [OpenStax fixed-axis rotation][openstax-fixed-axis-rotation] |
 | v² = v₀² + 2aΔx | `LinearVelocity` | Constant acceleration along one axis. Use signed acceleration and displacement with a nonnegative squared final speed. The method returns speed magnitude. Supported methods include `LinearVelocity.SpeedAfterConstantAcceleration`. | [OpenStax kinematics][openstax-kinematics] |
-| I = mr² | `MomentOfInertia` | Point mass at perpendicular distance r from the axis. Supported methods include `MomentOfInertia.FromPointMass`. | [OpenStax moments of inertia][openstax-moments-of-inertia] |
+| I = mr² | `MomentOfInertia` | Point mass at perpendicular distance r from the axis or a thin ring about its central symmetry axis. Supported methods include `MomentOfInertia.FromPointMass` and `MomentOfInertia.FromThinRing`. | [OpenStax moments of inertia][openstax-moments-of-inertia] · [OpenStax moments of inertia reference table][openstax-rotation-tables] |
+| I = mR² / 2 | `MomentOfInertia` | Uniform solid disk or cylinder about its central symmetry axis. Supported methods include `MomentOfInertia.FromSolidCylinder`. | [OpenStax moments of inertia reference table][openstax-rotation-tables] |
+| I = mℓ² / 12 | `MomentOfInertia` | Uniform thin rod about an axis through the midpoint perpendicular to its length. Supported methods include `MomentOfInertia.FromThinRod`. | [OpenStax moments of inertia reference table][openstax-rotation-tables] |
+| I = 2mR² / 5 | `MomentOfInertia` | Uniform solid sphere about an axis through its centre. Supported methods include `MomentOfInertia.FromSolidSphere`. | [OpenStax moments of inertia reference table][openstax-rotation-tables] |
+| I = Icm + md² | `MomentOfInertia` | Parallel-axis theorem for the same body and its mass m. Use perpendicular separation d from the centre-of-mass axis. Supported methods include `MomentOfInertia.AboutParallelAxis`. | [OpenStax moments of inertia][openstax-moments-of-inertia] |
 | T = 2π√(m / k) | `Time` | Positive mass and stiffness in an undamped, linear, massless-spring system. Supported methods include `Time.FromMassSpring`. | [OpenStax periodic motion][openstax-periodic-motion] |
 | T = 2π√(ℓ / g) | `Time` | Small-angle, undamped simple pendulum of positive length in uniform gravity. Supported methods include `Time.FromSimplePendulum`. | [OpenStax pendulums][openstax-pendulums] |
 | U = −μm / r | `Energy` | Newtonian potential energy outside a spherical body, with zero energy at infinity. Use centre-to-centre distance r and the central body's gravitational parameter μ = GM. Supported methods include `Energy.FromGravitationalPotential`. | [OpenStax gravitational potential and escape][openstax-gravitational-potential] |
@@ -153,6 +157,34 @@ Update the corresponding row when changing a formula's coverage.
 | K = ½mv² | `Energy` | Nonrelativistic translation. Supported methods include `Energy.FromTranslationalKineticEnergy`. | [OpenStax work and energy][openstax-work-and-energy] |
 | Δv = āΔt | `LinearAcceleration`, `LinearVelocity`, `Time` | Constant or average acceleration component over the interval. | [OpenStax kinematics][openstax-kinematics] |
 | v = λf | `Frequency`, `Length`, `LinearVelocity` | Wavelength and frequency belong to the same propagating wave. Supported methods include `Frequency.FromWaveSpeed`, `Length.WavelengthFromSpeed`, `LinearVelocity.FromWavelength`. | [OpenStax waves][openstax-waves] |
+
+### Elasticity and structural mechanics
+
+| Formula | Result types | Applicability and named entry points | Source |
+| --- | --- | --- | --- |
+| ε = Δℓ/ℓ₀, εᵥ = ΔV/V₀ | `double` | Signed engineering or volumetric strain relative to the positive initial gauge length or volume. Supported methods include `Length.EngineeringStrainFrom` and `Volume.VolumetricStrainFrom`. | [OpenStax stress, strain, and elastic modulus][openstax-elasticity] |
+| σ = Eε, τ = Gγ | `Stress` | Linear elasticity. Use Young's modulus E under uniaxial stress, or shear modulus G and engineering shear strain γ for simple shear. Supported methods include `Stress.FromUniaxialStrain` and `Stress.FromElasticShearStrain`. | [OpenStax stress, strain, and elastic modulus][openstax-elasticity] |
+| Δp = −KΔV/V₀ | `ForcePerArea` | Small volumetric strain at constant bulk modulus K. Compression raises pressure. Supported methods include `ForcePerArea.PressureChangeFromBulkModulus`. | [OpenStax stress, strain, and elastic modulus][openstax-elasticity] |
+| u = ½σε | `EnergyDensity` | Recoverable energy density for a single linearly elastic stress and conjugate strain, such as uniaxial loading. Supported methods include `EnergyDensity.FromElasticStrain`. | [Purdue elastic strain energy][purdue-elastic-energy] |
+| k = EA/ℓ | `ForcePerLength` | Axial stiffness of a uniform straight bar in the linear elastic regime. Use Young's modulus, constant cross section and positive length. Supported methods include `ForcePerLength.AxialStiffness`. | [Illinois axial stiffness][illinois-axial-stiffness] |
+| τsurface = 2T/(πr³) | `Stress` | Signed surface shear stress from elastic torsion of a solid circular shaft of positive radius. Supported methods include `Stress.FromSolidShaftTorque`. | [MIT circular shaft torsion][mit-shaft-torsion] |
+| θ = Tℓ/(GJ), J = πr⁴/2 | `PlaneAngle` | Uniform solid circular shaft with constant torque T and shear modulus G. θ is the signed twist over the length ℓ. Supported methods include `PlaneAngle.TwistOfSolidCircularShaft`. | [MIT circular shaft torsion][mit-shaft-torsion] |
+| G = E/[2(1 + ν)] | `ForcePerArea` | Isotropic linear elasticity. Use positive Young's modulus and Poisson's ratio ν between −1 and ½, excluding the endpoints. Supported methods include `ForcePerArea.ShearModulusFromYoungsModulus`. | [University of Hawaiʻi elastic moduli][hawaii-elastic-moduli] |
+| K = E/[3(1 − 2ν)] | `ForcePerArea` | Isotropic linear elasticity with the same conditions on Young's modulus and Poisson's ratio. Supported methods include `ForcePerArea.BulkModulusFromYoungsModulus`. | [University of Hawaiʻi elastic moduli][hawaii-elastic-moduli] |
+
+### Special relativity
+
+| Formula | Result types | Applicability and named entry points | Source |
+| --- | --- | --- | --- |
+| γ = 1/√(1 − v²/c²) | `double` | Relative speed magnitude below the positive vacuum speed of light c. Supported methods include `LinearVelocity.LorentzFactor`. | [OpenStax special relativity equations][openstax-relativity] |
+| E₀ = mc² | `Energy` | Rest energy of a body of rest mass m. Supply the positive vacuum speed of light. Supported methods include `Energy.FromRestMass`. | [OpenStax special relativity equations][openstax-relativity] |
+| E = γmc² | `Energy` | Total energy of a body with positive rest mass and subluminal speed measured in the same inertial frame. Supported methods include `Energy.FromRelativisticMotion`. | [OpenStax special relativity equations][openstax-relativity] |
+| K = (γ − 1)mc² | `Energy` | Relativistic kinetic energy at subluminal speed. Evaluated using γ − 1 = (γv/c)²/(γ + 1) for small speeds. Supported methods include `Energy.FromRelativisticKineticEnergy`. | [OpenStax special relativity equations][openstax-relativity] |
+| E² = (pc)² + (mc²)² | `Energy` | Use rest mass and momentum in the frame of interest. The result is the positive total energy. Supported methods include `Energy.FromRelativisticMomentum`. | [OpenStax special relativity equations][openstax-relativity] |
+| p = γmv | `LinearMomentum` | Signed one-dimensional relativistic momentum of a body with positive rest mass at subluminal velocity. Supported methods include `LinearMomentum.FromRelativisticMotion`. | [OpenStax special relativity equations][openstax-relativity] |
+| Δt = γΔτ | `Time` | Proper time interval Δτ measured by a clock moving at constant relative velocity in the reference frame. Supported methods include `Time.DilatedForRelativeVelocity`. | [OpenStax special relativity equations][openstax-relativity] |
+| ℓ = ℓ₀/γ | `Length` | Length measured along relative motion. ℓ₀ is the proper length measured in the object's rest frame. Supported methods include `Length.ContractedAlongMotion`. | [OpenStax special relativity equations][openstax-relativity] |
+| u = (u′ + v)/(1 + u′v/c²) | `LinearVelocity` | Collinear signed subluminal velocities. u′ is measured in the moving inertial frame, whose velocity in the reference frame is v. Supported methods include `LinearVelocity.ComposeRelativistically`. | [OpenStax special relativity equations][openstax-relativity] |
 
 ### Acoustics and surface waves
 
@@ -502,6 +534,13 @@ Update the corresponding row when changing a formula's coverage.
 - [IUPAC fractions][iupac-fraction]
 - [IUPAC volume fraction][iupac-volume-fraction]
 - [OpenStax molarity and dilution][openstax-molarity]
+- [OpenStax stress, strain, and elastic modulus][openstax-elasticity]
+- [Purdue elastic strain energy][purdue-elastic-energy]
+- [Illinois axial stiffness][illinois-axial-stiffness]
+- [University of Hawaiʻi elastic moduli][hawaii-elastic-moduli]
+- [MIT circular shaft torsion][mit-shaft-torsion]
+- [OpenStax moments of inertia reference table][openstax-rotation-tables]
+- [OpenStax special relativity equations][openstax-relativity]
 
 [bipm-si-brochure]: https://www.bipm.org/en/publications/si-brochure
 [bipm-katal-resolution]: https://www.bipm.org/en/-/resolution-cgpm-21-12
@@ -631,3 +670,10 @@ Update the corresponding row when changing a formula's coverage.
 [iupac-fraction]: https://goldbook.iupac.org/terms/view/F02494
 [iupac-volume-fraction]: https://goldbook.iupac.org/terms/view/V06643
 [openstax-molarity]: https://openstax.org/books/chemistry-2e/pages/3-3-molarity
+[openstax-elasticity]: https://openstax.org/books/university-physics-volume-1/pages/12-3-stress-strain-and-elastic-modulus
+[purdue-elastic-energy]: https://web.ics.purdue.edu/~gonza226/ME323/Lecture-21.pdf
+[illinois-axial-stiffness]: https://mechref.engr.illinois.edu/sol/axial.html
+[hawaii-elastic-moduli]: https://www.soest.hawaii.edu/martel/Courses/GG303/Lecture_20.pdf
+[mit-shaft-torsion]: https://ocw.mit.edu/courses/1-050-solid-mechanics-fall-2004/emech8_04.pdf
+[openstax-rotation-tables]: https://openstax.org/books/physics/pages/a-reference-tables
+[openstax-relativity]: https://openstax.org/books/university-physics-volume-3/pages/5-key-equations

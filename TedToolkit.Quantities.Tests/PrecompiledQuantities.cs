@@ -45,6 +45,8 @@ internal static class PrecompiledQuantities
         Close(5, (squaredTime / Q.Time.FromSecond(2)).Second);
 
         VerifyMechanicsAndFlow();
+        VerifySolidMechanics();
+        VerifyRelativity();
         VerifyWaves();
         VerifyFluidTransport();
         VerifyElectromagnetism();
@@ -258,6 +260,59 @@ internal static class PrecompiledQuantities
         Close(Math.Sqrt(10 * Math.Tanh(1)), Q.LinearVelocity.FromSurfaceGravityWave(gravity, wavelength, depth).MetrePerSecond);
         Close(Math.Sqrt(10), Q.LinearVelocity.FromDeepWaterGravityWave(gravity, wavelength).MetrePerSecond);
         Close(2, Q.LinearVelocity.FromShallowWaterGravityWave(gravity, Q.Length.FromMillimetre(400)).MetrePerSecond);
+    }
+
+    private static void VerifySolidMechanics()
+    {
+        var mass = Q.Mass.FromKilogram(3);
+        var radius = Q.Length.FromMillimetre(2000);
+        Close(12, Q.MomentOfInertia.FromThinRing(mass, radius).Value);
+        Close(6, Q.MomentOfInertia.FromSolidCylinder(mass, radius).Value);
+        Close(1, Q.MomentOfInertia.FromThinRod(mass, radius).Value);
+        var sphereInertia = Q.MomentOfInertia.FromSolidSphere(mass, radius);
+        Close(4.8, sphereInertia.Value);
+        Close(7.8, sphereInertia.AboutParallelAxis(mass, Q.Length.FromMetre(1)).Value);
+
+        var strain = Q.Length.FromMillimetre(1100).EngineeringStrainFrom(Q.Length.FromMetre(1));
+        Close(0.1, strain);
+        var youngsModulus = Q.ForcePerArea.FromPascal(1000);
+        var stress = Q.Stress.FromUniaxialStrain(youngsModulus, strain);
+        Close(100, stress.Value);
+        Close(5, Q.EnergyDensity.FromElasticStrain(stress, strain).Value);
+        var shearModulus = Q.ForcePerArea.ShearModulusFromYoungsModulus(youngsModulus, 0.25);
+        Close(400, shearModulus.Pascal);
+        Close(-40, Q.Stress.FromElasticShearStrain(shearModulus, -0.1).Value);
+        Close(2000d / 3, Q.ForcePerArea.BulkModulusFromYoungsModulus(youngsModulus, 0.25).Pascal);
+        var originalVolume = Q.Volume.FromLitre(1);
+        var finalVolume = Q.Volume.FromLitre(0.9);
+        Close(-0.1, finalVolume.VolumetricStrainFrom(originalVolume));
+        Close(100, Q.ForcePerArea.PressureChangeFromBulkModulus(youngsModulus, originalVolume, finalVolume).Pascal);
+        Close(50, Q.ForcePerLength.AxialStiffness(youngsModulus, Q.Area.FromSquareMetre(0.1), radius).Value);
+
+        var torque = (Q.Torque)Math.PI;
+        var shaftRadius = Q.Length.FromMillimetre(500);
+        Close(16, Q.Stress.FromSolidShaftTorque(torque, shaftRadius).Value);
+        Close(0.16, Q.PlaneAngle.TwistOfSolidCircularShaft(torque, shearModulus, shaftRadius, radius).Radian);
+    }
+
+    private static void VerifyRelativity()
+    {
+        var mass = Q.Mass.FromKilogram(2);
+        var lightSpeed = Q.LinearVelocity.FromMetrePerSecond(10);
+        var velocity = Q.LinearVelocity.FromMetrePerSecond(6);
+        Close(1.25, velocity.LorentzFactor(lightSpeed));
+        Close(200, Q.Energy.FromRestMass(mass, lightSpeed).Joule);
+        Close(250, Q.Energy.FromRelativisticMotion(mass, velocity, lightSpeed).Joule);
+        Close(50, Q.Energy.FromRelativisticKineticEnergy(mass, velocity, lightSpeed).Joule);
+        Close(0.09, Q.Energy.FromRelativisticKineticEnergy(
+            mass, Q.LinearVelocity.FromMetrePerSecond(0.3), Q.LinearVelocity.FromMetrePerSecond(3e8)).Joule);
+
+        var momentum = Q.LinearMomentum.FromRelativisticMotion(mass, -velocity, lightSpeed);
+        Close(-15, momentum.Value);
+        Close(250, Q.Energy.FromRelativisticMomentum(mass, momentum, lightSpeed).Joule);
+        Close(10, Q.Time.FromSecond(8).DilatedForRelativeVelocity(velocity, lightSpeed).Second);
+        Close(8, Q.Length.FromMetre(10).ContractedAlongMotion(velocity, lightSpeed).Metre);
+        Close(10d / 7, velocity.ComposeRelativistically(Q.LinearVelocity.FromMetrePerSecond(-5), lightSpeed).MetrePerSecond);
     }
 
     private static void VerifyFluidTransport()
