@@ -14,6 +14,8 @@ namespace TedToolkit.Quantities;
 [QuantityOperator<double, Length, InverseLength>(Operator.DIVIDE)]
 [QuantityOperator<Length, InverseLength, double>(Operator.MULTIPLY)]
 [QuantityOperator<InverseLength, Length, double>(Operator.MULTIPLY)]
+[QuantityOperator<Length, Area, InverseLength>(Operator.DIVIDE)]
+[QuantityOperator<Length, InverseLength, Area>(Operator.DIVIDE)]
 public readonly partial struct Length;
 
 [QuantityOperator<Area, Length, Volume>(Operator.MULTIPLY)]
@@ -97,7 +99,15 @@ public readonly partial struct ElectricCurrent;
 public readonly partial struct ElectricCharge;
 
 [QuantityOperator<double, InverseLength, Length>(Operator.DIVIDE)]
+[QuantityOperator<InverseLength, Area, Length>(Operator.MULTIPLY)]
+[QuantityOperator<Area, InverseLength, Length>(Operator.MULTIPLY)]
+[QuantityOperator<InverseLength, ElectricConductivity, Resistance>(Operator.DIVIDE)]
+[QuantityOperator<InverseLength, Resistance, ElectricConductivity>(Operator.DIVIDE)]
 public readonly partial struct InverseLength;
+
+[QuantityOperator<Resistance, ElectricConductivity, InverseLength>(Operator.MULTIPLY)]
+[QuantityOperator<ElectricConductivity, Resistance, InverseLength>(Operator.MULTIPLY)]
+public readonly partial struct Resistance;
 public readonly partial struct LinearMomentum;
 public readonly partial struct SquareEnergy;
 
@@ -116,6 +126,8 @@ public readonly partial struct SquareTime;
 [QuantityOperator<LinearMomentum, LinearVelocity, Mass>(Operator.DIVIDE)]
 [QuantityOperator<LinearMomentum, Force, Time>(Operator.DIVIDE)]
 [QuantityOperator<LinearMomentum, Time, Force>(Operator.DIVIDE)]
+[QuantityOperator<Length, LinearMomentum, AngularMomentum>(Operator.MULTIPLY)]
+[QuantityOperator<LinearMomentum, Length, AngularMomentum>(Operator.MULTIPLY)]
 public readonly partial struct LinearMomentum;
 
 // Average force over the interval gives the change in linear momentum.
@@ -131,7 +143,13 @@ public readonly partial struct Force;
 [QuantityOperator<Area, ForcePerArea, Force>(Operator.MULTIPLY)]
 [QuantityOperator<ForcePerArea, VolumePerTime, Power>(Operator.MULTIPLY)]
 [QuantityOperator<VolumePerTime, ForcePerArea, Power>(Operator.MULTIPLY)]
+[QuantityOperator<ForcePerArea, Time, ForcePerAreaTime>(Operator.DIVIDE)]
+[QuantityOperator<ForcePerArea, ForcePerAreaTime, Time>(Operator.DIVIDE)]
 public readonly partial struct ForcePerArea;
+
+[QuantityOperator<ForcePerAreaTime, Time, ForcePerArea>(Operator.MULTIPLY)]
+[QuantityOperator<Time, ForcePerAreaTime, ForcePerArea>(Operator.MULTIPLY)]
+public readonly partial struct ForcePerAreaTime;
 
 [QuantityOperator<ForcePerLength, Length, Force>(Operator.MULTIPLY)]
 [QuantityOperator<Length, ForcePerLength, Force>(Operator.MULTIPLY)]
@@ -176,6 +194,8 @@ public readonly partial struct Torque;
 [QuantityOperator<AngularMomentum, AngularVelocity, MomentOfInertia>(Operator.DIVIDE)]
 [QuantityOperator<AngularMomentum, Torque, Time>(Operator.DIVIDE)]
 [QuantityOperator<AngularMomentum, Time, Torque>(Operator.DIVIDE)]
+[QuantityOperator<AngularMomentum, Length, LinearMomentum>(Operator.DIVIDE)]
+[QuantityOperator<AngularMomentum, LinearMomentum, Length>(Operator.DIVIDE)]
 public readonly partial struct AngularMomentum;
 
 [QuantityOperator<Power, Torque, AngularVelocity>(Operator.DIVIDE)]
@@ -402,11 +422,48 @@ public readonly partial struct ElectricDipoleMoment;
 
 [QuantityOperator<Permittivity, ElectricFieldStrength, ElectricDisplacement>(Operator.MULTIPLY)]
 [QuantityOperator<ElectricFieldStrength, Permittivity, ElectricDisplacement>(Operator.MULTIPLY)]
+[QuantityOperator<Permittivity, Length, Capacitance>(Operator.MULTIPLY)]
+[QuantityOperator<Length, Permittivity, Capacitance>(Operator.MULTIPLY)]
+[QuantityOperator<Permittivity, ElectricFlux, ElectricCharge>(Operator.MULTIPLY)]
+[QuantityOperator<ElectricFlux, Permittivity, ElectricCharge>(Operator.MULTIPLY)]
 public readonly partial struct Permittivity;
+
+[QuantityOperator<Capacitance, Permittivity, Length>(Operator.DIVIDE)]
+[QuantityOperator<Capacitance, Length, Permittivity>(Operator.DIVIDE)]
+public readonly partial struct Capacitance;
+
+[QuantityOperator<ElectricCharge, Permittivity, ElectricFlux>(Operator.DIVIDE)]
+[QuantityOperator<ElectricCharge, ElectricFlux, Permittivity>(Operator.DIVIDE)]
+[QuantityOperator<ElectricCharge, ElectricDisplacement, Area>(Operator.DIVIDE)]
+public readonly partial struct ElectricCharge;
 
 [QuantityOperator<ElectricDisplacement, Permittivity, ElectricFieldStrength>(Operator.DIVIDE)]
 [QuantityOperator<ElectricDisplacement, ElectricFieldStrength, Permittivity>(Operator.DIVIDE)]
+[QuantityOperator<ElectricDisplacement, Area, ElectricCharge>(Operator.MULTIPLY)]
+[QuantityOperator<Area, ElectricDisplacement, ElectricCharge>(Operator.MULTIPLY)]
 public readonly partial struct ElectricDisplacement;
+
+[QuantityOperator<Polarizability, ElectricFieldStrength, ElectricDipoleMoment>(Operator.MULTIPLY)]
+[QuantityOperator<ElectricFieldStrength, Polarizability, ElectricDipoleMoment>(Operator.MULTIPLY)]
+public readonly partial struct Polarizability;
+
+[QuantityOperator<ElectricDipoleMoment, ElectricFieldStrength, Polarizability>(Operator.DIVIDE)]
+[QuantityOperator<ElectricDipoleMoment, Polarizability, ElectricFieldStrength>(Operator.DIVIDE)]
+[QuantityOperator<ElectricDipoleMoment, Volume, PolarizationField>(Operator.DIVIDE)]
+[QuantityOperator<ElectricDipoleMoment, PolarizationField, Volume>(Operator.DIVIDE)]
+public readonly partial struct ElectricDipoleMoment;
+
+[QuantityOperator<PolarizationField, Volume, ElectricDipoleMoment>(Operator.MULTIPLY)]
+[QuantityOperator<Volume, PolarizationField, ElectricDipoleMoment>(Operator.MULTIPLY)]
+public readonly partial struct PolarizationField;
+
+[QuantityOperator<ElectricCurrent, Length, LinearElectricCurrent>(Operator.DIVIDE)]
+[QuantityOperator<ElectricCurrent, LinearElectricCurrent, Length>(Operator.DIVIDE)]
+public readonly partial struct ElectricCurrent;
+
+[QuantityOperator<LinearElectricCurrent, Length, ElectricCurrent>(Operator.MULTIPLY)]
+[QuantityOperator<Length, LinearElectricCurrent, ElectricCurrent>(Operator.MULTIPLY)]
+public readonly partial struct LinearElectricCurrent;
 
 // Use the area-averaged field component normal to the surface.
 [QuantityOperator<MagneticFluxDensity, Area, MagneticFlux>(Operator.MULTIPLY)]
@@ -521,6 +578,13 @@ public readonly partial struct Illuminance;
 [QuantityOperator<Area, Luminance, LuminousIntensity>(Operator.MULTIPLY)]
 public readonly partial struct Luminance;
 
+[QuantityOperator<LuminousFluxPerArea, Area, LuminousFlux>(Operator.MULTIPLY)]
+[QuantityOperator<Area, LuminousFluxPerArea, LuminousFlux>(Operator.MULTIPLY)]
+public readonly partial struct LuminousFluxPerArea;
+
+[QuantityOperator<LuminousFlux, LuminousFluxPerArea, Area>(Operator.DIVIDE)]
+public readonly partial struct LuminousFlux;
+
 [QuantityOperator<LuminousEnergy, LuminousFlux, Time>(Operator.DIVIDE)]
 [QuantityOperator<LuminousEnergy, Time, LuminousFlux>(Operator.DIVIDE)]
 public readonly partial struct LuminousEnergy;
@@ -575,7 +639,13 @@ public readonly partial struct Volume;
 
 [QuantityOperator<MolarEnergy, AmountOfSubstance, Energy>(Operator.MULTIPLY)]
 [QuantityOperator<AmountOfSubstance, MolarEnergy, Energy>(Operator.MULTIPLY)]
+[QuantityOperator<MolarEnergy, Length, LengthMolarEnergy>(Operator.MULTIPLY)]
+[QuantityOperator<Length, MolarEnergy, LengthMolarEnergy>(Operator.MULTIPLY)]
 public readonly partial struct MolarEnergy;
+
+[QuantityOperator<LengthMolarEnergy, Length, MolarEnergy>(Operator.DIVIDE)]
+[QuantityOperator<LengthMolarEnergy, MolarEnergy, Length>(Operator.DIVIDE)]
+public readonly partial struct LengthMolarEnergy;
 
 [QuantityOperator<Energy, MolarEnergy, AmountOfSubstance>(Operator.DIVIDE)]
 [QuantityOperator<Energy, AmountOfSubstance, MolarEnergy>(Operator.DIVIDE)]

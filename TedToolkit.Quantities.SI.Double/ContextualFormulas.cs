@@ -42,50 +42,10 @@ public readonly partial struct Frequency
         return FromHertz(Math.Abs(first.Hertz - second.Hertz));
     }
 
-    /// <summary>Calculates a standing-wave frequency with identical end conditions and positive mode number.</summary>
-    /// <remarks>Use a string fixed at both ends or an ideal pipe open at both ends or closed at both ends.</remarks>
-    public static Frequency FromStandingWave(LinearVelocity waveSpeed, Length resonatorLength, int mode)
-    {
-        return FromHertz((0.5d * mode) * waveSpeed.MetrePerSecond / resonatorLength.Metre);
-    }
-
-    /// <summary>Calculates the frequency of a positive mode number in an ideal pipe open at one end and closed at the other.</summary>
-    public static Frequency FromQuarterWaveResonance(LinearVelocity soundSpeed, Length pipeLength, int mode)
-    {
-        return FromHertz((0.5d * mode - 0.25d) * soundSpeed.MetrePerSecond / pipeLength.Metre);
-    }
-
-    /// <summary>Calculates the classical Doppler shift of this emitted frequency for collinear sound propagation.</summary>
-    /// <param name="soundSpeed">The positive sound speed in the uniform medium.</param>
-    /// <param name="sourceVelocityTowardObserver">The signed source velocity relative to the medium, positive toward the observer.</param>
-    /// <param name="observerVelocityTowardSource">The signed observer velocity relative to the medium, positive toward the source.</param>
-    /// <remarks>Both speeds must be below the sound speed.</remarks>
-    public Frequency ObservedWithDopplerShift(
-        LinearVelocity soundSpeed, LinearVelocity sourceVelocityTowardObserver, LinearVelocity observerVelocityTowardSource)
-    {
-        var speed = soundSpeed.Value;
-        return this * ((speed + observerVelocityTowardSource.Value) / (speed - sourceVelocityTowardObserver.Value));
-    }
-
-    /// <summary>Calculates the observed frequency of this light for collinear relative motion in vacuum.</summary>
-    /// <param name="recessionVelocity">The signed subluminal relative velocity, positive for recession.</param>
-    /// <param name="vacuumLightSpeed">The positive vacuum speed of light.</param>
-    public Frequency ObservedWithRelativisticDopplerShift(LinearVelocity recessionVelocity, LinearVelocity vacuumLightSpeed)
-    {
-        var beta = recessionVelocity.Value / vacuumLightSpeed.Value;
-        return this * Math.Sqrt((1d - beta) / (1d + beta));
-    }
-
     /// <summary>Calculates the half-power cutoff frequency of a first-order RC or RL filter with positive time constant.</summary>
     public static Frequency FromFirstOrderCutoff(Time timeConstant)
     {
         return AngularVelocity.FromRadianPerSecond(1d / timeConstant.Second).ToFrequency();
-    }
-
-    /// <summary>Calculates the Strouhal number from this oscillation frequency, a characteristic flow length, and a positive reference speed.</summary>
-    public double StrouhalNumber(Length characteristicLength, LinearVelocity referenceSpeed)
-    {
-        return Value * characteristicLength.Value / referenceSpeed.Value;
     }
 }
 
@@ -111,13 +71,6 @@ public readonly partial struct AngularVelocity
     {
         return FromRadianPerSecond(1d / Math.Sqrt(inductance.Henry * capacitance.Farad));
     }
-
-    /// <summary>Calculates angular frequency for a linear mass–spring system with positive subcritical viscous damping.</summary>
-    public static AngularVelocity FromUnderdampedSpring(Mass mass, ForcePerLength stiffness, MassPerTime dampingCoefficient)
-    {
-        var decayRate = 0.5d * dampingCoefficient.Value / mass.Value;
-        return FromRadianPerSecond(Math.Sqrt(stiffness.Value / mass.Value - decayRate * decayRate));
-    }
 }
 
 public readonly partial struct PlaneAngle
@@ -139,33 +92,6 @@ public readonly partial struct PlaneAngle
         return radius * Radian;
     }
 
-    /// <summary>Calculates signed angular displacement about a fixed axis under constant angular acceleration.</summary>
-    public static PlaneAngle FromConstantAngularAcceleration(
-        AngularVelocity initialAngularVelocity, AngularAcceleration acceleration, Time elapsed)
-    {
-        return FromRadian((initialAngularVelocity.Value + 0.5d * acceleration.Value * elapsed.Value) * elapsed.Value);
-    }
-
-    /// <summary>Calculates the transmitted ray angle for refraction between media with positive refractive indices.</summary>
-    /// <param name="incidence">The signed incident angle from the interface normal, between −π/2 and π/2 radians.</param>
-    /// <param name="incidentIndex">The refractive index of the incident medium at this wavelength.</param>
-    /// <param name="transmittedIndex">The refractive index of the transmitted medium at this wavelength.</param>
-    /// <param name="refraction">The signed transmitted angle, or the default angle on failure.</param>
-    /// <returns>True if Snell's law admits a propagating transmitted ray.</returns>
-    public static bool TryFromRefraction(
-        PlaneAngle incidence, double incidentIndex, double transmittedIndex, out PlaneAngle refraction)
-    {
-        var sine = (incidentIndex / transmittedIndex) * Math.Sin(incidence.Radian);
-        if (!(Math.Abs(sine) <= 1d))
-        {
-            refraction = default;
-            return false;
-        }
-
-        refraction = FromRadian(Math.Asin(sine));
-        return true;
-    }
-
     /// <summary>Calculates the critical incidence angle for light passing from a higher to a lower positive refractive index.</summary>
     public static PlaneAngle CriticalAngle(double incidentIndex, double transmittedIndex)
     {
@@ -184,25 +110,16 @@ public readonly partial struct PlaneAngle
         return FromRevolution(pathDifference / vacuumWavelength);
     }
 
-    /// <summary>Calculates a single-slit diffraction minimum at positive order in the far field.</summary>
-    /// <remarks>The light is normally incident and the order times wavelength cannot exceed the slit width.</remarks>
-    public static PlaneAngle FromSingleSlitMinimum(Length wavelength, Length slitWidth, int order)
-    {
-        return FromRadian(Math.Asin(order * (wavelength / slitWidth)));
-    }
-
     /// <summary>Calculates the approximate Rayleigh angular resolution of a circular aperture in the small-angle regime.</summary>
     public static PlaneAngle FromRayleighCriterion(Length wavelength, Length apertureDiameter)
     {
         return FromRadian(1.22d * (wavelength / apertureDiameter));
     }
 
-    /// <summary>Calculates signed elastic twist under constant torque along a uniform solid circular shaft.</summary>
-    public static PlaneAngle TwistOfSolidCircularShaft(Torque torque, ForcePerArea shearModulus, Length radius, Length shaftLength)
+    /// <summary>Calculates numerical aperture from this objective's acceptance half-angle and the positive object-space refractive index.</summary>
+    public double NumericalAperture(double refractiveIndex)
     {
-        var sectionArea = Area.FromCircle(radius).Value;
-        var polarAreaMoment = 0.5d * sectionArea * (radius * radius).Value;
-        return FromRadian(torque.Value * shaftLength.Value / (shearModulus.Value * polarAreaMoment));
+        return refractiveIndex * Math.Sin(Radian);
     }
 }
 
@@ -260,25 +177,10 @@ public readonly partial struct Length
         return (Length)(waveSpeed.Value / frequency.Value);
     }
 
-    /// <summary>Calculates signed displacement from initial velocity and constant acceleration along the same axis.</summary>
-    public static Length FromConstantAcceleration(LinearVelocity initialVelocity, LinearAcceleration acceleration, Time elapsed)
-    {
-        return (Length)((initialVelocity.Value + 0.5d * acceleration.Value * elapsed.Value) * elapsed.Value);
-    }
-
     /// <summary>Calculates hydraulic diameter from flow area and positive wetted perimeter.</summary>
     public static Length HydraulicDiameter(Area flowArea, Length wettedPerimeter)
     {
         return 4d * (flowArea / wettedPerimeter);
-    }
-
-    /// <summary>Calculates the signed equilibrium rise of a liquid in a vertical circular capillary tube.</summary>
-    /// <remarks>Use the liquid density when the gas density is negligible and measure the contact angle through the liquid.</remarks>
-    public static Length CapillaryRise(
-        ForcePerLength surfaceTension, Density liquidDensity, LinearAcceleration gravity, Length tubeRadius, PlaneAngle contactAngle)
-    {
-        return (Length)(2d * surfaceTension.Value * Math.Cos(contactAngle.Radian)
-                        / (liquidDensity.Value * gravity.Value * tubeRadius.Value));
     }
 
     /// <summary>Calculates paraxial focal length from signed object and image distances.</summary>
@@ -299,31 +201,10 @@ public readonly partial struct Length
         return -(imageDistance / objectDistance);
     }
 
-    /// <summary>Calculates paraxial focal length of a thin lens with the same medium on both sides.</summary>
-    /// <remarks>Use signed radii, positive where the centre of curvature is downstream. A planar surface has infinite radius.</remarks>
-    public static Length FocalLengthFromLensMaker(
-        double lensIndex, double surroundingIndex, Length firstRadius, Length secondRadius)
+    /// <summary>Calculates approximate lateral Rayleigh resolution for a diffraction-limited microscope with positive numerical aperture.</summary>
+    public static Length RayleighMicroscopeResolution(Length vacuumWavelength, double numericalAperture)
     {
-        var curvatureDifference = 1d / firstRadius.Metre - 1d / secondRadius.Metre;
-        return FromMetre(1d / ((lensIndex / surroundingIndex - 1d) * curvatureDifference));
-    }
-
-    /// <summary>Calculates wavelength from a nonzero diffraction grating order with normal incidence.</summary>
-    public static Length WavelengthFromDiffractionGrating(Length grooveSpacing, PlaneAngle angle, int order)
-    {
-        return grooveSpacing * (Math.Sin(angle.Radian) / order);
-    }
-
-    /// <summary>Calculates wavelength from a Bragg reflection at positive order and glancing angle measured from the lattice planes.</summary>
-    public static Length WavelengthFromBraggDiffraction(Length latticeSpacing, PlaneAngle glancingAngle, int order)
-    {
-        return latticeSpacing * (2d * Math.Sin(glancingAngle.Radian) / order);
-    }
-
-    /// <summary>Calculates paraxial double-slit fringe spacing with normally incident coherent light.</summary>
-    public static Length FringeSpacingForDoubleSlit(Length wavelength, Length screenDistance, Length slitSeparation)
-    {
-        return screenDistance * (wavelength / slitSeparation);
+        return vacuumWavelength * (0.61d / numericalAperture);
     }
 
     /// <summary>Calculates the half-value thickness for narrow-beam exponential attenuation at a fixed photon energy.</summary>
@@ -338,12 +219,6 @@ public readonly partial struct Length
         return (Value - originalLength.Value) / originalLength.Value;
     }
 
-    /// <summary>Calculates the length measured along motion when this proper length moves at the given relative velocity.</summary>
-    public Length ContractedAlongMotion(LinearVelocity relativeVelocity, LinearVelocity vacuumLightSpeed)
-    {
-        return this / relativeVelocity.LorentzFactor(vacuumLightSpeed);
-    }
-
     /// <summary>Calculates the wavelength increase for Compton scattering from an initially stationary electron.</summary>
     public static Length ComptonWavelengthShift(Length electronComptonWavelength, PlaneAngle scatteringAngle)
     {
@@ -355,35 +230,6 @@ public readonly partial struct Length
     public double RedshiftFrom(Length emittedWavelength)
     {
         return (Value - emittedWavelength.Value) / emittedWavelength.Value;
-    }
-
-    /// <summary>Calculates the amplitude envelope of an underdamped linear spring with viscous damping.</summary>
-    /// <remarks>Use this initial amplitude, positive mass and damping coefficient, and nonnegative elapsed time.</remarks>
-    public Length AfterViscousDamping(Mass mass, MassPerTime dampingCoefficient, Time elapsed)
-    {
-        var decayRate = 0.5d * dampingCoefficient.Value / mass.Value;
-        return this * Math.Exp(-decayRate * elapsed.Value);
-    }
-
-    /// <summary>Calculates the capillary length of an interface between two fluids of different density under uniform gravity.</summary>
-    public static Length CapillaryLength(
-        ForcePerLength surfaceTension, Density heavierFluid, Density lighterFluid, LinearAcceleration gravity)
-    {
-        var densityDifference = heavierFluid.Value - lighterFluid.Value;
-        return FromMetre(Math.Sqrt(surfaceTension.Value / (densityDifference * gravity.Value)));
-    }
-
-    /// <summary>Calculates the Bond number for this characteristic length at a fluid interface.</summary>
-    public double BondNumber(ForcePerLength surfaceTension, Density heavierFluid, Density lighterFluid, LinearAcceleration gravity)
-    {
-        var scaleRatio = this / CapillaryLength(surfaceTension, heavierFluid, lighterFluid, gravity);
-        return scaleRatio * scaleRatio;
-    }
-
-    /// <summary>Calculates the constant scale height of a hydrostatic, isothermal ideal gas under uniform gravity.</summary>
-    public static Length IsothermalScaleHeight(ForcePerArea absolutePressure, Density density, LinearAcceleration gravity)
-    {
-        return FromMetre(absolutePressure.Value / (density.Value * gravity.Value));
     }
 }
 
@@ -456,12 +302,6 @@ public readonly partial struct MomentOfInertia
     {
         return (2d / 5d) * FromPointMass(mass, radius);
     }
-
-    /// <summary>Transfers this centre-of-mass inertia to a parallel axis at the specified perpendicular distance.</summary>
-    public MomentOfInertia AboutParallelAxis(Mass mass, Length axisSeparation)
-    {
-        return (MomentOfInertia)(Value + FromPointMass(mass, axisSeparation).Value);
-    }
 }
 
 public readonly partial struct EnergyDensity
@@ -470,15 +310,6 @@ public readonly partial struct EnergyDensity
     public static EnergyDensity FromElasticStrain(Stress stress, double strain)
     {
         return (EnergyDensity)(0.5d * stress.Value * strain);
-    }
-
-    /// <summary>Calculates instantaneous field energy density in a lossless, linear, isotropic, nondispersive medium.</summary>
-    public static EnergyDensity FromElectromagneticFields(
-        ElectricFieldStrength electricField, MagneticFluxDensity magneticField, Permittivity permittivity, Permeability permeability)
-    {
-        var electric = electricField.Value;
-        var magnetic = magneticField.Value;
-        return (EnergyDensity)(0.5d * (permittivity.Value * electric * electric + magnetic * magnetic / permeability.Value));
     }
 }
 
@@ -541,48 +372,10 @@ public readonly partial struct Energy
         return (Energy)(0.5d * MagneticFlux.LinkageFromInductor(inductance, current).Value * current.Value);
     }
 
-    /// <summary>Calculates gravitational potential energy outside a spherical body, with zero energy at infinity.</summary>
-    /// <param name="gravitationalParameter">The central body's gravitational parameter.</param>
-    /// <param name="mass">The mass of the other body.</param>
-    /// <param name="distance">The positive distance between the centres.</param>
-    public static Energy FromGravitationalPotential(
-        StandardGravitationalParameter gravitationalParameter, Mass mass, Length distance)
-    {
-        return (Energy)(-(gravitationalParameter.Value / distance.Value) * mass.Value);
-    }
-
-    /// <summary>Calculates the signed change in gravitational potential energy in a uniform field.</summary>
-    /// <param name="mass">The mass of the body.</param>
-    /// <param name="gravity">The positive magnitude of gravitational acceleration.</param>
-    /// <param name="heightChange">The signed height change, positive upward.</param>
-    public static Energy FromUniformGravity(Mass mass, LinearAcceleration gravity, Length heightChange)
-    {
-        return FromMechanicalWork(mass * gravity, heightChange);
-    }
-
-    /// <summary>Calculates the total mechanical energy of a Newtonian circular orbit with negligible orbiting mass.</summary>
-    public static Energy FromCircularOrbit(StandardGravitationalParameter gravitationalParameter, Mass orbitingMass, Length radius)
-    {
-        return 0.5d * FromGravitationalPotential(gravitationalParameter, orbitingMass, radius);
-    }
-
     /// <summary>Calculates heat engine efficiency from this net work output and the positive heat input over the same cycle.</summary>
     public double HeatEngineEfficiency(Energy heatInput)
     {
         return Value / heatInput.Value;
-    }
-
-    /// <summary>Calculates potential energy of an electric dipole in a uniform field, relative to perpendicular orientation.</summary>
-    public static Energy FromElectricDipole(ElectricDipoleMoment dipoleMoment, ElectricFieldStrength field, PlaneAngle angle)
-    {
-        return (Energy)(-dipoleMoment.Value * field.Value * Math.Cos(angle.Radian));
-    }
-
-    /// <summary>Calculates potential energy of a magnetic dipole in a uniform field, relative to perpendicular orientation.</summary>
-    public static Energy FromMagneticDipole(
-        MagneticDipoleMoment dipoleMoment, MagneticFluxDensity field, Permeability vacuumPermeability, PlaneAngle angle)
-    {
-        return (Energy)(-(dipoleMoment.Value / vacuumPermeability.Value) * field.Value * Math.Cos(angle.Radian));
     }
 
     /// <summary>Calculates the rest energy of a body using the positive vacuum speed of light.</summary>
@@ -591,27 +384,16 @@ public readonly partial struct Energy
         return (Energy)(restMass.Value * vacuumLightSpeed.Value * vacuumLightSpeed.Value);
     }
 
-    /// <summary>Calculates total relativistic energy from rest mass and velocity measured in the same inertial frame.</summary>
-    public static Energy FromRelativisticMotion(Mass restMass, LinearVelocity velocity, LinearVelocity vacuumLightSpeed)
+    /// <summary>Calculates photon energy in vacuum from momentum magnitude or signed collinear momentum.</summary>
+    public static Energy FromPhotonMomentum(LinearMomentum momentum, LinearVelocity vacuumLightSpeed)
     {
-        return FromRestMass(restMass, vacuumLightSpeed) * velocity.LorentzFactor(vacuumLightSpeed);
+        return (Energy)(Math.Abs(momentum.Value) * vacuumLightSpeed.Value);
     }
 
-    /// <summary>Calculates relativistic kinetic energy from rest mass and subluminal velocity.</summary>
-    public static Energy FromRelativisticKineticEnergy(Mass restMass, LinearVelocity velocity, LinearVelocity vacuumLightSpeed)
+    /// <summary>Calculates photon energy in a downward bound-state transition from the upper and lower level energies.</summary>
+    public static Energy FromEmissionTransition(Energy upperLevel, Energy lowerLevel)
     {
-        var beta = velocity.Value / vacuumLightSpeed.Value;
-        var gamma = velocity.LorentzFactor(vacuumLightSpeed);
-        var gammaTimesBeta = gamma * beta;
-        return FromRestMass(restMass, vacuumLightSpeed) * (gammaTimesBeta * gammaTimesBeta / (gamma + 1d));
-    }
-
-    /// <summary>Calculates positive total relativistic energy from rest mass and momentum magnitude or a signed collinear momentum.</summary>
-    public static Energy FromRelativisticMomentum(Mass restMass, LinearMomentum momentum, LinearVelocity vacuumLightSpeed)
-    {
-        var restEnergy = FromRestMass(restMass, vacuumLightSpeed).Value;
-        var momentumTimesLightSpeed = momentum.Value * vacuumLightSpeed.Value;
-        return (Energy)Math.Sqrt(restEnergy * restEnergy + momentumTimesLightSpeed * momentumTimesLightSpeed);
+        return (Energy)(upperLevel.Value - lowerLevel.Value);
     }
 
     /// <summary>Calculates maximum photoelectron kinetic energy from photon energy and a positive work function.</summary>
@@ -628,29 +410,14 @@ public readonly partial struct Energy
         kineticEnergy = (Energy)difference;
         return true;
     }
-
-    /// <summary>Calculates work done by a fixed amount of ideal gas during a reversible isothermal volume change.</summary>
-    public static Energy FromIsothermalWork(ForcePerArea initialPressure, Volume initialVolume, Volume finalVolume)
-    {
-        return (Energy)(initialPressure.Value * initialVolume.Value * Math.Log(finalVolume.Value / initialVolume.Value));
-    }
-
-    /// <summary>Calculates work done by a calorically perfect ideal gas during a reversible adiabatic volume change.</summary>
-    public static Energy FromIsentropicWork(
-        ForcePerArea initialPressure, Volume initialVolume, Volume finalVolume, double heatCapacityRatio)
-    {
-        var finalPressure = initialPressure.AfterIsentropicVolumeChange(initialVolume, finalVolume, heatCapacityRatio);
-        return (Energy)((initialPressure.Value * initialVolume.Value - finalPressure.Value * finalVolume.Value)
-                        / (heatCapacityRatio - 1d));
-    }
 }
 
 public readonly partial struct LinearMomentum
 {
-    /// <summary>Calculates signed relativistic momentum along the given subluminal velocity in an inertial frame.</summary>
-    public static LinearMomentum FromRelativisticMotion(Mass restMass, LinearVelocity velocity, LinearVelocity vacuumLightSpeed)
+    /// <summary>Calculates photon momentum magnitude in vacuum from energy and the positive speed of light.</summary>
+    public static LinearMomentum FromPhotonEnergy(Energy photonEnergy, LinearVelocity vacuumLightSpeed)
     {
-        return (restMass * velocity) * velocity.LorentzFactor(vacuumLightSpeed);
+        return (LinearMomentum)(photonEnergy.Value / vacuumLightSpeed.Value);
     }
 }
 
@@ -660,40 +427,6 @@ public readonly partial struct Force
     public static Force FromSpringDisplacement(ForcePerLength stiffness, Length displacement)
     {
         return -(stiffness * displacement);
-    }
-
-    /// <summary>Calculates the upward buoyant force in a fluid with uniform density and gravity over the displaced volume.</summary>
-    public static Force FromBuoyancy(Density fluidDensity, Volume displacedVolume, LinearAcceleration gravity)
-    {
-        return (fluidDensity * displacedVolume) * gravity;
-    }
-
-    /// <summary>Calculates the magnetic force magnitude on a moving charge.</summary>
-    /// <param name="charge">The signed electric charge.</param>
-    /// <param name="speed">The speed of the charge.</param>
-    /// <param name="perpendicularFluxDensity">The magnitude of the magnetic flux density component perpendicular to the velocity.</param>
-    public static Force FromMovingChargeInMagneticField(
-        ElectricCharge charge, LinearVelocity speed, MagneticFluxDensity perpendicularFluxDensity)
-    {
-        return (Force)(Math.Abs(charge.Value) * speed.Value * perpendicularFluxDensity.Value);
-    }
-
-    /// <summary>Calculates the magnetic force magnitude on a straight current-carrying segment in a uniform field.</summary>
-    /// <param name="current">The signed electric current.</param>
-    /// <param name="conductorLength">The length of the segment in the field.</param>
-    /// <param name="perpendicularFluxDensity">The magnitude of the magnetic flux density component perpendicular to the segment.</param>
-    public static Force FromCurrentInMagneticField(
-        ElectricCurrent current, Length conductorLength, MagneticFluxDensity perpendicularFluxDensity)
-    {
-        return (Force)(Math.Abs(current.Value) * conductorLength.Value * perpendicularFluxDensity.Value);
-    }
-
-    /// <summary>Calculates the radial Coulomb force on a point charge in a homogeneous, isotropic medium.</summary>
-    /// <returns>The signed radial force, positive for repulsion.</returns>
-    public static Force FromPointCharges(
-        ElectricCharge sourceCharge, ElectricCharge testCharge, Permittivity permittivity, Length separation)
-    {
-        return ElectricFieldStrength.FromPointCharge(sourceCharge, permittivity, separation) * testCharge;
     }
 
     /// <summary>Calculates the maximum static friction magnitude in the dry Coulomb friction model.</summary>
@@ -706,24 +439,6 @@ public readonly partial struct Force
     public static Force FromKineticFriction(Force normalForce, double coefficientOfKineticFriction)
     {
         return normalForce * coefficientOfKineticFriction;
-    }
-
-    /// <summary>Calculates drag magnitude with the coefficient and reference area for the given flow condition.</summary>
-    public static Force FromDrag(Density density, LinearVelocity relativeSpeed, Area referenceArea, double dragCoefficient)
-    {
-        return (ForcePerArea.FromDynamicPressure(density, relativeSpeed) * referenceArea) * dragCoefficient;
-    }
-
-    /// <summary>Calculates signed lift with the coefficient and reference area for the given flow condition.</summary>
-    public static Force FromLift(Density density, LinearVelocity relativeSpeed, Area referenceArea, double liftCoefficient)
-    {
-        return (ForcePerArea.FromDynamicPressure(density, relativeSpeed) * referenceArea) * liftCoefficient;
-    }
-
-    /// <summary>Calculates Stokes drag magnitude on an isolated rigid sphere in creeping Newtonian flow.</summary>
-    public static Force FromStokesDrag(DynamicViscosity viscosity, Length sphereRadius, LinearVelocity relativeSpeed)
-    {
-        return (Force)((6d * Math.PI) * viscosity.Value * sphereRadius.Value * Math.Abs(relativeSpeed.Value));
     }
 
     /// <summary>Calculates the signed force opposing relative motion under linear viscous damping.</summary>
@@ -743,62 +458,10 @@ public readonly partial struct Torque
     {
         return (Torque)(force.Value * perpendicularLeverArm.Value);
     }
-
-    /// <summary>Calculates the torque magnitude on an electric dipole in a uniform electric field.</summary>
-    /// <param name="dipoleMoment">The electric dipole moment magnitude.</param>
-    /// <param name="field">The electric field magnitude.</param>
-    /// <param name="angle">The angle between the dipole and the field, from zero to π radians.</param>
-    public static Torque FromElectricDipole(ElectricDipoleMoment dipoleMoment, ElectricFieldStrength field, PlaneAngle angle)
-    {
-        return (Torque)(dipoleMoment.Value * field.Value * Math.Sin(angle.Radian));
-    }
-
-    /// <summary>Calculates the torque magnitude on a magnetic dipole in a uniform magnetic field.</summary>
-    /// <param name="dipoleMoment">The QUDT magnetic dipole moment magnitude in weber metres.</param>
-    /// <param name="field">The magnetic flux density magnitude.</param>
-    /// <param name="vacuumPermeability">The vacuum permeability used to recover the magnetic area moment.</param>
-    /// <param name="angle">The angle between the dipole and the field, from zero to π radians.</param>
-    public static Torque FromMagneticDipole(
-        MagneticDipoleMoment dipoleMoment, MagneticFluxDensity field, Permeability vacuumPermeability, PlaneAngle angle)
-    {
-        return (Torque)((dipoleMoment.Value / vacuumPermeability.Value) * field.Value * Math.Sin(angle.Radian));
-    }
-}
-
-public readonly partial struct ForcePerLength
-{
-    /// <summary>Calculates axial stiffness of a straight uniform bar in the linear elastic regime.</summary>
-    public static ForcePerLength AxialStiffness(ForcePerArea youngsModulus, Area crossSection, Length barLength)
-    {
-        return (youngsModulus * crossSection) / barLength;
-    }
-
-    /// <summary>Calculates force per unit length between long parallel conductors in a uniform linear medium.</summary>
-    /// <returns>The signed force per unit length, positive for currents in the same direction and attraction.</returns>
-    public static ForcePerLength FromParallelCurrents(
-        Permeability permeability, ElectricCurrent firstCurrent, ElectricCurrent secondCurrent, Length separation)
-    {
-        var field = MagneticFluxDensity.FromLongStraightWire(permeability, firstCurrent, separation);
-        return (ForcePerLength)(field.Value * secondCurrent.Value);
-    }
 }
 
 public readonly partial struct ForcePerArea
 {
-    /// <summary>Calculates this static absolute pressure after isentropic deceleration of a calorically perfect gas to rest.</summary>
-    public ForcePerArea ToIsentropicStagnation(double machNumber, double heatCapacityRatio)
-    {
-        var ratio = ThermodynamicTemperature.StagnationTemperatureRatio(machNumber, heatCapacityRatio);
-        return this * Math.Pow(ratio, heatCapacityRatio / (heatCapacityRatio - 1d));
-    }
-
-    /// <summary>Calculates hydrostatic absolute pressure after a signed height change in an isothermal ideal gas.</summary>
-    /// <remarks>Positive height change is upward. Use constant scale height and a positive reference pressure.</remarks>
-    public ForcePerArea AfterIsothermalElevationChange(Length heightChange, Length scaleHeight)
-    {
-        return this * Math.Exp(-(heightChange / scaleHeight));
-    }
-
     /// <summary>Calculates a constituent's partial pressure from this total pressure of an ideal gas mixture.</summary>
     public ForcePerArea PartialPressureInIdealGas(double moleFraction)
     {
@@ -809,18 +472,6 @@ public readonly partial struct ForcePerArea
     public ForcePerArea VapourPartialPressureInIdealSolution(double liquidMoleFraction)
     {
         return this * liquidMoleFraction;
-    }
-
-    /// <summary>Calculates mechanical head loss as pressure across a fitting in steady incompressible flow.</summary>
-    public static ForcePerArea FromLocalFlowLoss(Density density, LinearVelocity referenceSpeed, double lossCoefficient)
-    {
-        return FromDynamicPressure(density, referenceSpeed) * lossCoefficient;
-    }
-
-    /// <summary>Calculates the signed pressure change for a small volumetric strain with constant bulk modulus.</summary>
-    public static ForcePerArea PressureChangeFromBulkModulus(ForcePerArea bulkModulus, Volume originalVolume, Volume finalVolume)
-    {
-        return bulkModulus * (-finalVolume.VolumetricStrainFrom(originalVolume));
     }
 
     /// <summary>Calculates shear modulus from Young's modulus and Poisson's ratio for stable isotropic linear elasticity.</summary>
@@ -853,16 +504,6 @@ public readonly partial struct ForcePerArea
         return normalForce / area;
     }
 
-    /// <summary>Calculates the pressure increase below a reference level in a static fluid of uniform density.</summary>
-    /// <param name="density">The fluid density.</param>
-    /// <param name="gravity">The gravitational acceleration magnitude, assumed constant over the depth.</param>
-    /// <param name="depth">The vertical distance below the reference level.</param>
-    /// <returns>The hydrostatic pressure increase relative to the reference level.</returns>
-    public static ForcePerArea FromHydrostaticHead(Density density, LinearAcceleration gravity, Length depth)
-    {
-        return (ForcePerArea)(density.Value * gravity.Value * depth.Value);
-    }
-
     /// <summary>Calculates the pressure difference corresponding to power transferred to a fluid flow.</summary>
     /// <param name="hydraulicPower">The power transferred through the pressure difference.</param>
     /// <param name="flow">The corresponding volumetric flow rate.</param>
@@ -872,102 +513,10 @@ public readonly partial struct ForcePerArea
         return hydraulicPower / flow;
     }
 
-    /// <summary>Calculates static pressure along a streamline in steady, incompressible, inviscid flow.</summary>
-    /// <param name="referencePressure">The static pressure at the reference point.</param>
-    /// <param name="density">The constant fluid density.</param>
-    /// <param name="referenceSpeed">The fluid speed at the reference point.</param>
-    /// <param name="speed">The fluid speed at the result point on the same streamline.</param>
-    /// <param name="gravity">The gravitational acceleration magnitude.</param>
-    /// <param name="elevationChange">The elevation at the result point minus the reference elevation.</param>
-    public static ForcePerArea FromBernoulli(
-        ForcePerArea referencePressure, Density density, LinearVelocity referenceSpeed, LinearVelocity speed,
-        LinearAcceleration gravity, Length elevationChange)
-    {
-        var dynamicPressureChange = FromDynamicPressure(density, referenceSpeed).Value
-                                    - FromDynamicPressure(density, speed).Value;
-        return (ForcePerArea)(referencePressure.Value + dynamicPressureChange
-                             - density.Value * gravity.Value * elevationChange.Value);
-    }
-
-    /// <summary>Calculates the new absolute pressure of a fixed amount of ideal gas.</summary>
-    /// <remarks>This pressure, both volumes, and both absolute temperatures must be positive.</remarks>
-    public ForcePerArea AfterIdealGasStateChange(
-        Volume initialVolume, ThermodynamicTemperature initialTemperature,
-        Volume finalVolume, ThermodynamicTemperature finalTemperature)
-    {
-        return this * ((initialVolume.Value / finalVolume.Value) * (finalTemperature.Kelvin / initialTemperature.Kelvin));
-    }
-
-    /// <summary>Calculates the absolute pressure after a reversible adiabatic volume change of a calorically perfect ideal gas.</summary>
-    public ForcePerArea AfterIsentropicVolumeChange(Volume initialVolume, Volume finalVolume, double heatCapacityRatio)
-    {
-        return this * Math.Pow(initialVolume.Value / finalVolume.Value, heatCapacityRatio);
-    }
-
-    /// <summary>Calculates the Darcy–Weisbach friction pressure drop for fully developed flow in a straight duct.</summary>
-    /// <param name="density">The fluid density, assumed constant along the duct.</param>
-    /// <param name="meanSpeed">The cross-sectional mean flow speed.</param>
-    /// <param name="ductLength">The length of the constant cross-section duct.</param>
-    /// <param name="hydraulicDiameter">The positive hydraulic diameter.</param>
-    /// <param name="darcyFrictionFactor">The Darcy friction factor for the given duct and flow conditions.</param>
-    public static ForcePerArea FromDarcyWeisbach(
-        Density density, LinearVelocity meanSpeed, Length ductLength, Length hydraulicDiameter, double darcyFrictionFactor)
-    {
-        return FromDynamicPressure(density, meanSpeed) * (darcyFrictionFactor * (ductLength / hydraulicDiameter));
-    }
-
     /// <summary>Calculates the inside-to-outside pressure jump across a single spherical interface.</summary>
     public static ForcePerArea FromSphericalSurfaceTension(ForcePerLength surfaceTension, Length radius)
     {
         return (ForcePerArea)(2d * surfaceTension.Value / radius.Value);
-    }
-
-    /// <summary>Calculates pressure on an opaque surface illuminated at normal incidence in vacuum.</summary>
-    /// <remarks>Specular reflectance is a fraction from zero to one, and the remaining irradiance is absorbed.</remarks>
-    public static ForcePerArea FromRadiationPressure(
-        PowerPerArea irradiance, LinearVelocity vacuumLightSpeed, double specularReflectance)
-    {
-        return (ForcePerArea)((1d + specularReflectance) * irradiance.Value / vacuumLightSpeed.Value);
-    }
-}
-
-public readonly partial struct VolumePerTime
-{
-    /// <summary>Calculates incompressible discharge through an orifice with negligible approach velocity.</summary>
-    /// <param name="pressureDrop">The nonnegative driving pressure difference, with elevation head accounted for.</param>
-    /// <param name="density">The positive fluid density.</param>
-    /// <param name="orificeArea">The area of the opening.</param>
-    /// <param name="dischargeCoefficient">The discharge coefficient defined for this orifice and flow condition.</param>
-    public static VolumePerTime FromOrificeFlow(
-        ForcePerArea pressureDrop, Density density, Area orificeArea, double dischargeCoefficient)
-    {
-        var idealSpeed = LinearVelocity.FromMetrePerSecond(Math.Sqrt(2d * pressureDrop.Value / density.Value));
-        return (orificeArea * idealSpeed) * dischargeCoefficient;
-    }
-
-    /// <summary>Calculates incompressible discharge from a Venturi meter with steady flow and a known discharge coefficient.</summary>
-    /// <remarks>Use elevation-corrected differential pressure, positive density, and a throat area smaller than the upstream area.</remarks>
-    public static VolumePerTime FromVenturi(
-        ForcePerArea pressureDrop, Density density, Area upstreamArea, Area throatArea, double dischargeCoefficient)
-    {
-        var areaRatio = throatArea.Value / upstreamArea.Value;
-        var throatSpeed = LinearVelocity.FromMetrePerSecond(
-            Math.Sqrt(2d * pressureDrop.Value / (density.Value * (1d - areaRatio * areaRatio))));
-        return (throatArea * throatSpeed) * dischargeCoefficient;
-    }
-
-    /// <summary>Calculates Hagen–Poiseuille flow through a straight, rigid, horizontal circular pipe.</summary>
-    /// <remarks>Applies to steady, fully developed, laminar flow of an incompressible Newtonian fluid with no wall slip.</remarks>
-    /// <param name="pressureDrop">The inlet pressure minus the outlet pressure.</param>
-    /// <param name="viscosity">The positive dynamic viscosity.</param>
-    /// <param name="radius">The positive internal pipe radius.</param>
-    /// <param name="pipeLength">The positive length over which the pressure drop is measured.</param>
-    public static VolumePerTime FromLaminarPipeFlow(
-        ForcePerArea pressureDrop, DynamicViscosity viscosity, Length radius, Length pipeLength)
-    {
-        var radiusSquared = (radius * radius).Value;
-        return (VolumePerTime)(Math.PI * radiusSquared * radiusSquared * pressureDrop.Value
-                               / (8d * viscosity.Value * pipeLength.Value));
     }
 }
 
@@ -989,15 +538,6 @@ public readonly partial struct Stress
     public static Stress FromSolidShaftTorque(Torque torque, Length radius)
     {
         return (Stress)(2d * torque.Value / (Area.FromCircle(radius) * radius).Value);
-    }
-
-    /// <summary>Calculates signed Newtonian shear stress for a linear velocity profile.</summary>
-    /// <param name="viscosity">The dynamic viscosity of the fluid.</param>
-    /// <param name="velocityDifference">The signed difference of the velocity component parallel to the layers.</param>
-    /// <param name="separation">The positive distance between the layers, perpendicular to them.</param>
-    public static Stress FromNewtonianShear(DynamicViscosity viscosity, LinearVelocity velocityDifference, Length separation)
-    {
-        return (Stress)(viscosity.Value * (velocityDifference.Value / separation.Value));
     }
 }
 
@@ -1023,14 +563,6 @@ public readonly partial struct LinearVelocity
         return Math.Sqrt(2d) * FromCircularOrbit(gravitationalParameter, radius);
     }
 
-    /// <summary>Calculates final speed from signed one-dimensional kinematics under constant acceleration.</summary>
-    /// <remarks>The inputs must describe a reachable displacement, so the squared final speed is nonnegative.</remarks>
-    public static LinearVelocity SpeedAfterConstantAcceleration(
-        LinearVelocity initialVelocity, LinearAcceleration acceleration, Length displacement)
-    {
-        return FromMetrePerSecond(Math.Sqrt(initialVelocity.Value * initialVelocity.Value + 2d * acceleration.Value * displacement.Value));
-    }
-
     /// <summary>Calculates transverse wave speed along a uniform taut string under small displacement.</summary>
     public static LinearVelocity FromStretchedString(Force tension, MassPerLength linearDensity)
     {
@@ -1041,14 +573,6 @@ public readonly partial struct LinearVelocity
     public static LinearVelocity FromFluidBulkModulus(ForcePerArea bulkModulus, Density density)
     {
         return FromMetrePerSecond(Math.Sqrt(bulkModulus.Value / density.Value));
-    }
-
-    /// <summary>Calculates phase speed for linear surface gravity waves in still water of uniform positive depth.</summary>
-    /// <remarks>Use a positive wavelength in the gravity-dominated regime, where surface tension is negligible.</remarks>
-    public static LinearVelocity FromSurfaceGravityWave(LinearAcceleration gravity, Length wavelength, Length depth)
-    {
-        var waveNumber = 2d * Math.PI / wavelength.Metre;
-        return FromMetrePerSecond(Math.Sqrt((gravity.Value / waveNumber) * Math.Tanh(waveNumber * depth.Metre)));
     }
 
     /// <summary>Calculates phase speed for linear surface gravity waves when depth is small relative to wavelength.</summary>
@@ -1067,33 +591,6 @@ public readonly partial struct LinearVelocity
     public double MachNumber(LinearVelocity soundSpeed)
     {
         return Math.Abs(Value) / soundSpeed.Value;
-    }
-
-    /// <summary>Calculates the Froude number for open-channel flow using this mean velocity and positive hydraulic depth.</summary>
-    public double FroudeNumber(LinearAcceleration gravity, Length hydraulicDepth)
-    {
-        return Math.Abs(Value) / FromShallowWaterGravityWave(gravity, hydraulicDepth).Value;
-    }
-
-    /// <summary>Calculates the Weber number using this relative speed, the fluid density, reference length, and positive surface tension.</summary>
-    public double WeberNumber(Density density, Length characteristicLength, ForcePerLength surfaceTension)
-    {
-        return density.Value * Value * Value * characteristicLength.Value / surfaceTension.Value;
-    }
-
-    /// <summary>Calculates the Darcy friction factor from this positive mean speed in fully developed laminar circular-pipe flow.</summary>
-    public double DarcyFrictionFactorForLaminarPipe(Length pipeDiameter, KinematicViscosity kinematicViscosity)
-    {
-        return 64d / ReynoldsNumber(pipeDiameter, kinematicViscosity);
-    }
-
-    /// <summary>Calculates a rigid sphere's signed terminal velocity in an unbounded Newtonian fluid at very low Reynolds number.</summary>
-    /// <returns>The terminal velocity, positive downward and negative for a rising sphere.</returns>
-    public static LinearVelocity StokesTerminalVelocity(
-        Density sphereDensity, Density fluidDensity, DynamicViscosity viscosity, LinearAcceleration gravity, Length sphereRadius)
-    {
-        var radiusSquared = (sphereRadius * sphereRadius).Value;
-        return FromMetrePerSecond((2d / 9d) * (sphereDensity.Value - fluidDensity.Value) * gravity.Value * radiusSquared / viscosity.Value);
     }
 
     /// <summary>Calculates the phase speed of light in a medium from its positive refractive index at the wavelength of interest.</summary>
@@ -1115,15 +612,6 @@ public readonly partial struct LinearVelocity
         return 1d / Math.Sqrt((1d - beta) * (1d + beta));
     }
 
-    /// <summary>Composes this velocity in a moving inertial frame with that frame's collinear velocity in a reference frame.</summary>
-    /// <remarks>Both signed velocities must have magnitudes below the positive vacuum light speed.</remarks>
-    public LinearVelocity ComposeRelativistically(LinearVelocity frameVelocity, LinearVelocity vacuumLightSpeed)
-    {
-        var vacuumSpeed = vacuumLightSpeed.Value;
-        var normalizedProduct = (Value / vacuumSpeed) * (frameVelocity.Value / vacuumSpeed);
-        return FromMetrePerSecond((Value + frameVelocity.Value) / (1d + normalizedProduct));
-    }
-
     /// <summary>Calculates electromagnetic phase speed in a lossless, isotropic, nondispersive linear medium.</summary>
     public static LinearVelocity FromElectromagneticMedium(Permittivity permittivity, Permeability permeability)
     {
@@ -1135,43 +623,6 @@ public readonly partial struct LinearVelocity
     public static LinearVelocity FromTorricelliHead(LinearAcceleration gravity, Length head)
     {
         return FromMetrePerSecond(Math.Sqrt(2d * gravity.Value * head.Value));
-    }
-
-    /// <summary>Calculates sound speed from absolute static pressure, density, and heat capacity ratio for a calorically perfect ideal gas.</summary>
-    public static LinearVelocity FromIdealGasSoundSpeed(ForcePerArea pressure, Density density, double heatCapacityRatio)
-    {
-        return FromFluidBulkModulus(pressure * heatCapacityRatio, density);
-    }
-
-    /// <summary>Calculates the capillary number from this flow speed, dynamic viscosity, and positive surface tension.</summary>
-    public double CapillaryNumber(DynamicViscosity viscosity, ForcePerLength surfaceTension)
-    {
-        return viscosity.Value * Math.Abs(Value) / surfaceTension.Value;
-    }
-
-    /// <summary>Calculates the thermal Péclet number from this flow speed, characteristic length, and positive thermal diffusivity.</summary>
-    public double ThermalPecletNumber(Length characteristicLength, ThermalDiffusivity diffusivity)
-    {
-        return Math.Abs(Value) * characteristicLength.Value / diffusivity.Value;
-    }
-
-    /// <summary>Calculates the Reynolds number for a flow using kinematic viscosity.</summary>
-    /// <param name="characteristicLength">The representative length for the flow geometry.</param>
-    /// <param name="kinematicViscosity">The fluid's kinematic viscosity at the flow conditions.</param>
-    /// <returns>The Reynolds number for those conditions and that length scale.</returns>
-    public double ReynoldsNumber(Length characteristicLength, KinematicViscosity kinematicViscosity)
-    {
-        return Value * characteristicLength.Value / kinematicViscosity.Value;
-    }
-
-    /// <summary>Calculates the Reynolds number for a flow using density and dynamic viscosity.</summary>
-    /// <param name="characteristicLength">The representative length for the flow geometry.</param>
-    /// <param name="density">The fluid density at the flow conditions.</param>
-    /// <param name="dynamicViscosity">The fluid's dynamic viscosity at those same conditions.</param>
-    /// <returns>The Reynolds number for those conditions and that length scale.</returns>
-    public double ReynoldsNumber(Length characteristicLength, Density density, DynamicViscosity dynamicViscosity)
-    {
-        return ReynoldsNumber(characteristicLength, dynamicViscosity / density);
     }
 }
 
@@ -1199,28 +650,19 @@ public readonly partial struct LinearAcceleration
     }
 }
 
-public readonly partial struct Density
-{
-    /// <summary>Calculates this static density after isentropic deceleration of a calorically perfect gas to rest.</summary>
-    public Density ToIsentropicStagnation(double machNumber, double heatCapacityRatio)
-    {
-        var ratio = ThermodynamicTemperature.StagnationTemperatureRatio(machNumber, heatCapacityRatio);
-        return this * Math.Pow(ratio, 1d / (heatCapacityRatio - 1d));
-    }
-}
-
 public readonly partial struct Time
 {
-    /// <summary>Calculates the coordinate duration of this proper interval for a clock moving at the given relative velocity.</summary>
-    public Time DilatedForRelativeVelocity(LinearVelocity relativeVelocity, LinearVelocity vacuumLightSpeed)
-    {
-        return this * relativeVelocity.LorentzFactor(vacuumLightSpeed);
-    }
-
     /// <summary>Calculates the period of a Newtonian circular orbit about a spherical central body.</summary>
     public static Time FromCircularOrbit(StandardGravitationalParameter gravitationalParameter, Length radius)
     {
-        return Length.CircumferenceFromRadius(radius) / LinearVelocity.FromCircularOrbit(gravitationalParameter, radius);
+        return FromKeplerOrbit(gravitationalParameter, radius);
+    }
+
+    /// <summary>Calculates the period of a Newtonian elliptic orbit from positive semi-major axis and gravitational parameter.</summary>
+    public static Time FromKeplerOrbit(StandardGravitationalParameter gravitationalParameter, Length semiMajorAxis)
+    {
+        var axis = semiMajorAxis.Metre;
+        return FromSecond((2d * Math.PI * axis) * Math.Sqrt(axis / gravitationalParameter.Value));
     }
 
     /// <summary>Calculates the period of a positive mass on an undamped, massless spring with positive stiffness.</summary>
@@ -1249,20 +691,6 @@ public readonly partial struct MagneticFlux
 
 public readonly partial struct ElectricFieldStrength
 {
-    /// <summary>Calculates the signed radial electric field of a point charge in a homogeneous, isotropic medium.</summary>
-    /// <returns>The radial field component, positive outward from the source charge.</returns>
-    public static ElectricFieldStrength FromPointCharge(ElectricCharge charge, Permittivity permittivity, Length distance)
-    {
-        return (ElectricFieldStrength)(ElectricPotential.FromPointCharge(charge, permittivity, distance).Value / distance.Value);
-    }
-
-    /// <summary>Calculates the signed radial field of an infinite uniform line charge in a homogeneous linear dielectric.</summary>
-    public static ElectricFieldStrength FromLineCharge(
-        ElectricChargeLineDensity lineCharge, Permittivity permittivity, Length distance)
-    {
-        return (ElectricFieldStrength)(lineCharge.Value / ((2d * Math.PI) * permittivity.Value * distance.Value));
-    }
-
     /// <summary>Calculates the electric field magnitude from the matching magnetic magnitude in a progressive plane wave.</summary>
     public static ElectricFieldStrength FromPlaneWave(MagneticFluxDensity magneticField, LinearVelocity phaseSpeed)
     {
@@ -1279,97 +707,8 @@ public readonly partial struct ElectricFieldStrength
     }
 }
 
-public readonly partial struct ElectricPotential
-{
-    /// <summary>Calculates the potential of a point charge in a homogeneous, isotropic medium, relative to infinity.</summary>
-    /// <param name="charge">The signed source charge.</param>
-    /// <param name="permittivity">The medium's positive absolute permittivity.</param>
-    /// <param name="distance">The positive distance to the charge.</param>
-    public static ElectricPotential FromPointCharge(ElectricCharge charge, Permittivity permittivity, Length distance)
-    {
-        return (ElectricPotential)(charge.Value / (4d * Math.PI * permittivity.Value * distance.Value));
-    }
-
-    /// <summary>Calculates the voltage across the lower resistor of an unloaded two-resistor divider.</summary>
-    public static ElectricPotential FromVoltageDivider(
-        ElectricPotential supply, Resistance upperResistance, Resistance lowerResistance)
-    {
-        return supply * (lowerResistance.Value / upperResistance.InSeriesWith(lowerResistance).Value);
-    }
-
-    /// <summary>Calculates this capacitor voltage after a first-order RC step toward a constant final voltage.</summary>
-    public ElectricPotential AfterRcStep(ElectricPotential finalVoltage, Resistance resistance, Capacitance capacitance, Time elapsed)
-    {
-        var decay = Math.Exp(-elapsed.Value / (resistance * capacitance).Value);
-        return FromVolt(finalVoltage.Volt + (Volt - finalVoltage.Volt) * decay);
-    }
-
-    /// <summary>Calculates RMS voltage across an ideal capacitor from RMS current at a positive sinusoidal frequency.</summary>
-    public static ElectricPotential FromSinusoidalCapacitor(ElectricCurrent rmsCurrent, Capacitance capacitance, Frequency frequency)
-    {
-        var angularFrequency = AngularVelocity.FromFrequency(frequency).RadianPerSecond;
-        return FromVolt(rmsCurrent.Ampere / (angularFrequency * capacitance.Farad));
-    }
-
-    /// <summary>Calculates RMS voltage across an ideal inductor from RMS current at a positive sinusoidal frequency.</summary>
-    public static ElectricPotential FromSinusoidalInductor(ElectricCurrent rmsCurrent, Inductance inductance, Frequency frequency)
-    {
-        return FromVolt(rmsCurrent.Ampere * AngularVelocity.FromFrequency(frequency).RadianPerSecond * inductance.Henry);
-    }
-
-    /// <summary>Calculates average passive terminal voltage from the change of current through a linear ideal inductor.</summary>
-    public static ElectricPotential FromInductorCurrentChange(Inductance inductance, ElectricCurrent currentChange, Time elapsed)
-    {
-        return FromVolt(inductance.Henry * currentChange.Ampere / elapsed.Second);
-    }
-
-    /// <summary>Calculates secondary RMS voltage from this primary RMS voltage in an ideal transformer.</summary>
-    public ElectricPotential AfterIdealTransformer(int primaryTurns, int secondaryTurns)
-    {
-        return this * ((double)secondaryTurns / primaryTurns);
-    }
-}
-
-public readonly partial struct ElectricCurrent
-{
-    /// <summary>Calculates this inductor current after a first-order RL step toward a constant final current.</summary>
-    public ElectricCurrent AfterRlStep(ElectricCurrent finalCurrent, Resistance resistance, Inductance inductance, Time elapsed)
-    {
-        var decay = Math.Exp(-elapsed.Value / (inductance / resistance).Value);
-        return FromAmpere(finalCurrent.Ampere + (Ampere - finalCurrent.Ampere) * decay);
-    }
-
-    /// <summary>Calculates the RMS current of a series RLC circuit in sinusoidal steady state.</summary>
-    public static ElectricCurrent FromSeriesRlc(
-        ElectricPotential rmsVoltage, Resistance resistance, Inductance inductance, Capacitance capacitance, Frequency frequency)
-    {
-        var angularFrequency = AngularVelocity.FromFrequency(frequency).RadianPerSecond;
-        var reactance = angularFrequency * inductance.Henry - 1d / (angularFrequency * capacitance.Farad);
-        return FromAmpere(rmsVoltage.Volt / Math.Sqrt(resistance.Ohm * resistance.Ohm + reactance * reactance));
-    }
-
-    /// <summary>Calculates average passive terminal current from the voltage change across a linear ideal capacitor.</summary>
-    public static ElectricCurrent FromCapacitorVoltageChange(Capacitance capacitance, ElectricPotential voltageChange, Time elapsed)
-    {
-        return (capacitance * voltageChange) / elapsed;
-    }
-
-    /// <summary>Calculates secondary RMS current from this primary RMS current in an ideal loaded transformer.</summary>
-    public ElectricCurrent AfterIdealTransformer(int primaryTurns, int secondaryTurns)
-    {
-        return this * ((double)primaryTurns / secondaryTurns);
-    }
-}
-
 public readonly partial struct Power
 {
-    /// <summary>Calculates average active power from RMS voltage and current in sinusoidal steady state.</summary>
-    /// <remarks>Measure the phase difference between terminal voltage and current entering its positive terminal.</remarks>
-    public static Power FromSinusoidalAc(ElectricPotential rmsVoltage, ElectricCurrent rmsCurrent, PlaneAngle phaseDifference)
-    {
-        return (rmsVoltage * rmsCurrent) * Math.Cos(phaseDifference.Radian);
-    }
-
     /// <summary>Calculates Joule heating from the current through a positive ohmic resistance.</summary>
     public static Power FromResistiveHeating(ElectricCurrent current, Resistance resistance)
     {
@@ -1385,23 +724,6 @@ public readonly partial struct Power
 
 public readonly partial struct MagneticFluxDensity
 {
-    /// <summary>Calculates the signed axial flux density near the centre of a long, uniformly wound solenoid.</summary>
-    /// <param name="permeability">The uniform absolute permeability of the linear medium.</param>
-    /// <param name="current">The signed winding current, with positive direction given by the winding orientation.</param>
-    /// <param name="turns">The number of turns.</param>
-    /// <param name="axialLength">The positive length of the winding, large compared with its diameter.</param>
-    public static MagneticFluxDensity FromLongSolenoid(
-        Permeability permeability, ElectricCurrent current, int turns, Length axialLength)
-    {
-        return permeability * (MagnetomotiveForce.FromWinding(current, turns) / axialLength);
-    }
-
-    /// <summary>Calculates the signed tangential magnetic flux density outside a long straight current in a uniform linear medium.</summary>
-    public static MagneticFluxDensity FromLongStraightWire(Permeability permeability, ElectricCurrent current, Length distance)
-    {
-        return FromTesla(permeability.Value * current.Ampere / ((2d * Math.PI) * distance.Metre));
-    }
-
     /// <summary>Calculates magnetic flux density magnitude from the matching electric magnitude in a progressive plane wave.</summary>
     public static MagneticFluxDensity FromPlaneWave(ElectricFieldStrength electricField, LinearVelocity phaseSpeed)
     {
@@ -1415,20 +737,6 @@ public readonly partial struct MagnetomotiveForce
     public static MagnetomotiveForce FromWinding(ElectricCurrent current, int turns)
     {
         return (MagnetomotiveForce)(turns * current.Value);
-    }
-}
-
-public readonly partial struct MagneticDipoleMoment
-{
-    /// <summary>Calculates the signed QUDT magnetic dipole moment in weber metres of a planar current loop winding.</summary>
-    /// <param name="vacuumPermeability">Vacuum permeability, which scales the current-area moment to the QUDT quantity.</param>
-    /// <param name="current">Signed current with respect to the winding orientation.</param>
-    /// <param name="loopArea">The area enclosed by each planar turn.</param>
-    /// <param name="turns">The number of turns with the same orientation.</param>
-    public static MagneticDipoleMoment FromCurrentLoop(
-        Permeability vacuumPermeability, ElectricCurrent current, Area loopArea, int turns)
-    {
-        return (MagneticDipoleMoment)(vacuumPermeability.Value * turns * current.Value * loopArea.Value);
     }
 }
 
@@ -1459,20 +767,16 @@ public readonly partial struct Resistance
         var larger = Math.Max(Ohm, other.Ohm);
         return FromOhm(smaller / (1d + smaller / larger));
     }
-
-    /// <summary>Calculates the resistance along a uniform conductor.</summary>
-    /// <param name="conductivity">The positive electrical conductivity of the conductor material.</param>
-    /// <param name="length">The conductor length in the direction of current flow.</param>
-    /// <param name="crossSection">The uniform cross-sectional area perpendicular to the current.</param>
-    /// <returns>The electrical resistance along the conductor.</returns>
-    public static Resistance FromUniformConductor(ElectricConductivity conductivity, Length length, Area crossSection)
-    {
-        return (Resistance)(length.Value / (conductivity.Value * crossSection.Value));
-    }
 }
 
 public readonly partial struct Capacitance
 {
+    /// <summary>Calculates capacitance of an isolated conducting sphere in an unbounded homogeneous linear dielectric.</summary>
+    public static Capacitance FromIsolatedSphere(Permittivity permittivity, Length radius)
+    {
+        return FromFarad((4d * Math.PI) * permittivity.Value * radius.Value);
+    }
+
     /// <summary>Calculates effective capacitance of two positive ideal capacitors in series.</summary>
     public Capacitance InSeriesWith(Capacitance other)
     {
@@ -1485,16 +789,6 @@ public readonly partial struct Capacitance
     public Capacitance InParallelWith(Capacitance other)
     {
         return FromFarad(Farad + other.Farad);
-    }
-
-    /// <summary>Calculates capacitance for parallel plates with a uniform dielectric.</summary>
-    /// <param name="permittivity">The absolute permittivity of the dielectric between the plates.</param>
-    /// <param name="overlap">The overlapping plate area.</param>
-    /// <param name="separation">The distance between the plates.</param>
-    /// <returns>The capacitance in the parallel-plate approximation with negligible fringing.</returns>
-    public static Capacitance FromParallelPlates(Permittivity permittivity, Area overlap, Length separation)
-    {
-        return (Capacitance)(permittivity.Value * overlap.Value / separation.Value);
     }
 }
 
@@ -1513,39 +807,10 @@ public readonly partial struct Inductance
         var larger = Math.Max(Henry, other.Henry);
         return FromHenry(smaller / (1d + smaller / larger));
     }
-
-    /// <summary>Calculates self-inductance of a long uniform solenoid in a linear medium with negligible fringing.</summary>
-    public static Inductance FromLongSolenoid(Permeability permeability, Area crossSection, Length axialLength, int turns)
-    {
-        return FromHenry(permeability.Value * turns * turns * crossSection.Value / axialLength.Value);
-    }
-
-    /// <summary>Calculates the quality factor of a series RLC circuit from this inductance and positive capacitance and resistance.</summary>
-    public double SeriesQualityFactor(Capacitance capacitance, Resistance seriesResistance)
-    {
-        return AngularVelocity.FromLcResonance(this, capacitance).Value * Value / seriesResistance.Value;
-    }
 }
 
 public readonly partial struct ThermodynamicTemperature
 {
-    /// <summary>Calculates this static temperature after isentropic deceleration of a calorically perfect gas to rest.</summary>
-    public ThermodynamicTemperature ToIsentropicStagnation(double machNumber, double heatCapacityRatio)
-    {
-        return FromKelvin(Kelvin * StagnationTemperatureRatio(machNumber, heatCapacityRatio));
-    }
-
-    internal static double StagnationTemperatureRatio(double machNumber, double heatCapacityRatio)
-    {
-        return 1d + 0.5d * (heatCapacityRatio - 1d) * machNumber * machNumber;
-    }
-
-    /// <summary>Calculates the absolute temperature after a reversible adiabatic volume change of a calorically perfect ideal gas.</summary>
-    public ThermodynamicTemperature AfterIsentropicVolumeChange(Volume initialVolume, Volume finalVolume, double heatCapacityRatio)
-    {
-        return FromKelvin(Kelvin * Math.Pow(initialVolume.Value / finalVolume.Value, heatCapacityRatio - 1d));
-    }
-
     /// <summary>Calculates Carnot engine efficiency with this hot reservoir and a colder reservoir.</summary>
     public double CarnotEfficiency(ThermodynamicTemperature coldReservoir)
     {
@@ -1564,15 +829,6 @@ public readonly partial struct ThermodynamicTemperature
         return Kelvin / DifferenceInKelvins(coldReservoir);
     }
 
-    /// <summary>Calculates this body's temperature after lumped heating or cooling against constant surroundings.</summary>
-    /// <remarks>Use constant, positive thermal resistance and heat capacity, negligible internal temperature gradients, and nonnegative elapsed time.</remarks>
-    public ThermodynamicTemperature AfterLumpedHeatTransfer(
-        ThermodynamicTemperature surroundings, ThermalResistance resistance, HeatCapacity heatCapacity, Time elapsed)
-    {
-        var decay = Math.Exp(-elapsed.Value / (resistance * heatCapacity).Value);
-        return surroundings.AddKelvins(DifferenceInKelvins(surroundings) * decay);
-    }
-
     /// <summary>Returns this absolute temperature minus the reference temperature, in kelvins.</summary>
     public double DifferenceInKelvins(ThermodynamicTemperature reference)
     {
@@ -1583,13 +839,6 @@ public readonly partial struct ThermodynamicTemperature
     public ThermodynamicTemperature AddKelvins(double deltaKelvins)
     {
         return FromKelvin(Kelvin + deltaKelvins);
-    }
-
-    /// <summary>Calculates the average gradient from the start temperature to this point at a positive distance.</summary>
-    /// <returns>The signed gradient in kelvins per metre.</returns>
-    public double GradientInKelvinsPerMetre(ThermodynamicTemperature start, Length distance)
-    {
-        return DifferenceInKelvins(start) / distance.Metre;
     }
 }
 
@@ -1620,18 +869,6 @@ public readonly partial struct HeatCapacity
 
 public readonly partial struct CoefficientOfHeatTransfer
 {
-    /// <summary>Calculates the Biot number using this surface coefficient and the solid's characteristic length and conductivity.</summary>
-    public double BiotNumber(Length characteristicLength, ThermalConductivity solidConductivity)
-    {
-        return Value * characteristicLength.Value / solidConductivity.Value;
-    }
-
-    /// <summary>Calculates the Nusselt number using this convection coefficient and the fluid's characteristic length and conductivity.</summary>
-    public double NusseltNumber(Length characteristicLength, ThermalConductivity fluidConductivity)
-    {
-        return Value * characteristicLength.Value / fluidConductivity.Value;
-    }
-
     /// <summary>Calculates heat flux from the signed driving temperature difference in kelvins.</summary>
     public HeatFlowRatePerArea HeatFluxForTemperatureChange(double deltaKelvins)
     {
@@ -1641,20 +878,6 @@ public readonly partial struct CoefficientOfHeatTransfer
 
 public readonly partial struct ThermalResistance
 {
-    /// <summary>Calculates steady radial conduction resistance of a homogeneous cylindrical shell with constant conductivity.</summary>
-    public static ThermalResistance FromCylindricalConduction(
-        ThermalConductivity conductivity, Length innerRadius, Length outerRadius, Length axialLength)
-    {
-        return (ThermalResistance)(Math.Log(outerRadius / innerRadius) / ((2d * Math.PI) * conductivity.Value * axialLength.Value));
-    }
-
-    /// <summary>Calculates steady radial conduction resistance of a homogeneous spherical shell with constant conductivity.</summary>
-    public static ThermalResistance FromSphericalConduction(ThermalConductivity conductivity, Length innerRadius, Length outerRadius)
-    {
-        var inverseRadiusDifference = (outerRadius.Value - innerRadius.Value) / outerRadius.Value / innerRadius.Value;
-        return (ThermalResistance)(inverseRadiusDifference / ((4d * Math.PI) * conductivity.Value));
-    }
-
     /// <summary>Calculates equivalent resistance for two thermal paths in series, with the same heat flow through both.</summary>
     public ThermalResistance InSeriesWith(ThermalResistance other)
     {
@@ -1691,15 +914,6 @@ public readonly partial struct ThermalResistance
     public static ThermalResistance FromHeatTransferCoefficient(CoefficientOfHeatTransfer coefficient, Area area)
     {
         return (ThermalResistance)(1d / (coefficient.Value * area.Value));
-    }
-}
-
-public readonly partial struct ThermalDiffusivity
-{
-    /// <summary>Calculates the Fourier number for this thermal diffusivity, elapsed time, and positive characteristic length.</summary>
-    public double FourierNumber(Time elapsed, Length characteristicLength)
-    {
-        return Value * elapsed.Value / (characteristicLength * characteristicLength).Value;
     }
 }
 
@@ -1748,48 +962,8 @@ public readonly partial struct VolumeThermalExpansion
     }
 }
 
-public readonly partial struct HeatFlowRatePerArea
-{
-    /// <summary>Calculates net outward thermal radiation per unit area from a grey surface to large isothermal surroundings.</summary>
-    /// <param name="stefanBoltzmannConstant">The Stefan–Boltzmann constant as a quantity in power per area per kelvin to the fourth power.</param>
-    /// <param name="emissivity">The surface emissivity, a ratio from zero to one.</param>
-    /// <param name="surfaceTemperature">The absolute surface temperature.</param>
-    /// <param name="surroundingsTemperature">The absolute temperature of the surrounding black enclosure.</param>
-    public static HeatFlowRatePerArea FromThermalRadiation(
-        PowerPerAreaQuarticTemperature stefanBoltzmannConstant, double emissivity,
-        ThermodynamicTemperature surfaceTemperature, ThermodynamicTemperature surroundingsTemperature)
-    {
-        var surface = surfaceTemperature.Kelvin;
-        var surroundings = surroundingsTemperature.Kelvin;
-        var fourthPowerDifference = (surface - surroundings) * (surface + surroundings)
-                                    * (surface * surface + surroundings * surroundings);
-        return (HeatFlowRatePerArea)(emissivity * stefanBoltzmannConstant.Value * fourthPowerDifference);
-    }
-
-    /// <summary>Calculates the conductive heat-flux component along an axis using Fourier's law.</summary>
-    /// <param name="conductivity">The scalar thermal conductivity of the material.</param>
-    /// <param name="start">The absolute temperature at the start of the interval.</param>
-    /// <param name="end">The absolute temperature at the end of the interval.</param>
-    /// <param name="distance">The positive distance from start to end along the axis.</param>
-    /// <returns>The signed heat flux along that axis, directed down the temperature gradient.</returns>
-    public static HeatFlowRatePerArea FromConduction(
-        ThermalConductivity conductivity, ThermodynamicTemperature start, ThermodynamicTemperature end, Length distance)
-    {
-        return (HeatFlowRatePerArea)(-conductivity.Value * end.GradientInKelvinsPerMetre(start, distance));
-    }
-}
-
 public readonly partial struct Illuminance
 {
-    /// <summary>Calculates point-source illuminance at a surface whose normal faces the source.</summary>
-    /// <param name="intensity">Luminous intensity in the direction of the surface.</param>
-    /// <param name="distance">Positive distance from the point source to the surface.</param>
-    /// <param name="incidenceAngle">Angle between the surface normal and the direction to the source, from zero to π/2 radians.</param>
-    public static Illuminance FromPointSource(LuminousIntensity intensity, Length distance, PlaneAngle incidenceAngle)
-    {
-        return FromNormalPointSource(intensity, distance) * Math.Cos(incidenceAngle.Radian);
-    }
-
     /// <summary>Calculates illuminance on a surface perpendicular to light from a point source.</summary>
     /// <param name="intensity">The luminous intensity of the source towards the surface.</param>
     /// <param name="distance">The distance from the source to the surface.</param>
@@ -1800,22 +974,95 @@ public readonly partial struct Illuminance
     }
 }
 
+public readonly partial struct LuminousIntensity
+{
+    /// <summary>Calculates luminous intensity at an angle to the normal of a Lambertian source, starting from its normal intensity.</summary>
+    public LuminousIntensity AtLambertianAngle(PlaneAngle angleFromNormal)
+    {
+        return this * Math.Cos(angleFromNormal.Radian);
+    }
+
+    /// <summary>Calculates total luminous flux into one hemisphere from this Lambertian source's normal intensity.</summary>
+    public LuminousFlux ToLambertianFlux()
+    {
+        return this * SolidAngle.FromSteradian(Math.PI);
+    }
+}
+
+public readonly partial struct Luminance
+{
+    /// <summary>Calculates hemispherical luminous exitance from this uniform Lambertian luminance.</summary>
+    public LuminousFluxPerArea ToLambertianExitance()
+    {
+        return (LuminousFluxPerArea)(Math.PI * Value);
+    }
+}
+
+public readonly partial struct LuminousFluxPerArea
+{
+    /// <summary>Calculates average luminous exitance from emitted luminous flux and the emitting area.</summary>
+    public static LuminousFluxPerArea FromEmittedFlux(LuminousFlux emittedFlux, Area emittingArea)
+    {
+        return (LuminousFluxPerArea)(emittedFlux.Value / emittingArea.Value);
+    }
+}
+
+public readonly partial struct ElectricDisplacement
+{
+    /// <summary>Calculates average normal electric displacement from its signed flux through the area.</summary>
+    public static ElectricDisplacement FromDisplacementFlux(ElectricCharge displacementFlux, Area area)
+    {
+        return (ElectricDisplacement)(displacementFlux.Value / area.Value);
+    }
+}
+
+public readonly partial struct Permittivity
+{
+    /// <summary>Calculates this absolute permittivity relative to positive vacuum permittivity.</summary>
+    public double RelativePermittivity(Permittivity vacuumPermittivity)
+    {
+        return Value / vacuumPermittivity.Value;
+    }
+
+    /// <summary>Calculates absolute permittivity from relative permittivity and vacuum permittivity.</summary>
+    public static Permittivity FromRelativePermittivity(double relativePermittivity, Permittivity vacuumPermittivity)
+    {
+        return vacuumPermittivity * relativePermittivity;
+    }
+}
+
+public readonly partial struct Permeability
+{
+    /// <summary>Calculates this absolute permeability relative to positive vacuum permeability.</summary>
+    public double RelativePermeability(Permeability vacuumPermeability)
+    {
+        return Value / vacuumPermeability.Value;
+    }
+
+    /// <summary>Calculates absolute permeability from relative permeability and vacuum permeability.</summary>
+    public static Permeability FromRelativePermeability(double relativePermeability, Permeability vacuumPermeability)
+    {
+        return vacuumPermeability * relativePermeability;
+    }
+}
+
+public readonly partial struct RadiantIntensity
+{
+    /// <summary>Calculates radiant intensity at an angle to the normal of a Lambertian source, starting from its normal intensity.</summary>
+    public RadiantIntensity AtLambertianAngle(PlaneAngle angleFromNormal)
+    {
+        return this * Math.Cos(angleFromNormal.Radian);
+    }
+
+    /// <summary>Calculates total radiant power into one hemisphere from this Lambertian source's normal intensity.</summary>
+    public Power ToLambertianFlux()
+    {
+        return this * SolidAngle.FromSteradian(Math.PI);
+    }
+}
+
 public readonly partial struct PowerPerArea
 {
-    /// <summary>Calculates average intensity of a progressive sinusoidal plane wave in a lossless linear medium.</summary>
-    public static PowerPerArea FromPlaneWave(
-        ElectricFieldStrength rmsElectricField, MagneticFluxDensity rmsMagneticField, Permeability permeability)
-    {
-        return (PowerPerArea)(rmsElectricField.Value * rmsMagneticField.Value / permeability.Value);
-    }
-
-    /// <summary>Calculates transmitted irradiance for a narrow monoenergetic beam crossing a uniform material.</summary>
-    /// <remarks>Use the linear attenuation coefficient at the photon energy and the path length through the material.</remarks>
-    public PowerPerArea AfterExponentialAttenuation(InverseLength linearAttenuationCoefficient, Length pathLength)
-    {
-        return this * Math.Exp(-(linearAttenuationCoefficient * pathLength));
-    }
-
     /// <summary>Calculates irradiance transmitted through an ideal polarizer for linearly polarized incident light.</summary>
     /// <param name="axisAngle">Angle between the incident polarization and the transmission axis.</param>
     public PowerPerArea AfterIdealPolarizer(PlaneAngle axisAngle)
@@ -1824,25 +1071,10 @@ public readonly partial struct PowerPerArea
         return this * (cosine * cosine);
     }
 
-    /// <summary>Calculates point-source irradiance at a surface whose normal faces the source.</summary>
-    /// <param name="intensity">Radiant intensity in the direction of the surface.</param>
-    /// <param name="distance">Positive distance from the point source to the surface.</param>
-    /// <param name="incidenceAngle">Angle between the surface normal and the direction to the source, from zero to π/2 radians.</param>
-    public static PowerPerArea FromPointSource(RadiantIntensity intensity, Length distance, PlaneAngle incidenceAngle)
-    {
-        return FromNormalPointSource(intensity, distance) * Math.Cos(incidenceAngle.Radian);
-    }
-
     /// <summary>Calculates intensity at positive distance from an isotropic source in a lossless medium.</summary>
     public static PowerPerArea FromIsotropicSource(Power emittedPower, Length distance)
     {
         return emittedPower / Area.FromSphere(distance);
-    }
-
-    /// <summary>Calculates average intensity from the peak acoustic pressure of a progressive sinusoidal plane wave.</summary>
-    public static PowerPerArea FromPeakSoundPressure(ForcePerArea peakPressure, Density density, LinearVelocity soundSpeed)
-    {
-        return (PowerPerArea)(0.5d * peakPressure.Value * peakPressure.Value / (density.Value * soundSpeed.Value));
     }
 
     /// <summary>Calculates irradiance for normal incidence from a point source at a positive distance.</summary>
@@ -1866,29 +1098,21 @@ public readonly partial struct AbsorbedDose
     }
 }
 
-public readonly partial struct Activity
-{
-    /// <summary>Calculates the activity of a single radionuclide from its amount and positive half-life.</summary>
-    public static Activity FromAmountAndHalfLife(
-        AmountOfSubstance radionuclideAmount, Time halfLife, InverseAmountOfSubstance avogadroConstant)
-    {
-        return (Activity)((radionuclideAmount * avogadroConstant) * (Math.Log(2d) / halfLife.Value));
-    }
-
-    /// <summary>Calculates the remaining activity of a single radionuclide after radioactive decay.</summary>
-    /// <remarks>The half-life must be positive, elapsed time must be nonnegative, and the nuclide is neither replenished nor removed by other processes.</remarks>
-    public Activity AfterDecay(Time elapsed, Time halfLife)
-    {
-        return this * Math.Pow(0.5d, elapsed.Value / halfLife.Value);
-    }
-}
-
 public readonly partial struct DoseEquivalent
 {
     /// <summary>Calculates dose equivalent at a point from absorbed dose and its mean radiation quality factor.</summary>
     public static DoseEquivalent FromAbsorbedDose(AbsorbedDose dose, double qualityFactor)
     {
         return (DoseEquivalent)(dose.Value * qualityFactor);
+    }
+}
+
+public readonly partial struct Activity
+{
+    /// <summary>Calculates average activity from the number of nuclear transformations in the sample over a positive interval.</summary>
+    public static Activity FromDecayCount(double decayCount, Time elapsed)
+    {
+        return (Activity)(decayCount / elapsed.Second);
     }
 }
 
@@ -1917,50 +1141,5 @@ public readonly partial struct AmountOfSubstance
     public double AmountFraction(AmountOfSubstance totalAmount)
     {
         return Value / totalAmount.Value;
-    }
-}
-
-public readonly partial struct AmountOfSubstancePerVolume
-{
-    /// <summary>Calculates solute concentration after dilution at constant solute amount.</summary>
-    public AmountOfSubstancePerVolume AfterDilution(Volume initialSolutionVolume, Volume finalSolutionVolume)
-    {
-        return (this * initialSolutionVolume) / finalSolutionVolume;
-    }
-
-    /// <summary>Calculates the concentration of the same solute after mixing two solutions without reaction or loss.</summary>
-    /// <remarks>Use the actual positive final solution volume.</remarks>
-    public static AmountOfSubstancePerVolume FromMixing(
-        AmountOfSubstancePerVolume firstConcentration, Volume firstVolume,
-        AmountOfSubstancePerVolume secondConcentration, Volume secondVolume, Volume finalSolutionVolume)
-    {
-        var firstAmount = firstConcentration * firstVolume;
-        var secondAmount = secondConcentration * secondVolume;
-        return (AmountOfSubstance)(firstAmount.Value + secondAmount.Value) / finalSolutionVolume;
-    }
-
-    /// <summary>Calculates solute concentration from its mass fraction and molar mass and the density of the complete solution.</summary>
-    public static AmountOfSubstancePerVolume FromMassFraction(double soluteMassFraction, Density solutionDensity, MolarMass soluteMolarMass)
-    {
-        return (solutionDensity * soluteMassFraction) / soluteMolarMass;
-    }
-
-    /// <summary>Calculates amount concentration from the molality of a single solute dissolved in a solvent.</summary>
-    public static AmountOfSubstancePerVolume FromMolality(
-        AmountOfSubstancePerMass molality, Density solutionDensity, MolarMass soluteMolarMass)
-    {
-        return (AmountOfSubstancePerVolume)(molality.Value * solutionDensity.Value / (1d + molality.Value * soluteMolarMass.Value));
-    }
-}
-
-public readonly partial struct AmountOfSubstancePerMass
-{
-    /// <summary>Calculates molality from the amount concentration of a single solute dissolved in a solvent.</summary>
-    /// <remarks>The complete solution density must exceed the mass of solute per unit solution volume.</remarks>
-    public static AmountOfSubstancePerMass FromAmountConcentration(
-        AmountOfSubstancePerVolume concentration, Density solutionDensity, MolarMass soluteMolarMass)
-    {
-        var soluteDensity = concentration * soluteMolarMass;
-        return (AmountOfSubstancePerMass)(concentration.Value / (solutionDensity.Value - soluteDensity.Value));
     }
 }
